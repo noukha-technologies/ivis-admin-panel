@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   ];
 
   return (
-    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col py-8 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
+    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-8 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
       
       {/* Collapse Toggle Button */}
       <button
@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
             O
           </div>
         ) : (
-          <img src={opalLogo} alt="OPAL IVPMS Logo" className="h-[60px] w-auto object-contain" />
+          <img src={opalLogo} alt="OPAL IVPMS Logo" className="w-[160px] h-auto object-contain" />
         )}
       </div>
 

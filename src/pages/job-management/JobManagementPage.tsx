@@ -1,0 +1,964 @@
+import React, { useState } from 'react';
+import carImage from '../../assets/images/Png/car.png';
+import tickImg from '../../assets/icons/tick_img.svg';
+
+interface Job {
+  id: string;
+  vehicle: string;
+  customer: string;
+  center: string;
+  line: string;
+  created: string;
+  status: 'Pending' | 'In progress' | 'Redo Test' | 'Completed';
+}
+
+const JobManagementPage: React.FC = () => {
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [activeTab, setActiveTab] = useState<'Pending' | 'In progress' | 'Redo Test' | 'Completed'>('Pending');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showNewJobModal, setShowNewJobModal] = useState(false);
+
+  // Detail Page states
+  const [adminPc, setAdminPc] = useState('Ramesh');
+  const [selectedLine, setSelectedLine] = useState('C002');
+
+  // Form states for New Job
+  const [newVehicle, setNewVehicle] = useState('');
+  const [newCustomer, setNewCustomer] = useState('');
+  const [newCenter, setNewCenter] = useState('Muscat');
+  const [newLine, setNewLine] = useState('Line 1');
+
+  const [jobs, setJobs] = useState<Job[]>([
+    { id: '#J01', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Line 1', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J02', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J03', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J04', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J05', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J06', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J07', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J08', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J09', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+    { id: '#J10', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
+
+    // Some dummy jobs for other tabs so they aren't empty
+    { id: '#J11', vehicle: 'OM-2045', customer: 'Fatima Al-Balushi', center: 'Sohar', line: 'Line 2', created: '02 Jan 2026 10:15', status: 'In progress' },
+    { id: '#J12', vehicle: 'OM-9011', customer: 'Salim Al-Harthy', center: 'Nizwa', line: 'Line 1', created: '02 Jan 2026 11:30', status: 'Redo Test' },
+    { id: '#J13', vehicle: 'OM-5566', customer: 'Muna Al-Zadjali', center: 'Muscat', line: 'Line 3', created: '03 Jan 2026 08:00', status: 'Completed' },
+  ]);
+
+  const handleCreateJob = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVehicle || !newCustomer) return;
+
+    const nextIdNum = jobs.length + 1;
+    const formattedId = `#J${nextIdNum < 10 ? '0' + nextIdNum : nextIdNum}`;
+
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : now.getMonth() + 1}-${now.getDate() < 10 ? '0' + now.getDate() : now.getDate()} ${now.getHours() < 10 ? '0' + now.getHours() : now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
+
+    const newJob: Job = {
+      id: formattedId,
+      vehicle: newVehicle,
+      customer: newCustomer,
+      center: newCenter,
+      line: newLine,
+      created: formattedDate,
+      status: 'Pending',
+    };
+
+    setJobs([newJob, ...jobs]);
+    setNewVehicle('');
+    setNewCustomer('');
+    setNewCenter('Muscat');
+    setNewLine('Line 1');
+    setShowNewJobModal(false);
+    setActiveTab('Pending');
+  };
+
+  const handleStartTest = () => {
+    if (selectedJob) {
+      // Transition job to In progress
+      const updatedJobs = jobs.map(j => {
+        if (j.id === selectedJob.id) {
+          return { ...j, status: 'In progress' as const };
+        }
+        return j;
+      });
+      setJobs(updatedJobs);
+      setSelectedJob({ ...selectedJob, status: 'In progress' });
+      setCurrentStep(2);
+    }
+  };
+
+  // Filter jobs based on active tab and search query
+  const filteredJobs = jobs.filter((job) => {
+    const matchesTab = job.status === activeTab;
+    const matchesSearch =
+      job.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.center.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.line.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
+
+  // If a job is selected, show the detail view
+  if (selectedJob) {
+    return (
+      <div className="flex flex-col gap-6 text-gray-900" style={{ marginLeft: '20px', marginRight: '20px' }}>
+
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2.5 text-sm font-medium text-gray-500">
+          <button
+            onClick={() => setSelectedJob(null)}
+            className="hover:text-gray-900 transition-colors bg-transparent border-none cursor-pointer p-0 font-medium text-sm"
+          >
+            Job Management
+          </button>
+          <span>&gt;</span>
+          <div className="flex items-center gap-1.5 text-gray-900 cursor-pointer">
+            <span>{selectedJob.id}</span>
+            <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Header Block */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-[26px] font-bold text-gray-900 tracking-tight leading-none">
+              Job - {selectedJob.id}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1.5 font-semibold">
+              {selectedJob.vehicle} • {selectedJob.center} • {selectedJob.line}
+            </p>
+          </div>
+          {currentStep === 1 ? (
+            <button
+              onClick={handleStartTest}
+              className="bg-[#111827] text-white w-[160px] py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer text-center"
+            >
+              Start Test
+            </button>
+          ) : (
+            <button
+              onClick={() => alert('Jobs refreshed!')}
+              className="flex items-center justify-center gap-1.5 bg-white text-gray-700 border border-[#D0D5DD] w-[160px] py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              <span>Refresh now</span>
+            </button>
+          )}
+        </div>
+
+        {/* Stepper progress indicator */}
+        <div className="max-w-[400px] flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white select-none">
+          {/* Step 1: Created */}
+          <div
+            onClick={() => setCurrentStep(1)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 border-r border-[#D0D5DD] text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${currentStep >= 1
+                ? 'bg-[#ECFDF5] text-[#15803D] hover:bg-[#D1FAE5]'
+                : 'bg-white text-[#344054] hover:bg-gray-50'
+              }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] flex-none ${currentStep >= 1 ? 'bg-[#15803D] text-white' : 'bg-[#475467] text-white'
+              }`}>
+              {currentStep >= 2 ? (
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : '1'}
+            </span>
+            <span>Created</span>
+          </div>
+
+          {/* Step 2: In File */}
+          <div
+            onClick={() => setCurrentStep(2)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 border-r border-[#D0D5DD] text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${currentStep >= 2
+                ? 'bg-[#ECFDF5] text-[#15803D] hover:bg-[#D1FAE5]'
+                : 'bg-white text-[#344054] hover:bg-gray-50'
+              }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] flex-none ${currentStep >= 2 ? 'bg-[#15803D] text-white' : 'bg-[#475467] text-white'
+              }`}>
+              {currentStep >= 3 ? (
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : '2'}
+            </span>
+            <span>In File</span>
+          </div>
+
+          {/* Step 3: Test & Submit */}
+          <div
+            onClick={() => setCurrentStep(3)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${currentStep >= 3
+                ? 'bg-[#ECFDF5] text-[#15803D] hover:bg-[#D1FAE5]'
+                : 'bg-white text-[#344054] hover:bg-gray-50'
+              }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] flex-none ${currentStep >= 3 ? 'bg-[#15803D] text-white' : 'bg-[#475467] text-white'
+              }`}>
+              3
+            </span>
+            <span>Test & Submit</span>
+          </div>
+        </div>
+
+        {/* Dropdowns side-by-side (Only visible in Step 1) */}
+        {currentStep === 1 && (
+          <div className="grid grid-cols-2 gap-4 max-w-[1000px]">
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1.5">Admin PC</label>
+              <select
+                value={adminPc}
+                onChange={(e) => setAdminPc(e.target.value)}
+                className="w-full bg-white border border-[#D0D5DD] rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold cursor-pointer"
+              >
+                <option value="Ramesh">Ramesh</option>
+                <option value="Suresh">Suresh</option>
+                <option value="Ali">Ali</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-600 mb-1.5">Line</label>
+              <select
+                value={selectedLine}
+                onChange={(e) => setSelectedLine(e.target.value)}
+                className="w-full bg-white border border-[#D0D5DD] rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold cursor-pointer"
+              >
+                <option value="C001">C001</option>
+                <option value="C002">C002</option>
+                <option value="C003">C003</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Detail Content List */}
+        <div className="flex flex-col gap-5 w-full">
+          {currentStep === 1 && (
+            <>
+              {/* Card 1: Job Info */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-[#F9FAFB]">
+                  <h3 className="text-sm font-bold text-gray-900">Job Info</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Job ID</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.id}</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Job Status</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.status}</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Centre</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.center}</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Created</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.created}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Vehicle Information */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-[#F9FAFB]">
+                  <h3 className="text-sm font-bold text-gray-900">Vehicle Information</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Plate Number</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.vehicle}</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Chassis</span>
+                    <span className="text-gray-900 font-bold">JT2BF22K0W0123456</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Type</span>
+                    <span className="text-gray-900 font-bold">Sedan</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Brand / Model</span>
+                    <span className="text-gray-900 font-bold">Toyota Corolla</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Customer Info */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-[#F9FAFB]">
+                  <h3 className="text-sm font-bold text-gray-900">Customer Info</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Name</span>
+                    <span className="text-gray-900 font-bold">{selectedJob.customer}</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Phone</span>
+                    <span className="text-gray-900 font-bold">+986 91000000</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">ID Number</span>
+                    <span className="text-gray-900 font-bold">ID20000000</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Payment Info */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-[#F9FAFB]">
+                  <h3 className="text-sm font-bold text-gray-900">Payment Info</h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Amount</span>
+                    <span className="text-gray-900 font-bold">OMR 25.000</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Payment Id / Date</span>
+                    <span className="text-gray-900 font-bold">T1729 / 06.05.26</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Tax (5%)</span>
+                    <span className="text-gray-900 font-bold">OMR 1.250</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Total</span>
+                    <span className="text-gray-900 font-bold">OMR 26.250</span>
+                  </div>
+                  <div className="px-5 py-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Status</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                      Paid
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {currentStep === 2 && (
+            <>
+              {/* Combined In File Panel */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full flex flex-col gap-6">
+
+                {/* XML File Section */}
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-sm font-bold text-gray-900">In File</h3>
+
+                  <div className="flex items-center gap-4 border border-[#E4E7EC] rounded-xl p-4 bg-white">
+                    <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 flex-none">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-bold text-gray-900 truncate">IN_JOB-2000.xml</p>
+                      <p className="text-xs text-[#667085] mt-0.5 font-semibold">200 KB | May 22 2026</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => alert('Opening preview...')}
+                      className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => alert('Downloading XML file...')}
+                      className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <hr className="border-gray-200" />
+
+                {/* Image Gallery Section */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-gray-900">In File</h3>
+                    <button
+                      onClick={() => alert('Camera activated to capture image...')}
+                      className="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                    >
+                      Capture Image
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="aspect-[16/9] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={carImage} alt="Car" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                    <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                  </div>
+                </div>
+
+              </div>
+            </>
+          )}
+
+          {currentStep === 3 && (
+            <>
+              {/* Out File Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-gray-900 text-left">Out File</h3>
+
+                <div className="flex items-center gap-4 border border-[#E4E7EC] rounded-xl p-4 bg-white">
+                  <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100 flex-none">
+                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-bold text-gray-900 truncate">OUT_JOB-2000.xml</p>
+                    <p className="text-xs text-[#667085] mt-0.5 font-semibold">200 KB | May 22 2026</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => alert('Opening preview...')}
+                    className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                  >
+                    Preview
+                  </button>
+                  <button
+                    onClick={() => alert('Downloading XML file...')}
+                    className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+
+              {/* System Test Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full flex flex-col gap-4 text-left">
+                <h3 className="text-sm font-bold text-gray-900">System Test</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Brake System */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Brake System</p>
+                      <p className="text-sm font-bold text-gray-900">Safety</p>
+                    </div>
+                  </div>
+                  {/* Headlights */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Headlights</p>
+                      <p className="text-sm font-bold text-gray-900">Lights</p>
+                    </div>
+                  </div>
+                  {/* Suspension */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Suspension</p>
+                      <p className="text-sm font-bold text-gray-900">Mechanical</p>
+                    </div>
+                  </div>
+                  {/* Emissions */}
+                  <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#DC2626] flex items-center justify-center text-white flex-none">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Emissions</p>
+                      <p className="text-sm font-bold text-gray-900">Environment</p>
+                    </div>
+                  </div>
+                  {/* Tyres & Wheels */}
+                  <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#DC2626] flex items-center justify-center text-white flex-none">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Tyres & Wheels</p>
+                      <p className="text-sm font-bold text-gray-900">Safety</p>
+                    </div>
+                  </div>
+                  {/* Steering */}
+                  <div className="bg-[#FEF2F2] border border-[#FEE2E2] rounded-xl p-4 flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#DC2626] flex items-center justify-center text-white flex-none">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Steering</p>
+                      <p className="text-sm font-bold text-gray-900">Mechanical</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* In File (Image Gallery) Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full flex flex-col gap-4 text-left">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-gray-900">In File</h3>
+                  <button
+                    onClick={() => alert('Camera activated to capture image...')}
+                    className="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                  >
+                    Capture Image
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="aspect-[16/9] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <img src={carImage} alt="Car" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                  <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                </div>
+              </div>
+
+              {/* Manual Test Card */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 w-full flex flex-col gap-4 text-left">
+                <h3 className="text-sm font-bold text-gray-900">Manual Test</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Brake System */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Brake System</p>
+                      <p className="text-sm font-bold text-gray-900">Safety</p>
+                    </div>
+                  </div>
+                  {/* Headlights */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Headlights</p>
+                      <p className="text-sm font-bold text-gray-900">Lights</p>
+                    </div>
+                  </div>
+                  {/* Suspension */}
+                  <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
+                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Suspension</p>
+                      <p className="text-sm font-bold text-gray-900">Mechanical</p>
+                    </div>
+                  </div>
+                  {/* Emissions */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-none bg-white"></div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Emissions</p>
+                      <p className="text-sm font-bold text-gray-900">Environment</p>
+                    </div>
+                  </div>
+                  {/* Tyres & Wheels */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-none bg-white"></div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Tyres & Wheels</p>
+                      <p className="text-sm font-bold text-gray-900">Safety</p>
+                    </div>
+                  </div>
+                  {/* Steering */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+                    <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-none bg-white"></div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500">Steering</p>
+                      <p className="text-sm font-bold text-gray-900">Mechanical</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons Bar */}
+              <div className="bg-[#F9FAFB] border border-gray-200 rounded-xl p-4 flex justify-end gap-3 w-full">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => alert('Submitting & Printing...')}
+                  className="px-6 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  Submit & Print
+                </button>
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="px-6 py-2.5 bg-[#1F2937] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  Redo Test
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
+
+      {/* Top Controls Bar */}
+      <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
+        {/* Left Side: Search Box */}
+        <div className="relative" style={{ width: '320px' }}>
+          <span className="absolute inset-y-0 left-[14px] flex items-center pointer-events-none">
+            <svg className="w-[18px] h-[18px]" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white transition-all focus:outline-none focus:border-[#98A2B3]"
+            style={{
+              width: '100%',
+              height: '38px',
+              border: '1px solid #D0D5DD',
+              borderRadius: '10px',
+              paddingLeft: '40px',
+              paddingRight: '16px',
+              fontSize: '14px',
+              color: '#1D2939',
+              boxSizing: 'border-box'
+            }}
+          />
+        </div>
+
+        {/* Right Side: Switcher Tabs & New Job Button */}
+        <div className="flex items-center gap-3">
+          {/* Switcher Tab Buttons */}
+          <div className="flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white">
+            {(['Pending', 'In progress', 'Redo Test', 'Completed'] as const).map((tab) => {
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-2 text-sm font-medium transition-all cursor-pointer border-r border-[#D0D5DD] last:border-r-0 ${activeTab === tab
+                    ? 'bg-[#F8F9FC] text-[#1D2939]'
+                    : 'bg-white text-[#344054] hover:bg-[#F9FAFB]'
+                    }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* New Job Button */}
+          <button
+            onClick={() => setShowNewJobModal(true)}
+            className="transition-all cursor-pointer hover:bg-opacity-95"
+            style={{
+              backgroundColor: '#1c1c1e',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '8px 18px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+              height: '38px'
+            }}
+          >
+            <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
+            <span>New Job</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Table Container */}
+      <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+        <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                <th className="px-6 py-4.5 text-xs font-bold text-[#667085] tracking-wider">
+                  <div className="flex items-center gap-1 cursor-pointer select-none">
+                    Job ID
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Vehicle</th>
+                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Customer</th>
+                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Center</th>
+                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Line</th>
+                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredJobs.length > 0 ? (
+                filteredJobs.map((job) => (
+                  <tr
+                    key={job.id}
+                    onClick={() => {
+                      setSelectedJob(job);
+                      if (job.status === 'Pending') {
+                        setCurrentStep(1);
+                      } else if (job.status === 'Completed') {
+                        setCurrentStep(3);
+                      } else {
+                        setCurrentStep(2);
+                      }
+                    }}
+                    className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white cursor-pointer"
+                  >
+                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">
+                      <span className="underline text-gray-900 hover:text-gray-600 transition-colors font-semibold">
+                        {job.id}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.vehicle}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.customer}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.center}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.line}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.created}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500 font-medium">
+                    No jobs found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+        </table>
+
+        {/* Table Footer / Pagination */}
+        <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-[#ffffff]">
+          <span className="text-xs font-semibold text-gray-500">
+            Page 1 of {Math.max(1, Math.ceil(filteredJobs.length / 10))} - {filteredJobs.length} Records
+          </span>
+          <div className="flex gap-2">
+            <button className="px-3.5 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              Previous
+            </button>
+            <button className="px-3.5 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              Next
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* MODAL: New Job Entry Form */}
+      {showNewJobModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
+          <div
+            style={{
+              width: '460px',
+              maxWidth: '95%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              padding: '24px 28px',
+              position: 'relative',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              border: '1px solid #f3f4f6'
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>New Inspection Job</h3>
+              <button
+                type="button"
+                onClick={() => setShowNewJobModal(false)}
+                style={{
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  border: '1.5px solid #6b7280',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  color: '#4b5563'
+                }}
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateJob} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+              {/* Vehicle */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Vehicle (Plate) *</label>
+                <input
+                  type="text"
+                  placeholder="Enter Plate (e.g. OM-1000)"
+                  value={newVehicle}
+                  onChange={(e) => setNewVehicle(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Customer */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Customer Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter Name"
+                  value={newCustomer}
+                  onChange={(e) => setNewCustomer(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Center */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Center *</label>
+                <select
+                  value={newCenter}
+                  onChange={(e) => setNewCenter(e.target.value)}
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                >
+                  <option value="Muscat">Muscat</option>
+                  <option value="Sohar">Sohar</option>
+                  <option value="Nizwa">Nizwa</option>
+                  <option value="Salalah">Salalah</option>
+                </select>
+              </div>
+
+              {/* Line */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Line *</label>
+                <select
+                  value={newLine}
+                  onChange={(e) => setNewLine(e.target.value)}
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                >
+                  <option value="Line 1">Line 1</option>
+                  <option value="Line 2">Line 2</option>
+                  <option value="Line 3">Line 3</option>
+                  <option value="Muscat">Muscat</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNewJobModal(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #d1d5db',
+                    color: '#4b5563',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    padding: '10px 0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#111827',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    padding: '10px 0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Create Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default JobManagementPage;
