@@ -49,19 +49,15 @@ const LoginPage: React.FC = () => {
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Simple mock authentication
-      if (email === 'john@gmail.com' && password === 'password123') {
-        setToken('mock-jwt-token-xyz123');
-        setUser({
-          id: '1',
-          email: 'john@gmail.com',
-          role: 'admin',
-          name: 'John Doe',
-        });
-        navigate(ROUTES.DASHBOARD);
-      } else {
-        setLoginError('Invalid email or password. Use: john@gmail.com / password123');
-      }
+      // Simple mock authentication - accepts any credentials to bypass login
+      setToken('mock-jwt-token-xyz123');
+      setUser({
+        id: '1',
+        email: email || 'john@gmail.com',
+        role: 'admin',
+        name: email ? email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'John Doe',
+      });
+      navigate(ROUTES.DASHBOARD);
     } catch (err) {
       setLoginError('An error occurred. Please try again.');
     } finally {

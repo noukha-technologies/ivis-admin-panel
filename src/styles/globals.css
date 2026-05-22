@@ -1,38 +1,6 @@
 /* ===========================
-   Global Styles
+   Global Styles — Non-reset
    =========================== */
-
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  color: #1a1a2e;
-  background-color: #f8f9fc;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
@@ -50,4 +18,67 @@ img {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a0a0a0;
+}
+
+/* Sidebar Logo Spacing Styles */
+.sidebar-logo-container {
+  margin-top: -4px !important;
+  margin-bottom: 16px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Sidebar Button Custom Styles */
+.sidebar-btn {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  border: none !important;
+  background: transparent;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  display: block !important;
+  color: #2D3748 !important;
+  font-weight: 600 !important;
+}
+
+.sidebar-btn.active {
+  background-color: #EAECEF !important;
+  color: #111827 !important;
+}
+
+.sidebar-btn:hover:not(.active) {
+  background-color: rgba(234, 236, 239, 0.4) !important;
+  color: #111827 !important;
+}
+
+/* ===========================
+   Collapsible Sidebar Styles
+   =========================== */
+.sidebar-collapsed {
+  width: 78px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.sidebar-collapsed .sidebar-logo-container {
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+}
+
+.sidebar-collapsed .sidebar-btn {
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  height: 38px !important;
 }
