@@ -95,7 +95,7 @@ interface DocumentMaster {
   description?: string;
 }
 
-type TabType = 'Vehicle' | 'Manual Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR';
+type TabType = 'Vehicle' | 'Manual Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR' | 'Payment' | 'Document / File';
 
 const MasterManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Vehicle');
@@ -277,6 +277,7 @@ const MasterManagementPage: React.FC = () => {
           {
             id: generatedId,
             name: formData.name || 'Unnamed',
+            chassisNo: formData.chassisNo || '',
             category: formData.category || 'Light Vehicle',
             fuelType: formData.fuelType || 'Petrol',
             capacityRange: formData.capacityRange || 'N/A',
