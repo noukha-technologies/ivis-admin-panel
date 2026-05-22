@@ -12,6 +12,8 @@ interface PaymentRecord {
 const PaymentsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Form states for New Payment modal
   const [customerName, setCustomerName] = useState('');
@@ -28,6 +30,86 @@ const PaymentsPage: React.FC = () => {
       total: 'OMR 26.25',
       mode: 'Cash',
       type: 'FOC'
+    },
+    {
+      id: '#240526-02',
+      customer: 'Salim Al-Harthy',
+      vehicle: 'OM-4930',
+      total: 'OMR 15.00',
+      mode: 'Card',
+      type: 'Standard'
+    },
+    {
+      id: '#240526-03',
+      customer: 'Fatima Al-Balushi',
+      vehicle: 'OM-8812',
+      total: 'OMR 30.00',
+      mode: 'Card',
+      type: 'Premium'
+    },
+    {
+      id: '#240526-04',
+      customer: 'John Doe',
+      vehicle: 'OM-2033',
+      total: 'OMR 26.25',
+      mode: 'Cash',
+      type: 'FOC'
+    },
+    {
+      id: '#240526-05',
+      customer: 'Khalid Al-Riyami',
+      vehicle: 'OM-7721',
+      total: 'OMR 15.00',
+      mode: 'Cash',
+      type: 'Standard'
+    },
+    {
+      id: '#240526-06',
+      customer: 'Mazin Al-Sadi',
+      vehicle: 'OM-1928',
+      total: 'OMR 30.00',
+      mode: 'Card',
+      type: 'Premium'
+    },
+    {
+      id: '#240526-07',
+      customer: 'Said Al-Habsi',
+      vehicle: 'OM-3044',
+      total: 'OMR 26.25',
+      mode: 'Cash',
+      type: 'FOC'
+    },
+    {
+      id: '#240526-08',
+      customer: 'Amna Al-Jahwari',
+      vehicle: 'OM-9081',
+      total: 'OMR 15.00',
+      mode: 'Card',
+      type: 'Standard'
+    },
+    {
+      id: '#240526-09',
+      customer: 'Yahya Al-Kharusi',
+      vehicle: 'OM-6677',
+      total: 'OMR 30.00',
+      mode: 'Cash',
+      type: 'Premium'
+    },
+    {
+      id: '#240526-10',
+      customer: 'Mona Al-Farsi',
+      vehicle: 'OM-5522',
+      total: 'OMR 26.25',
+      mode: 'Card',
+      type: 'FOC'
+    },
+    {
+      id: '#240526-11',
+      customer: 'Hamed Al-Rawahi',
+      vehicle: 'OM-4110',
+      total: 'OMR 15.00',
+      mode: 'Cash',
+      type: 'Standard'
     }
   ]);
 
@@ -63,6 +145,11 @@ const PaymentsPage: React.FC = () => {
     p.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const paginatedPayments = filteredPayments.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
+
   return (
     <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
       {/* Top Controls Bar */}
@@ -79,7 +166,10 @@ const PaymentsPage: React.FC = () => {
             type="text"
             placeholder="Search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="bg-white transition-all focus:outline-none focus:border-gray-400"
             style={{
               width: '320px',
@@ -125,7 +215,7 @@ const PaymentsPage: React.FC = () => {
         <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap cursor-pointer select-none">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
                   <div className="flex items-center gap-1">
                     Payment ID
                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,16 +223,16 @@ const PaymentsPage: React.FC = () => {
                     </svg>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Customer</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Vehicle</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Total</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Mode</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Type</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.length > 0 ? (
-                filteredPayments.map((payment) => (
+              {paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment) => (
                   <tr
                     key={payment.id}
                     className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
@@ -166,6 +256,28 @@ const PaymentsPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+            <span className="text-[13px] text-slate-500 font-medium">
+              Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
+                disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
 
       {/* MODAL: New Payment Entry Form */}

@@ -60,7 +60,10 @@ interface LineStatus {
   inProgress: number;
 }
 
+const DASH_PAGE_SIZE = 10;
+
 const DashboardPage: React.FC = () => {
+  const [dashPage, setDashPage] = React.useState(1);
   const stats = [
     { title: 'Vehicles Today', value: '184', subText: 'yesterday-130', trend: '+12%', showTrendIcon: true },
     { title: 'Pass', value: '184', subText: 'yesterday-130', trend: '+12%', showTrendIcon: true },
@@ -70,12 +73,21 @@ const DashboardPage: React.FC = () => {
   ];
 
   const vehicles: VehicleRecord[] = [
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'High' },
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'High' },
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'Low' },
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'Low' },
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'Low' },
-    { plate: 'M-12345', type: 'Sedan', stage: 'Emissions', waiting: '12m', priority: 'Low' },
+    { plate: 'OM-1004', type: 'Sedan', stage: 'Emissions', waiting: '4m', priority: 'High' },
+    { plate: 'OM-2831', type: 'SUV', stage: 'Brake Test', waiting: '12m', priority: 'High' },
+    { plate: 'OM-7732', type: 'Coupe', stage: 'Visual', waiting: '8m', priority: 'Low' },
+    { plate: 'OM-9021', type: 'Sedan', stage: 'Suspension', waiting: '15m', priority: 'High' },
+    { plate: 'OM-1102', type: 'Pickup', stage: 'ROP Check', waiting: '2m', priority: 'Low' },
+    { plate: 'OM-3490', type: 'Sedan', stage: 'Emissions', waiting: '9m', priority: 'Low' },
+    { plate: 'OM-8821', type: 'SUV', stage: 'Headlights', waiting: '11m', priority: 'High' },
+    { plate: 'OM-6543', type: 'Sedan', stage: 'Brake Test', waiting: '5m', priority: 'Low' },
+    { plate: 'OM-4412', type: 'Coupe', stage: 'Visual', waiting: '14m', priority: 'Low' },
+    { plate: 'OM-7009', type: 'Pickup', stage: 'Suspension', waiting: '6m', priority: 'High' },
+    { plate: 'OM-5512', type: 'Sedan', stage: 'Emissions', waiting: '10m', priority: 'Low' },
+    { plate: 'OM-9923', type: 'SUV', stage: 'ROP Check', waiting: '18m', priority: 'High' },
+    { plate: 'OM-2211', type: 'Coupe', stage: 'Headlights', waiting: '3m', priority: 'Low' },
+    { plate: 'OM-8833', type: 'Sedan', stage: 'Brake Test', waiting: '7m', priority: 'High' },
+    { plate: 'OM-4545', type: 'Pickup', stage: 'Visual', waiting: '13m', priority: 'Low' },
   ];
 
   const lines: LineStatus[] = [
@@ -118,6 +130,9 @@ const DashboardPage: React.FC = () => {
     },
   ];
 
+  const startIndex = (dashPage - 1) * DASH_PAGE_SIZE;
+  const paginatedVehicles = vehicles.slice(startIndex, startIndex + DASH_PAGE_SIZE);
+
   return (
     <div className="w-full" style={{ paddingLeft: '20px', paddingRight: '20px', boxSizing: 'border-box' }}>
       {/* Stats Grid */}
@@ -125,7 +140,20 @@ const DashboardPage: React.FC = () => {
         {stats.map((item) => (
           <div
             key={item.title}
-            className="bg-[#F6F8F9] shadow-sm rounded-[16px] overflow-hidden flex flex-col justify-between min-h-[118px]"
+            className="bg-[#F6F8F9] rounded-[16px] overflow-hidden flex flex-col justify-between min-h-[118px]"
+            style={{
+              boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              cursor: 'default',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-6px)';
+              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.13)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+              (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.07)';
+            }}
           >
             <div className="px-5 pt-4 pb-3" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
               <p className="text-[20px] text-[#282828] font-medium tracking-tight">
@@ -169,7 +197,7 @@ const DashboardPage: React.FC = () => {
               Pending Vehicle Monitoring
             </h2>
             <p className="text-[16px] text-gray-500 mt-0.5">
-              6 vehicles awaiting next stage · 2 high priority
+              {vehicles.length} vehicles awaiting next stage · {vehicles.filter(v => v.priority === 'High').length} high priority
             </p>
           </div>
 
@@ -192,7 +220,7 @@ const DashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-[#dddddd]">
-                {vehicles.map((item, idx) => (
+                {paginatedVehicles.map((item, idx) => (
                   <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                     <td className="px-5 py-4 text-[13px] font-bold text-[#222] underline cursor-pointer hover:text-blue-600 transition-colors" style={{ padding: '16px 20px' }}>
                       {item.plate}
@@ -225,6 +253,28 @@ const DashboardPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+            {/* Pagination Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+              <span className="text-[13px] text-slate-500 font-medium">
+                Page {dashPage} of {Math.max(1, Math.ceil(vehicles.length / DASH_PAGE_SIZE))} · {vehicles.length} Records
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDashPage((p) => Math.max(1, p - 1))}
+                  disabled={dashPage === 1}
+                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${dashPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setDashPage((p) => Math.min(Math.ceil(vehicles.length / DASH_PAGE_SIZE), p + 1))}
+                  disabled={dashPage >= Math.ceil(vehicles.length / DASH_PAGE_SIZE)}
+                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${dashPage >= Math.ceil(vehicles.length / DASH_PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -240,7 +290,7 @@ const DashboardPage: React.FC = () => {
               {systemServices.map((svc) => (
                 <div
                   key={svc.name}
-                  className="bg-white rounded-[10px] flex items-center justify-between hover:bg-neutral-50/50 transition-colors shadow-sm"
+                  className="bg-white rounded-[10px] flex items-center justify-between"
                   style={{
                     border: '1px solid #e2e8f0',
                     boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
@@ -249,7 +299,17 @@ const DashboardPage: React.FC = () => {
                     backgroundColor: '#ffffff',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between'
+                    justifyContent: 'space-between',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                    cursor: 'default',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-6px)';
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = '0 12px 28px rgba(0,0,0,0.13)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.05)';
                   }}
                 >
                   <div>

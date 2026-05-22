@@ -17,6 +17,10 @@ const menuToRoute: Record<string, string> = {
   'Customers': '/customers',
   'ROP Management': '/rop-management',
   'Reports & Analytics': '/reports',
+  'Master Management': '/master-management',
+  'User Management': '/users',
+  'Configuration': '/configuration',
+  'File processing': '/file-processing',
 };
 
 const routeToMenu: Record<string, string> = Object.fromEntries(
@@ -32,6 +36,10 @@ const routeToTitle: Record<string, string> = {
   '/customers': 'Customers',
   '/rop-management': 'ROP Management',
   '/reports': 'Reports & Analytics',
+  '/master-management': 'Master Management',
+  '/users': 'User Management',
+  '/configuration': 'Configuration',
+  '/file-processing': 'File Processing',
 };
 
 const routeToSubtitle: Record<string, string> = {
@@ -43,6 +51,10 @@ const routeToSubtitle: Record<string, string> = {
   '/customers': 'View and manage customer profiles',
   '/rop-management': 'ROP integration and management',
   '/reports': 'Analytics and reporting insights',
+  '/master-management': 'Vehicle types, categories, fuel & capacity ranges',
+  '/users': 'Manage system administrators, receptionists, and technical staff',
+  '/configuration': 'Global application configurations, API keys, and settings',
+  '/file-processing': 'Import, validate, and process external data files and ANPR logs',
 };
 
 const MainLayout: React.FC = () => {
@@ -55,21 +67,32 @@ const MainLayout: React.FC = () => {
   const pageSubtitle = routeToSubtitle[location.pathname] || '';
 
   const handleMenuChange = (menuName: string) => {
+    if (location.pathname.startsWith('/configuration')) {
+      // For configuration sub-menus, we use query parameters
+      navigate(`/configuration?tab=${encodeURIComponent(menuName)}`);
+      return;
+    }
     const route = menuToRoute[menuName];
     if (route) {
       navigate(route);
     }
   };
 
+  // Hide the sidebar on management screens (except configuration which has its own sidebar menu)
+  const managementRoutes = ['/master-management', '/users', '/file-processing'];
+  const isSidebarHidden = managementRoutes.includes(location.pathname);
+
   return (
     <div className="flex h-screen w-full bg-[#f8f9fc] font-sans antialiased text-[#222] overflow-hidden">
       {/* Sidebar Navigation */}
-      <Sidebar activeMenu={activeMenu} onMenuChange={handleMenuChange} />
+      {!isSidebarHidden && (
+        <Sidebar activeMenu={activeMenu} onMenuChange={handleMenuChange} />
+      )}
 
       {/* Right Column Layout */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar Component */}
-        <Topbar title={pageTitle} subtitle={pageSubtitle} />
+        <Topbar title={pageTitle} subtitle={pageSubtitle} isSidebarHidden={isSidebarHidden} />
 
         {/* Main Content Area */}
         <main className="flex-1 bg-[#f8f9fc] pt-2 pb-6 px-6 overflow-y-auto" style={{ paddingLeft: '20px', paddingRight: '20px' }}>

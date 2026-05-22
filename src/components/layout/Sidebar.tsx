@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import opalLogo from '../../assets/images/opal_logo.svg';
 
 interface SidebarProps {
@@ -8,8 +9,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const location = useLocation();
 
-  const menuItems = [
+  const isConfiguration = location.pathname.startsWith('/configuration');
+  const searchParams = new URLSearchParams(location.search);
+  const activeTab = searchParams.get('tab') || 'Configuration';
+
+  const defaultMenuItems = [
     { 
       name: 'Dashboard', 
       icon: (
@@ -74,8 +80,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
         </svg>
       )
-    },
+    }
   ];
+
+  const configurationMenuItems = [
+    { name: 'Configuration' },
+    { name: 'Admin PC' },
+    { name: 'Line' },
+    { name: 'ANPR' },
+    { name: 'Charges' },
+    { name: 'Manual Tests' }
+  ];
+
+  const menuItems = isConfiguration ? configurationMenuItems : defaultMenuItems;
 
   return (
     <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-8 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
@@ -120,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       {/* Navigation Menu */}
       <nav className={`flex flex-col gap-y-1.5 ${isCollapsed ? 'px-0' : ''}`}>
         {menuItems.map((item) => {
-          const isActive = activeMenu === item.name;
+          const isActive = isConfiguration ? activeTab === item.name : activeMenu === item.name;
           return (
             <button
               key={item.name}
@@ -129,10 +146,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
               title={isCollapsed ? item.name : undefined}
             >
               <div className="flex items-center gap-3 w-full" style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start', gap: isCollapsed ? '0px' : '12px' }}>
-                <span style={{ color: isActive ? '#111827' : '#4a5568' }} className="flex-none transition-colors">
-                  {item.icon}
-                </span>
-                {!isCollapsed && <span className="truncate">{item.name}</span>}
+                {item.icon && (
+                  <span style={{ color: isActive ? '#111827' : '#4a5568' }} className="flex-none transition-colors">
+                    {item.icon}
+                  </span>
+                )}
+                {(!isCollapsed || !item.icon) && <span className="truncate">{item.name}</span>}
               </div>
             </button>
           );

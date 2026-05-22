@@ -18,6 +18,13 @@ const JobManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Pending' | 'In progress' | 'Redo Test' | 'Completed'>('Pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewJobModal, setShowNewJobModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
 
   // Detail Page states
   const [adminPc, setAdminPc] = useState('Ramesh');
@@ -102,6 +109,9 @@ const JobManagementPage: React.FC = () => {
       job.line.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesTab && matchesSearch;
   });
+
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
 
   // If a job is selected, show the detail view
   if (selectedJob) {
@@ -703,24 +713,25 @@ const JobManagementPage: React.FC = () => {
         <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                <th className="px-6 py-4.5 text-xs font-bold text-[#667085] tracking-wider">
-                  <div className="flex items-center gap-1 cursor-pointer select-none">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
+                  <div className="flex items-center gap-1">
                     Job ID
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </th>
-                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Vehicle</th>
-                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Customer</th>
-                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Center</th>
-                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Line</th>
-                <th className="px-6 py-4.5 text-xs font-semibold text-[#667085] tracking-wider">Created</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Center</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Line</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Created</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap w-12 text-right" style={{ padding: '12px 20px' }}>Action</th>
               </tr>
             </thead>
             <tbody>
-              {filteredJobs.length > 0 ? (
-                filteredJobs.map((job) => (
+              {paginatedJobs.length > 0 ? (
+                paginatedJobs.map((job) => (
                   <tr
                     key={job.id}
                     onClick={() => {
@@ -745,11 +756,70 @@ const JobManagementPage: React.FC = () => {
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.center}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.line}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.created}</td>
+                    <td className="px-6 py-4.5 text-right relative" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative inline-block text-left">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownId(activeDropdownId === job.id ? null : job.id);
+                          }}
+                          className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center ml-auto"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                          </svg>
+                        </button>
+
+                        {activeDropdownId === job.id && (
+                          <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 font-semibold text-[13px] text-gray-700 text-left">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedJob(job);
+                                if (job.status === 'Pending') {
+                                  setCurrentStep(1);
+                                } else if (job.status === 'Completed') {
+                                  setCurrentStep(3);
+                                } else {
+                                  setCurrentStep(2);
+                                }
+                                setActiveDropdownId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                alert(`Editing inspection job: ${job.id}`);
+                                setActiveDropdownId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`Are you sure you want to delete inspection job ${job.id}?`)) {
+                                  setJobs(jobs.filter(j => j.id !== job.id));
+                                }
+                                setActiveDropdownId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-1.5 transition-colors font-semibold"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-500 font-medium">
+                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500 font-medium">
                     No jobs found matching your criteria.
                   </td>
                 </tr>
@@ -760,13 +830,21 @@ const JobManagementPage: React.FC = () => {
         {/* Table Footer / Pagination */}
         <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-[#ffffff]">
           <span className="text-xs font-semibold text-gray-500">
-            Page 1 of {Math.max(1, Math.ceil(filteredJobs.length / 10))} - {filteredJobs.length} Records
+            Page {currentPage} of {Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE))} - {filteredJobs.length} Records
           </span>
           <div className="flex gap-2">
-            <button className="px-3.5 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+            >
               Previous
             </button>
-            <button className="px-3.5 py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <button
+              onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredJobs.length / PAGE_SIZE), p + 1))}
+              disabled={currentPage >= Math.ceil(filteredJobs.length / PAGE_SIZE)}
+              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${currentPage >= Math.ceil(filteredJobs.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+            >
               Next
             </button>
           </div>

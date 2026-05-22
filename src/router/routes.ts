@@ -13,7 +13,10 @@ export const ROUTES = {
   CUSTOMERS: '/customers',
   ROP_MANAGEMENT: '/rop-management',
   JOB_MANAGEMENT: '/job-management',
+  MASTER_MANAGEMENT: '/master-management',
   USERS: '/users',
   USER_DETAIL: '/users/:id',
+  CONFIGURATION: '/configuration',
+  FILE_PROCESSING: '/file-processing',
   UNAUTHORIZED: '/unauthorized',
 } as const;

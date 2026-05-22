@@ -17,6 +17,8 @@ const AppointmentsPage: React.FC = () => {
   const [currentYear] = useState('2025');
   const [currentMonth] = useState('Mar');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [listPage, setListPage] = useState(1);
+  const LIST_PAGE_SIZE = 10;
 
   // Modals state
   const [showNewModal, setShowNewModal] = useState(false);
@@ -31,8 +33,8 @@ const AppointmentsPage: React.FC = () => {
   const [newVehicleNo, setNewVehicleNo] = useState('OM 0082');
   const [newChassisNo, setNewChassisNo] = useState('9003 30039');
   const [newMulkiyaId, setNewMulkiyaId] = useState('OMN 0934');
-  const [newPriority, setNewPriority] = useState<'High' | 'Low'>('High');
-  const [newDay, setNewDay] = useState('8');
+  const [newPriority] = useState<'High' | 'Low'>('High');
+  const [newDay] = useState('8');
 
   // Payment states
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -359,7 +361,7 @@ const AppointmentsPage: React.FC = () => {
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap cursor-pointer select-none">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
                   <div className="flex items-center gap-1">
                     Queue Sq
                     <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,11 +369,11 @@ const AppointmentsPage: React.FC = () => {
                     </svg>
                   </div>
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Customer</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Vehicle</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Center</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Line</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[#667085] whitespace-nowrap">Created</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Center</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Line</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Created</th>
               </tr>
             </thead>
             <tbody>
@@ -392,6 +394,28 @@ const AppointmentsPage: React.FC = () => {
               ))}
             </tbody>
           </table>
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+            <span className="text-[13px] text-slate-500 font-medium">
+              Page {listPage} of {Math.max(1, Math.ceil(listVehicles.length / LIST_PAGE_SIZE))} · {listVehicles.length} Records
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                disabled={listPage === 1}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setListPage((p) => Math.min(Math.ceil(listVehicles.length / LIST_PAGE_SIZE), p + 1))}
+                disabled={listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE)}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
