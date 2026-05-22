@@ -9,6 +9,7 @@ interface TopbarProps {
 }
 
 const menuItems = [
+  { name: 'Dashboard', hasDivider: true },
   { name: 'User Management', hasDivider: true },
   { name: 'Configuration', hasDivider: false },
   { name: 'Master Management', hasDivider: false },
@@ -16,9 +17,10 @@ const menuItems = [
 ];
 
 const itemRouteMap: Record<string, string> = {
+  'Dashboard': '/dashboard',
   'User Management': '/users',
   'Configuration': '/configuration',
-  'Master Mangement': '/master-management',
+  'Master Management': '/master-management',
   'File processing': '/file-processing',
 };
 
@@ -117,7 +119,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
-                    padding: '14px 24px',
+                    padding: '10px 24px',
                     fontSize: '15px',
                     fontWeight: 500,
                     color: '#1a1a2e',
@@ -142,7 +144,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
                     style={{
                       height: '1px',
                       backgroundColor: '#e5e7eb',
-                      margin: '4px 16px',
+                      margin: '2px 16px',
                     }}
                   />
                 )}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface VehicleMaster {
   id: string;
   name: string;
+  chassisNo: string;
   category: string;
   fuelType: string;
   capacityRange: string;
@@ -61,9 +62,8 @@ interface AdminPcMaster {
 interface CameraMaster {
   id: string;
   name: string;
-  ipAddress: string;
+  type?: string;
   line: string;
-  streamUrl: string;
   status: 'Active' | 'Inactive';
   created: string;
   code?: string;
@@ -94,7 +94,7 @@ interface DocumentMaster {
   description?: string;
 }
 
-type TabType = 'Vehicle' | 'Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR' | 'Payment' | 'Document / File';
+type TabType = 'Vehicle' | 'Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR';
 
 const MasterManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Vehicle');
@@ -110,6 +110,8 @@ const MasterManagementPage: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Close dropdowns on outside clicks
   useEffect(() => {
@@ -132,13 +134,13 @@ const MasterManagementPage: React.FC = () => {
 
   // Master Lists States
   const [vehicles, setVehicles] = useState<VehicleMaster[]>([
-    { id: 'V-101', name: 'Sedan', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '1.5L-2.0L', code: 'VT-SED Light', details: 'Standard passenger sedan', status: 'Active', created: '2026-01-10' },
-    { id: 'V-102', name: 'SUV', category: 'Heavy Vehicle', fuelType: 'Diesel', capacityRange: '2.5L-3.0L', code: 'VT-SUV Heavy', details: 'Sports utility vehicle', status: 'Active', created: '2026-02-14' },
-    { id: 'V-103', name: 'Hatchback', category: 'Light Vehicle', fuelType: 'Electric', capacityRange: '100kW-150kW', code: 'VT-HB Compact', details: 'Compact electric hatchback', status: 'Active', created: '2026-03-01' },
-    { id: 'V-104', name: 'Coupe', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '2.0L-3.0L', code: 'VT-COU Sport', details: 'Two-door sports coupe', status: 'Inactive', created: '2026-03-15' },
-    { id: 'V-105', name: 'Motorcycle', category: 'Two-Wheeler', fuelType: 'Petrol', capacityRange: '0.5L-1.0L', code: 'VT-MC Standard', details: 'Standard motorcycle', status: 'Active', created: '2026-04-02' },
-    { id: 'V-106', name: 'Truck', category: 'Commercial', fuelType: 'Diesel', capacityRange: '5.0L-8.0L', code: 'VT-TRK Heavy', details: 'Heavy commercial duty truck', status: 'Active', created: '2026-04-10' },
-    { id: 'V-107', name: 'Pickup', category: 'Commercial', fuelType: 'Petrol', capacityRange: '3.5L', code: 'VT-PKP Mid', details: 'Mid-size utility pickup', status: 'Active', created: '2026-04-18' },
+    { id: 'V-101', name: 'Sedan', chassisNo: 'CH-SED-2026-001', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '1.5L-2.0L', code: 'VT-SED Light', details: 'Standard passenger sedan', status: 'Active', created: '2026-01-10' },
+    { id: 'V-102', name: 'SUV', chassisNo: 'CH-SUV-2026-042', category: 'Heavy Vehicle', fuelType: 'Diesel', capacityRange: '2.5L-3.0L', code: 'VT-SUV Heavy', details: 'Sports utility vehicle', status: 'Active', created: '2026-02-14' },
+    { id: 'V-103', name: 'Hatchback', chassisNo: 'CH-HAT-2026-113', category: 'Light Vehicle', fuelType: 'Electric', capacityRange: '100kW-150kW', code: 'VT-HB Compact', details: 'Compact electric hatchback', status: 'Active', created: '2026-03-01' },
+    { id: 'V-104', name: 'Coupe', chassisNo: 'CH-COU-2026-088', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '2.0L-3.0L', code: 'VT-COU Sport', details: 'Two-door sports coupe', status: 'Inactive', created: '2026-03-15' },
+    { id: 'V-105', name: 'Motorcycle', chassisNo: 'CH-MTC-2026-205', category: 'Two-Wheeler', fuelType: 'Petrol', capacityRange: '0.5L-1.0L', code: 'VT-MC Standard', details: 'Standard motorcycle', status: 'Active', created: '2026-04-02' },
+    { id: 'V-106', name: 'Truck', chassisNo: 'CH-TRK-2026-017', category: 'Commercial', fuelType: 'Diesel', capacityRange: '5.0L-8.0L', code: 'VT-TRK Heavy', details: 'Heavy commercial duty truck', status: 'Active', created: '2026-04-10' },
+    { id: 'V-107', name: 'Pickup', chassisNo: 'CH-PKP-2026-092', category: 'Commercial', fuelType: 'Petrol', capacityRange: '3.5L', code: 'VT-PKP Mid', details: 'Mid-size utility pickup', status: 'Active', created: '2026-04-18' },
   ]);
 
   const [tests, setTests] = useState<TestMaster[]>([
@@ -171,9 +173,9 @@ const MasterManagementPage: React.FC = () => {
   ]);
 
   const [cameras, setCameras] = useState<CameraMaster[]>([
-    { id: 'CAM-601', name: 'ANPR-MCT-IN-1', ipAddress: '87.12.98.44', line: 'Line 1 (Light)', streamUrl: 'rtsp://admin:admin123@87.12.98.44:554/live', status: 'Active', created: '2026-01-05' },
-    { id: 'CAM-602', name: 'ANPR-MCT-OUT-1', ipAddress: '87.12.98.45', line: 'Line 1 (Light)', streamUrl: 'rtsp://admin:admin123@87.12.98.45:554/live', status: 'Active', created: '2026-01-05' },
-    { id: 'CAM-603', name: 'ANPR-SLL-IN-1', ipAddress: '87.12.99.12', line: 'Line 3 (Mixed)', streamUrl: 'rtsp://admin:admin123@87.12.99.12:554/live', status: 'Active', created: '2026-01-15' },
+    { id: 'CAM-601', name: 'ANPR-MCT-IN-1', type: 'ANPR', code: 'CAM-IN-01', line: 'Line 1 (Light)', description: 'Main entrance ANPR', status: 'Active', created: '2026-01-05' },
+    { id: 'CAM-602', name: 'ANPR-MCT-OUT-1', type: 'ANPR', code: 'CAM-OUT-01', line: 'Line 1 (Light)', description: 'Main exit ANPR', status: 'Active', created: '2026-01-05' },
+    { id: 'CAM-603', name: 'ANPR-SLL-IN-1', type: 'CCTV', code: 'CAM-SLL-01', line: 'Line 3 (Mixed)', description: 'Salalah entrance', status: 'Active', created: '2026-01-15' },
   ]);
 
   const [payments, setPayments] = useState<PaymentMaster[]>([
@@ -351,9 +353,8 @@ const MasterManagementPage: React.FC = () => {
           {
             id: generatedId,
             name: formData.name || 'Unnamed',
-            ipAddress: formData.ipAddress || '127.0.0.1',
+            type: formData.type || '',
             line: formData.line || 'Line 1 (Light)',
-            streamUrl: formData.streamUrl || 'rtsp://',
             status: (formData.status as 'Active' | 'Inactive') || 'Active',
             created: formattedDate,
             code: formData.code || '',
@@ -433,34 +434,42 @@ const MasterManagementPage: React.FC = () => {
     setSelectedItem(null);
   };
 
-  const handleDelete = (id: string) => {
+  const openDeleteModal = (id: string) => {
+    setDeleteId(id);
+    setShowDeleteModal(true);
+    setActiveDropdownId(null);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteId) return;
     switch (activeTab) {
       case 'Vehicle':
-        setVehicles(vehicles.filter(v => v.id !== id));
+        setVehicles(vehicles.filter(v => v.id !== deleteId));
         break;
       case 'Test':
-        setTests(tests.filter(t => t.id !== id));
+        setTests(tests.filter(t => t.id !== deleteId));
         break;
       case 'Centre':
-        setCentres(centres.filter(c => c.id !== id));
+        setCentres(centres.filter(c => c.id !== deleteId));
         break;
       case 'Line':
-        setLines(lines.filter(l => l.id !== id));
+        setLines(lines.filter(l => l.id !== deleteId));
         break;
       case 'Admin PC':
-        setPcs(pcs.filter(p => p.id !== id));
+        setPcs(pcs.filter(p => p.id !== deleteId));
         break;
       case 'Camera / ANPR':
-        setCameras(cameras.filter(c => c.id !== id));
+        setCameras(cameras.filter(c => c.id !== deleteId));
         break;
       case 'Payment':
-        setPayments(payments.filter(p => p.id !== id));
+        setPayments(payments.filter(p => p.id !== deleteId));
         break;
       case 'Document / File':
-        setDocuments(documents.filter(d => d.id !== id));
+        setDocuments(documents.filter(d => d.id !== deleteId));
         break;
     }
-    setActiveDropdownId(null);
+    setShowDeleteModal(false);
+    setDeleteId(null);
   };
 
   // Switch display details based on active tab
@@ -469,7 +478,7 @@ const MasterManagementPage: React.FC = () => {
       case 'Vehicle':
         return { title: 'Vehicle Master', subtitle: 'Vehicle types, categories, fuel & capacity ranges' };
       case 'Test':
-        return { title: 'Test Master', subtitle: 'Manage testing categories, result types, and criteria' };
+        return { title: 'Manual Testing Master', subtitle: 'Manage testing categories, result types, and criteria' };
       case 'Centre':
         return { title: 'Centre Master', subtitle: 'Manage testing centers, locations, and operational capacities' };
       case 'Line':
@@ -565,7 +574,7 @@ const MasterManagementPage: React.FC = () => {
       {/* Tabs Header bar (placed directly on the page background) */}
       <div className="mb-5 flex flex-row">
         <div className="inline-flex bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
-          {(['Vehicle', 'Test', 'Centre', 'Line', 'Admin PC', 'Camera / ANPR', 'Payment', 'Document / File'] as TabType[]).map((tab) => {
+          {(['Vehicle', 'Test', 'Centre', 'Line', 'Admin PC', 'Camera / ANPR'] as TabType[]).map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
@@ -619,7 +628,7 @@ const MasterManagementPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
           </svg>
-          <span>New {activeTab === 'Document / File' ? 'Document' : activeTab === 'Camera / ANPR' ? 'Camera' : activeTab}</span>
+          <span>{activeTab === 'Camera / ANPR' ? 'Add Camera/ANPR' : `New ${activeTab === 'Document / File' ? 'Document' : activeTab}`}</span>
         </button>
       </div>
 
@@ -671,11 +680,9 @@ const MasterManagementPage: React.FC = () => {
 
                   {activeTab === 'Vehicle' && (
                     <>
+                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Chassis No</th>
                       <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Code</th>
-                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Category</th>
-                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Fuel Type</th>
-                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Capacity Range</th>
-                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Description</th>
+                      <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Details</th>
                     </>
                   )}
 
@@ -702,14 +709,8 @@ const MasterManagementPage: React.FC = () => {
                     {/* Vehicle-specific */}
                     {activeTab === 'Vehicle' && (
                       <>
+                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.chassisNo || '—'}</td>
                         <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
-                          <span className="px-2.5 py-1 bg-neutral-100 text-neutral-700 text-[12px] font-semibold rounded-md border border-neutral-200/60">
-                            {item.category}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.fuelType}</td>
-                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.capacityRange}</td>
                         <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-[200px]" title={item.details}>
                           {item.details}
                         </td>
@@ -751,9 +752,9 @@ const MasterManagementPage: React.FC = () => {
                     {/* Camera-specific */}
                     {activeTab === 'Camera / ANPR' && (
                       <>
-                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.ipAddress}</td>
-                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-[200px]" title={item.streamUrl}>
-                          {item.line} — RTSP: {item.streamUrl}
+                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code || '—'}</td>
+                        <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-[200px]" title={item.description || item.type}>
+                          {item.type ? `[${item.type}] ` : ''}{item.description || '—'}
                         </td>
                       </>
                     )}
@@ -812,9 +813,9 @@ const MasterManagementPage: React.FC = () => {
                         >
                           <button
                             onClick={() => handleOpenView(item)}
-                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer font-medium"
+                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 cursor-pointer font-medium"
                           >
-                            <svg className="w-3.8 h-3.8 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
@@ -822,19 +823,19 @@ const MasterManagementPage: React.FC = () => {
                           </button>
                           <button
                             onClick={() => handleOpenEdit(item)}
-                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer font-medium"
+                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 cursor-pointer font-medium"
                           >
-                            <svg className="w-3.8 h-3.8 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                             </svg>
                             <span>Edit Record</span>
                           </button>
                           <div className="border-t border-neutral-100 my-1"></div>
                           <button
-                            onClick={() => handleDelete(item.id)}
-                            className="w-full px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer font-semibold"
+                            onClick={() => openDeleteModal(item.id)}
+                            className="w-full px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer font-semibold"
                           >
-                            <svg className="w-3.8 h-3.8 text-red-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                             </svg>
                             <span>Delete</span>
@@ -1229,8 +1230,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -1373,8 +1374,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -1523,8 +1524,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -1669,8 +1670,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -1800,8 +1801,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -1835,7 +1836,7 @@ const MasterManagementPage: React.FC = () => {
           ) : activeTab === 'Camera / ANPR' ? (
             <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[500px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
-                <h3 className="text-[18px] font-bold text-[#101828]">Add Camera</h3>
+                <h3 className="text-[18px] font-bold text-[#101828]">Add Camera / ANPR</h3>
                 <button
                   type="button"
                   onClick={() => setShowNewModal(false)}
@@ -1876,13 +1877,13 @@ const MasterManagementPage: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera IP Address</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                       <input
                         type="text"
                         required
                         placeholder="Enter"
-                        value={formData.ipAddress || ''}
-                        onChange={(e) => setFormData({ ...formData, ipAddress: e.target.value })}
+                        value={formData.type || ''}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
                       />
                     </div>
@@ -1909,18 +1910,6 @@ const MasterManagementPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">RTSP Stream Address</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.streamUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
                     <textarea
                       required
@@ -1942,8 +1931,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2072,8 +2061,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2201,8 +2190,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2371,8 +2360,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2521,8 +2510,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2677,8 +2666,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2829,8 +2818,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -2970,8 +2959,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -3009,7 +2998,7 @@ const MasterManagementPage: React.FC = () => {
           ) : activeTab === 'Camera / ANPR' ? (
             <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[500px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
-                <h3 className="text-[18px] font-bold text-[#101828]">Edit Camera</h3>
+                <h3 className="text-[18px] font-bold text-[#101828]">Edit Camera / ANPR</h3>
                 <button
                   type="button"
                   onClick={() => {
@@ -3052,16 +3041,16 @@ const MasterManagementPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Row 2: Camera IP & Line */}
+                  {/* Row 2: Type & Line */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera IP Address</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                       <input
                         type="text"
                         required
                         placeholder="Enter"
-                        value={formData.ipAddress || ''}
-                        onChange={(e) => setFormData({ ...formData, ipAddress: e.target.value })}
+                        value={formData.type || ''}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                         className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
                       />
                     </div>
@@ -3085,19 +3074,6 @@ const MasterManagementPage: React.FC = () => {
                         ))}
                       </select>
                     </div>
-                  </div>
-
-                  {/* Row 3: RTSP URL */}
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">RTSP Stream Address</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.streamUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, streamUrl: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
                   </div>
 
                   {/* Row 4: Description */}
@@ -3124,8 +3100,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -3265,8 +3241,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -3405,8 +3381,8 @@ const MasterManagementPage: React.FC = () => {
                       className="focus:outline-none cursor-pointer flex items-center gap-3"
                     >
                       <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                          ? 'bg-[#171717] border-[#171717]'
-                          : 'bg-[#f2f4f7] border-[#d0d5dd]'
+                        ? 'bg-[#171717] border-[#171717]'
+                        : 'bg-[#f2f4f7] border-[#d0d5dd]'
                         }`}>
                         <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold transition-opacity duration-200 leading-none ${formData.status === 'Active' ? 'text-white opacity-100' : 'text-transparent opacity-0'
                           }`}>
@@ -3442,6 +3418,41 @@ const MasterManagementPage: React.FC = () => {
               </form>
             </div>
           ) : null}
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
+          <div className="bg-white rounded-[16px] w-[400px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+            <div className="mb-4">
+              <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="48" height="48" rx="24" fill="#FEE4E2" style={{ fill: '#FEE4E2', fillOpacity: 1 }} />
+                <rect x="4" y="4" width="48" height="48" rx="24" stroke="#FEF3F2" style={{ stroke: '#FEF3F2', strokeOpacity: 1 }} strokeWidth="8" />
+                <path d="M28 24V28M28 32H28.01M38 28C38 33.5228 33.5228 38 28 38C22.4772 38 18 33.5228 18 28C18 22.4772 22.4772 18 28 18C33.5228 18 38 22.4772 38 28Z" stroke="#D92D20" style={{ stroke: '#D92D20', strokeOpacity: 1 }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <h3 className="text-[18px] font-bold text-slate-900 mb-2">Delete Record</h3>
+            <p className="text-[14px] text-slate-500 mb-6 leading-relaxed">
+              Are you sure you want to delete this record? This action cannot be undone.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteId(null);
+                }}
+                className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 font-semibold text-[14px] text-slate-700 rounded-lg transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 py-2.5 bg-[#fee2e2] hover:bg-[#fca5a5] border border-[#f87171] text-[#dc2626] font-semibold text-[14px] rounded-lg transition-all cursor-pointer"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

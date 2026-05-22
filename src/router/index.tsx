@@ -16,7 +16,6 @@ import MasterManagementPage from '../pages/master-management/MasterManagementPag
 import UsersPage from '../pages/users/UsersPage';
 import ConfigurationPage from '../pages/configuration/ConfigurationPage';
 import FileProcessingPage from '../pages/file-processing/FileProcessingPage';
-import LoginPage from '../pages/auth/LoginPage';
 
 /**
  * Root router configuration.
@@ -29,9 +28,6 @@ const AppRouter = () => {
         {/* Public routes */}
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
-
-        {/* Login route */}
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
 
         {/* Protected routes with layout */}
         <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>

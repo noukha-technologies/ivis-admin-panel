@@ -369,7 +369,7 @@ const ConfigurationPage: React.FC = () => {
     const sum = charges.reduce((acc, curr) => acc + (parseFloat(curr.no) || 0), 0);
 
     return (
-      <div className="bg-[#fafafa] p-6 rounded-[16px] w-full max-w-4xl border border-neutral-100">
+      <div className="bg-white p-8 rounded-2xl w-full max-w-4xl shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-neutral-100">
         <div className="flex justify-between items-end mb-4 px-1">
           <div className="grid grid-cols-[1fr_120px_150px_40px] gap-4 flex-1 items-center">
             <span className="text-[15px] font-bold text-gray-800">Charges Name</span>
@@ -417,9 +417,10 @@ const ConfigurationPage: React.FC = () => {
                 <button 
                   onClick={() => handleDelete(charge.id)}
                   disabled={charges.length === 1}
-                  className="p-1.5 text-[#d32f2f] hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                  title="Delete row"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
@@ -430,6 +431,49 @@ const ConfigurationPage: React.FC = () => {
 
         <div className="mt-6 px-1 text-[14px] font-medium text-gray-800">
           Total items: {charges.length} • Sum: OMR {sum.toFixed(2)}
+        </div>
+      </div>
+    );
+  };
+
+  const ManualTestsTab = () => {
+    const [tests, setTests] = useState([
+      { id: 'brake', name: 'Brake', active: true },
+      { id: 'light', name: 'Light', active: true },
+      { id: 'suspension', name: 'Suspension', active: true },
+      { id: 'emission', name: 'Emission', active: false },
+    ]);
+
+    const toggleTest = (id: string) => {
+      setTests(tests.map(t => t.id === id ? { ...t, active: !t.active } : t));
+    };
+
+    return (
+      <div className="bg-white p-7 rounded-2xl w-full max-w-lg shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-neutral-100 flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5 mb-1">
+          <label className="text-[14px] font-medium text-gray-800">Valid Date</label>
+          <input 
+            type="text" 
+            defaultValue="23/06/26" 
+            className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white shadow-sm" 
+          />
+        </div>
+        
+        <div className="flex flex-col gap-3 mt-2">
+          {tests.map(test => (
+            <div key={test.id} className="bg-white px-4 py-3.5 rounded-xl flex justify-between items-center border border-neutral-100 shadow-sm">
+              <span className="text-[15px] font-bold text-gray-900">{test.name}</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={test.active}
+                  onChange={() => toggleTest(test.id)} 
+                />
+                <div className="w-[42px] h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[18px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+              </label>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -461,6 +505,9 @@ const ConfigurationPage: React.FC = () => {
     if (activeTab === 'Charges') {
       return <ChargesTab />;
     }
+    if (activeTab === 'Manual Tests') {
+      return <ManualTestsTab />;
+    }
     if (activeTab === 'Configuration') {
       return <CentersTable />;
     }
@@ -482,6 +529,9 @@ const ConfigurationPage: React.FC = () => {
   } else if (activeTab === 'Charges') {
     pageTitle = "Charges";
     pageSubtitle = "Manage global application configurations and system parameters.";
+  } else if (activeTab === 'Manual Tests') {
+    pageTitle = "Configuration";
+    pageSubtitle = "System-wide settings and module configuration";
   }
 
   return (
