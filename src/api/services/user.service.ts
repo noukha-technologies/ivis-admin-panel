@@ -1,28 +1,77 @@
 import axiosInstance from '../axios.instance';
 import { ENDPOINTS } from '../endpoints';
-import type { PaginatedResponse } from '../../types/api.types';
+import { unwrapData, unwrapPaginated } from '../apiResponse';
+import type { ApiEnvelope, PaginatedResult } from '../../types/api.types';
 
-export interface User {
+export interface ApiUser {
   id: string;
-  name: string;
+  user_id: number;
+  user_name: string;
   email: string;
   role: string;
-  createdAt: string;
+  center?: string;
+  line?: string;
+  created_at: string;
+  updated_at?: string;
+  is_deleted?: boolean;
+}
+
+export interface CreateUserPayload {
+  user_id: number;
+  user_name: string;
+  email: string;
+  role_id: number;
+  password?: string;
+  center?: string;
+  line?: string;
+}
+
+export interface UpdateUserPayload {
+  user_name?: string;
+  email?: string;
+  role_id?: number;
+  center?: string;
+  line?: string;
+}
+
+export interface UserListParams {
+  page?: number;
+  limit?: number;
+  search?: string;
 }
 
 export const userService = {
-  getAll: (params?: Record<string, unknown>) =>
-    axiosInstance.get<PaginatedResponse<User>>(ENDPOINTS.USERS.BASE, { params }),
+  getAll: async (params?: UserListParams): Promise<PaginatedResult<ApiUser>> => {
+    const response = await axiosInstance.get<ApiEnvelope<ApiUser[]>>(ENDPOINTS.USERS.BASE, {
+      params,
+    });
+    return unwrapPaginated(response);
+  },
 
-  getById: (id: string) =>
-    axiosInstance.get<User>(ENDPOINTS.USERS.BY_ID(id)),
+  getById: async (id: string): Promise<ApiUser> => {
+    const response = await axiosInstance.get<ApiEnvelope<ApiUser>>(
+      ENDPOINTS.USERS.BY_ID(id)
+    );
+    return unwrapData(response);
+  },
 
-  create: (data: Partial<User>) =>
-    axiosInstance.post<User>(ENDPOINTS.USERS.BASE, data),
+  create: async (data: CreateUserPayload): Promise<ApiUser> => {
+    const response = await axiosInstance.post<ApiEnvelope<ApiUser>>(
+      ENDPOINTS.USERS.BASE,
+      data
+    );
+    return unwrapData(response);
+  },
 
-  update: (id: string, data: Partial<User>) =>
-    axiosInstance.put<User>(ENDPOINTS.USERS.BY_ID(id), data),
+  update: async (id: string, data: UpdateUserPayload): Promise<ApiUser> => {
+    const response = await axiosInstance.patch<ApiEnvelope<ApiUser>>(
+      ENDPOINTS.USERS.BY_ID(id),
+      data
+    );
+    return unwrapData(response);
+  },
 
-  delete: (id: string) =>
-    axiosInstance.delete(ENDPOINTS.USERS.BY_ID(id)),
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(ENDPOINTS.USERS.BY_ID(id));
+  },
 };

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../api/services/auth.service';
+import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
 
 interface TopbarProps {
@@ -28,6 +30,16 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    setIsMenuOpen(false);
+    try {
+      await authService.logout();
+    } catch {
+      // clearAuth runs in authService.finally
+    }
+    navigate(ROUTES.LOGIN);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -150,6 +162,38 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
                 )}
               </React.Fragment>
             ))}
+            <div
+              style={{
+                height: '1px',
+                backgroundColor: '#e5e7eb',
+                margin: '2px 16px',
+              }}
+            />
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                padding: '10px 24px',
+                fontSize: '15px',
+                fontWeight: 500,
+                color: '#b42318',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fef3f2';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+              }}
+            >
+              Sign out
+            </button>
           </div>
         )}
       </div>

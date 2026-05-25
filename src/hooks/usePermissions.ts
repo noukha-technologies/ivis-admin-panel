@@ -1,27 +1,32 @@
 import { useMemo } from 'react';
-import { PERMISSIONS } from '../constants/permissions';
-import { getToken } from '../utils/storage';
+import { PERMISSIONS, type Permission } from '../constants/permissions';
+import { getToken, getUser, getPermissions } from '../utils/storage';
 
 /**
- * Hook to check user permissions and roles.
- * Extend this to decode JWT or pull from auth store.
+ * Hook to check user permissions and roles from stored auth session.
  */
 export function usePermissions() {
   const isAuthenticated = useMemo(() => !!getToken(), []);
+  const user = useMemo(() => getUser(), [isAuthenticated]);
 
-  const hasPermission = (_permission: keyof typeof PERMISSIONS): boolean => {
-    // TODO: Implement actual permission checking logic
-    return isAuthenticated;
+  const hasPermission = (permission: Permission): boolean => {
+    if (!getToken()) return false;
+    return getPermissions().includes(permission);
   };
 
-  const hasRole = (_role: string): boolean => {
-    // TODO: Implement actual role checking logic
-    return isAuthenticated;
+  const hasRole = (role: string): boolean => {
+    if (!user?.role) return false;
+    return user.role.trim().toLowerCase() === role.trim().toLowerCase();
   };
 
   return {
     isAuthenticated,
+    user,
+    permissions: getPermissions(),
     hasPermission,
     hasRole,
+    canViewUsers: hasPermission(PERMISSIONS.USER_VIEW),
+    canCreateUsers: hasPermission(PERMISSIONS.USER_CREATE),
+    canEditUsers: hasPermission(PERMISSIONS.USER_EDIT),
   };
 }

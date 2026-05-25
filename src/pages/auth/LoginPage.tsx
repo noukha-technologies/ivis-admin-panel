@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
-import { setToken, setUser } from '../../utils/storage';
+import { authService } from '../../api/services/auth.service';
+import { getApiErrorMessage } from '../../api/apiResponse';
 import { isEmail, isRequired } from '../../utils/validators';
 
 // Import local assets
-import opalLogo from '../../assets/images/opal_logo.svg';
 import opalImg from '../../assets/images/opal_img.svg';
 import loginRightBg from '../../assets/images/login_right_background.svg';
 
@@ -13,7 +13,7 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+
   // Validation state
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -46,20 +46,19 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Simple mock authentication - accepts any credentials to bypass login
-      setToken('mock-jwt-token-xyz123');
-      setUser({
-        id: '1',
-        email: email || 'john@gmail.com',
-        role: 'admin',
-        name: email ? email.split('@')[0].split('.').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') : 'John Doe',
-      });
+      await authService.login({ email: email.trim(), password });
       navigate(ROUTES.DASHBOARD);
-    } catch (err) {
-      setLoginError('An error occurred. Please try again.');
+    } catch (err: unknown) {
+      const status =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { status?: number } }).response?.status;
+      if (status === 401) {
+        setLoginError('Invalid email or password');
+      } else {
+        setLoginError(getApiErrorMessage(err, 'An error occurred. Please try again.'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -67,18 +66,39 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-white font-sans antialiased overflow-hidden">
-      {/* Left Column - Form */}
+      {/* Left Column - Illustration / Banner */}
+      <div
+        className="flex-none flex flex-col items-center justify-center p-8 bg-neutral-50 relative overflow-hidden select-none border-r border-neutral-100"
+        style={{
+          width: '50%',
+          backgroundImage: `url(${loginRightBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="z-10 flex flex-col items-center w-full max-w-[460px] text-center gap-10">
+          <h1 className="text-[28px] md:text-[32px] font-semibold tracking-tight text-neutral-900 leading-tight">
+            Smart vehicle testing platform<br />for faster inspections
+          </h1>
+
+          {/* Main Opal Centered Card */}
+          <div className="w-full max-w-[420px] aspect-[1.6] flex items-center justify-center transition-all duration-300">
+            <img
+              src={opalImg}
+              alt="OPAL Banner"
+              className="max-h-[160px] w-auto object-contain"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Form */}
       <div className="flex-none flex flex-col justify-center items-center py-12 px-6 sm:px-12" style={{ width: '50%' }}>
         <div className="w-full max-w-[400px]">
           {/* Logo */}
-          <div className="mb-8 flex justify-start">
-            <img src={opalLogo} alt="OPAL IVPMS Logo" className="h-[52px] w-auto object-contain" />
+          <div className="mb-8 flex justify-center">
+            <img src={opalImg} alt="OPAL IVPMS Logo" className="h-[52px] w-auto object-contain" />
           </div>
-
-          {/* Header */}
-          <h2 className="text-[22px] font-semibold text-neutral-900 tracking-tight mb-8">
-            Sign into OPAL IVPMS
-          </h2>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -102,9 +122,8 @@ const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{ paddingLeft: '20px' }}
-                  className={`block w-full h-[48px] rounded-lg border px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-950 focus:border-neutral-950 transition-all ${
-                    emailError ? 'border-red-500 ring-1 ring-red-500' : 'border-neutral-300'
-                  }`}
+                  className={`block w-full h-[48px] rounded-lg border px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-950 focus:border-neutral-950 transition-all ${emailError ? 'border-red-500 ring-1 ring-red-500' : 'border-neutral-300'
+                    }`}
                 />
                 {emailError && (
                   <p className="mt-1.5 text-xs text-red-600 font-medium">{emailError}</p>
@@ -126,9 +145,8 @@ const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ paddingLeft: '20px' }}
-                  className={`block w-full h-[48px] rounded-lg border px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-950 focus:border-neutral-950 transition-all ${
-                    passwordError ? 'border-red-500 ring-1 ring-red-500' : 'border-neutral-300'
-                  }`}
+                  className={`block w-full h-[48px] rounded-lg border px-4 py-3 text-[15px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-950 focus:border-neutral-950 transition-all ${passwordError ? 'border-red-500 ring-1 ring-red-500' : 'border-neutral-300'
+                    }`}
                 />
                 {passwordError && (
                   <p className="mt-1.5 text-xs text-red-600 font-medium">{passwordError}</p>
@@ -165,32 +183,6 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
-      </div>
-
-      {/* Right Column - Illustration / Banner */}
-      <div 
-        className="flex-none flex flex-col items-center justify-center p-8 bg-neutral-50 relative overflow-hidden select-none border-l border-neutral-100"
-        style={{
-          width: '50%',
-          backgroundImage: `url(${loginRightBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="z-10 flex flex-col items-center w-full max-w-[460px] text-center gap-10">
-          <h1 className="text-[28px] md:text-[32px] font-semibold tracking-tight text-neutral-900 leading-tight">
-            Smart vehicle testing platform<br />for faster inspections
-          </h1>
-          
-          {/* Main Opal Centered Card */}
-          <div className="bg-[#FFF1F2] rounded-2xl w-full max-w-[420px] aspect-[1.6] flex items-center justify-center p-8 transition-all duration-300">
-            <img 
-              src={opalImg} 
-              alt="OPAL Banner" 
-              className="max-h-[160px] w-auto object-contain"
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -14,6 +14,10 @@ export const ENDPOINTS = {
     BASE: '/users',
     BY_ID: (id: string) => `/users/${id}`,
   },
+  ROLES: {
+    BASE: '/masters/roles',
+    BY_ID: (id: string) => `/masters/roles/${id}`,
+  },
   DASHBOARD: {
     STATS: '/dashboard/stats',
     REVENUE: '/dashboard/revenue',

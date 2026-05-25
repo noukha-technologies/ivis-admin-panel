@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ENV_CONFIG } from '../constants/config';
-import { getToken, removeToken } from '../utils/storage';
+import { getToken, clearAuth } from '../utils/storage';
 
 const axiosInstance = axios.create({
   baseURL: ENV_CONFIG.API_BASE_URL,
@@ -26,8 +26,11 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      removeToken();
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const isLoginPage = window.location.pathname === '/login';
+
+    if (error.response?.status === 401 && !isLoginRequest && !isLoginPage) {
+      clearAuth();
       window.location.href = '/login';
     }
     return Promise.reject(error);
