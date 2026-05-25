@@ -220,8 +220,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       {/* Logo */}
       <div className={`sidebar-logo-container flex items-center justify-center ${isCollapsed ? 'mb-6 px-0 !pl-0 !pr-0' : 'justify-start'}`}>
         {isCollapsed ? (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#db4d4d] to-[#ff6b6b] flex items-center justify-center text-white font-bold text-[18px] shadow-sm">
-            O
+          <div className="w-10 h-10 flex items-center justify-center bg-white border border-neutral-200/80 rounded-xl shadow-sm overflow-hidden flex-shrink-0">
+            <img 
+              src="/favicon.svg" 
+              alt="OPAL Logo Icon" 
+              className="w-7 h-7 object-contain" 
+            />
           </div>
         ) : (
           <img src={opalLogo} alt="OPAL IVPMS Logo" className="w-[160px] h-auto object-contain" />
