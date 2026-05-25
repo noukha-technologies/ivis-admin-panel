@@ -68,6 +68,7 @@ interface CameraMaster {
   created: string;
   code?: string;
   description?: string;
+  centerCode?: string;
 }
 
 interface PaymentMaster {
@@ -94,7 +95,7 @@ interface DocumentMaster {
   description?: string;
 }
 
-type TabType = 'Vehicle' | 'Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR';
+type TabType = 'Vehicle' | 'Manual Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR' | 'Payment' | 'Document / File';
 
 const MasterManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('Vehicle');
@@ -248,7 +249,7 @@ const MasterManagementPage: React.FC = () => {
       formVals.code = item.terminalId;
     } else if (activeTab === 'Document / File' && item.docCode) {
       formVals.code = item.docCode;
-    } else if (activeTab === 'Test' && item.testCode) {
+    } else if (activeTab === 'Manual Test' && item.testCode) {
       formVals.code = item.testCode;
     }
     setFormData(formVals);
@@ -276,6 +277,7 @@ const MasterManagementPage: React.FC = () => {
           {
             id: generatedId,
             name: formData.name || 'Unnamed',
+            chassisNo: formData.chassisNo || '',
             category: formData.category || 'Light Vehicle',
             fuelType: formData.fuelType || 'Petrol',
             capacityRange: formData.capacityRange || 'N/A',
@@ -287,7 +289,7 @@ const MasterManagementPage: React.FC = () => {
           ...vehicles,
         ]);
         break;
-      case 'Test':
+      case 'Manual Test':
         setTests([
           {
             id: generatedId,
@@ -359,6 +361,7 @@ const MasterManagementPage: React.FC = () => {
             created: formattedDate,
             code: formData.code || '',
             description: formData.description || '',
+            centerCode: formData.centerCode || '',
           },
           ...cameras,
         ]);
@@ -407,7 +410,7 @@ const MasterManagementPage: React.FC = () => {
       case 'Vehicle':
         setVehicles(vehicles.map(v => (v.id === selectedItem.id ? { ...v, ...formData } as VehicleMaster : v)));
         break;
-      case 'Test':
+      case 'Manual Test':
         setTests(tests.map(t => (t.id === selectedItem.id ? { ...t, ...formData, testCode: formData.code } as unknown as TestMaster : t)));
         break;
       case 'Centre':
@@ -446,7 +449,7 @@ const MasterManagementPage: React.FC = () => {
       case 'Vehicle':
         setVehicles(vehicles.filter(v => v.id !== deleteId));
         break;
-      case 'Test':
+      case 'Manual Test':
         setTests(tests.filter(t => t.id !== deleteId));
         break;
       case 'Centre':
@@ -477,7 +480,7 @@ const MasterManagementPage: React.FC = () => {
     switch (activeTab) {
       case 'Vehicle':
         return { title: 'Vehicle Master', subtitle: 'Vehicle types, categories, fuel & capacity ranges' };
-      case 'Test':
+      case 'Manual Test':
         return { title: 'Manual Testing Master', subtitle: 'Manage testing categories, result types, and criteria' };
       case 'Centre':
         return { title: 'Centre Master', subtitle: 'Manage testing centers, locations, and operational capacities' };
@@ -502,7 +505,7 @@ const MasterManagementPage: React.FC = () => {
   const getActiveList = (): any[] => {
     switch (activeTab) {
       case 'Vehicle': return vehicles;
-      case 'Test': return tests;
+      case 'Manual Test': return tests;
       case 'Centre': return centres;
       case 'Line': return lines;
       case 'Admin PC': return pcs;
@@ -574,7 +577,7 @@ const MasterManagementPage: React.FC = () => {
       {/* Tabs Header bar (placed directly on the page background) */}
       <div className="mb-5 flex flex-row">
         <div className="inline-flex bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
-          {(['Vehicle', 'Test', 'Centre', 'Line', 'Admin PC', 'Camera / ANPR'] as TabType[]).map((tab) => {
+          {(['Vehicle', 'Manual Test', 'Centre', 'Line', 'Admin PC', 'Camera / ANPR'] as TabType[]).map((tab) => {
             const isActive = activeTab === tab;
             return (
               <button
@@ -718,7 +721,7 @@ const MasterManagementPage: React.FC = () => {
                     )}
 
                     {/* Test-specific */}
-                    {activeTab === 'Test' && (
+                    {activeTab === 'Manual Test' && (
                       <>
                         <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.testCode}</td>
                         <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.details || '—'}</td>
@@ -942,7 +945,7 @@ const MasterManagementPage: React.FC = () => {
                 </>
               )}
 
-              {activeTab === 'Test' && (
+              {activeTab === 'Manual Test' && (
                 <>
                   <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                     <span className="text-gray-400 font-medium">Code</span>
@@ -1262,7 +1265,7 @@ const MasterManagementPage: React.FC = () => {
                 </div>
               </form>
             </div>
-          ) : activeTab === 'Test' ? (
+          ) : activeTab === 'Manual Test' ? (
             <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[480px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
                 <h3 className="text-[18px] font-bold text-[#101828]">Add Test</h3>
@@ -1852,7 +1855,7 @@ const MasterManagementPage: React.FC = () => {
                 <div className="p-6 space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera Name</label>
                       <input
                         type="text"
                         required
@@ -1863,7 +1866,7 @@ const MasterManagementPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera Code</label>
                       <input
                         type="text"
                         required
@@ -1875,7 +1878,7 @@ const MasterManagementPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                       <input
@@ -1906,6 +1909,16 @@ const MasterManagementPage: React.FC = () => {
                           <option key={l.id} value={l.name}>{l.name}</option>
                         ))}
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Center Code</label>
+                      <input
+                        type="text"
+                        placeholder="Enter"
+                        value={formData.centerCode || ''}
+                        onChange={(e) => setFormData({ ...formData, centerCode: e.target.value })}
+                        className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      />
                     </div>
                   </div>
 
@@ -2395,7 +2408,7 @@ const MasterManagementPage: React.FC = () => {
                 </div>
               </form>
             </div>
-          ) : activeTab === 'Test' ? (
+          ) : activeTab === 'Manual Test' ? (
             <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[480px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
                 <h3 className="text-[18px] font-bold text-[#101828]">Edit Test</h3>
@@ -3018,7 +3031,7 @@ const MasterManagementPage: React.FC = () => {
                   {/* Row 1: Name & Code */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera Name</label>
                       <input
                         type="text"
                         required
@@ -3029,7 +3042,7 @@ const MasterManagementPage: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Camera Code</label>
                       <input
                         type="text"
                         required
@@ -3042,7 +3055,7 @@ const MasterManagementPage: React.FC = () => {
                   </div>
 
                   {/* Row 2: Type & Line */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                       <input
@@ -3073,6 +3086,16 @@ const MasterManagementPage: React.FC = () => {
                           <option key={l.id} value={l.name}>{l.name}</option>
                         ))}
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Center Code</label>
+                      <input
+                        type="text"
+                        placeholder="Enter"
+                        value={formData.centerCode || ''}
+                        onChange={(e) => setFormData({ ...formData, centerCode: e.target.value })}
+                        className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      />
                     </div>
                   </div>
 
