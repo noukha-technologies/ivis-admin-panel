@@ -189,7 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const menuItems = isConfiguration ? configurationMenuItems : defaultMenuItems;
 
   return (
-    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
+    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-65 px-4'}`}>
 
       {/* Collapse Toggle Button */}
       <button
@@ -218,17 +218,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       </button>
 
       {/* Logo */}
-      <div className={`sidebar-logo-container flex items-center justify-center ${isCollapsed ? 'mb-6 px-0 !pl-0 !pr-0' : 'justify-start'}`}>
+      <div className={`sidebar-logo-container flex items-center justify-center ${isCollapsed ? 'mb-6 px-0 pl-0! pr-0!' : 'justify-start'}`}>
         {isCollapsed ? (
-          <div className="w-10 h-10 flex items-center justify-center bg-white border border-neutral-200/80 rounded-xl shadow-sm overflow-hidden flex-shrink-0">
-            <img 
-              src="/favicon.svg" 
-              alt="OPAL Logo Icon" 
-              className="w-7 h-7 object-contain" 
+          <div className="w-10 h-10 flex items-center justify-center bg-white border border-neutral-200/80 rounded-xl shadow-sm overflow-hidden shrink-0">
+            <img
+              src="/favicon.svg"
+              alt="OPAL Logo Icon"
+              className="w-7 h-7 object-contain"
             />
           </div>
         ) : (
-          <img src={opalLogo} alt="OPAL IVPMS Logo" className="w-[160px] h-auto object-contain" />
+          <img src={opalLogo} alt="OPAL IVPMS Logo" className="w-40 h-auto object-contain" />
         )}
       </div>
 
@@ -264,7 +264,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
             } ${isCollapsed ? 'justify-center' : ''}`}
         >
           {/* Avatar with initials */}
-          <div className={`w-10 h-10 rounded-xl font-bold text-[16px] flex items-center justify-center shadow-sm flex-shrink-0 select-none transition-all ${avatarPalette.bg}`}>
+          <div className={`w-10 h-10 rounded-xl font-bold text-[16px] flex items-center justify-center shadow-sm shrink-0 select-none transition-all ${avatarPalette.bg}`}>
             {userName.charAt(0).toUpperCase()}
           </div>
 
@@ -280,7 +280,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
           )}
 
           {!isCollapsed && (
-            <svg className="w-4 h-4 text-slate-400 flex-shrink-0 ml-auto" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-slate-400 shrink-0 ml-auto" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
             </svg>
           )}
@@ -289,8 +289,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
         {/* Mini Popover Sign Out */}
         {showPopup && (
           <div
-            className={`absolute bg-white border border-neutral-100 rounded-xl shadow-xl p-1.5 z-[100] animate-fadeInMenu ${isCollapsed
-              ? 'left-16 bottom-2 w-[180px]'
+            className={`absolute bg-white border border-neutral-100 rounded-xl shadow-xl p-1.5 z-100 animate-fadeInMenu ${isCollapsed
+              ? 'left-16 bottom-2 w-45'
               : 'left-2 right-2 bottom-16'
               }`}
             style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
@@ -299,7 +299,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
               onClick={handleLogout}
               className="w-full text-left px-3 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <svg className="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
               </svg>
               <span>Sign Out</span>

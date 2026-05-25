@@ -189,7 +189,7 @@ const UsersPage: React.FC = () => {
         {/* Search & Tab Toggle Group */}
         <div className="flex items-center gap-3">
           {/* Search */}
-          <div className="relative w-full max-w-[340px]">
+          <div className="relative w-full max-w-85">
             <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -209,10 +209,10 @@ const UsersPage: React.FC = () => {
           </div>
 
           {/* Segmented Control */}
-          <div className="inline-flex items-center border border-neutral-200 bg-white rounded-xl shadow-sm overflow-hidden flex-shrink-0">
+          <div className="inline-flex items-center border border-neutral-200 bg-white rounded-xl shadow-sm overflow-hidden shrink-0">
             <button
               onClick={() => setActiveTab('users')}
-              className={`px-5 py-[8px] text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'users'
+              className={`px-5 py-2 text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'users'
                 ? 'bg-neutral-50 text-neutral-800 font-semibold'
                 : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50/50'
                 } border-r border-neutral-200`}
@@ -221,7 +221,7 @@ const UsersPage: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('roles')}
-              className={`px-5 py-[8px] text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'roles'
+              className={`px-5 py-2 text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'roles'
                 ? 'bg-neutral-50 text-neutral-800 font-semibold'
                 : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50/50'
                 }`}
@@ -313,7 +313,7 @@ const UsersPage: React.FC = () => {
                       <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.centre}</td>
                       <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.line}</td>
                       <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-[8px] text-[12.5px] font-semibold border select-none ${user.status === 'Active'
+                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${user.status === 'Active'
                           ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
                           : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
                           }`}>
@@ -358,7 +358,7 @@ const UsersPage: React.FC = () => {
                             )}
                             {canEditUsers && (
                               <>
-                                <div className="h-[1px] bg-neutral-100 my-1"></div>
+                                <div className="h-px bg-neutral-100 my-1"></div>
                                 <button
                                   onClick={() => handleDelete(user.id)}
                                   className="w-full text-left px-4 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
@@ -472,7 +472,7 @@ const UsersPage: React.FC = () => {
                             )}
                             {canEditUsers && (
                               <>
-                                <div className="h-[1px] bg-neutral-100 my-1"></div>
+                                <div className="h-px bg-neutral-100 my-1"></div>
                                 <button
                                   onClick={() => {
                                     setRoleToDelete(role.id);
@@ -503,11 +503,11 @@ const UsersPage: React.FC = () => {
       {/* New User Modal */}
       {showNewModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[12px] w-[420px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl w-105 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-[17px] font-bold text-slate-800">New User</h3>
               <button onClick={() => setShowNewModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors">
-                <svg className="w-[24px] h-[24px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
@@ -523,7 +523,7 @@ const UsersPage: React.FC = () => {
                   value={formData.user_id}
                   onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
                   placeholder="e.g. 1001"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -534,7 +534,7 @@ const UsersPage: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -545,7 +545,7 @@ const UsersPage: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="user@ivis.gov.om"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -557,7 +557,7 @@ const UsersPage: React.FC = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Min 8 characters"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -567,7 +567,7 @@ const UsersPage: React.FC = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
               </div>
 
@@ -578,7 +578,7 @@ const UsersPage: React.FC = () => {
                     required
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                   >
                     <option value="" disabled>Select role</option>
                     {rolesHook.roleOptions.map((r) => (
@@ -592,7 +592,7 @@ const UsersPage: React.FC = () => {
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     placeholder="e.g. admin"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                   />
                 )}
               </div>
@@ -602,7 +602,7 @@ const UsersPage: React.FC = () => {
                 <select
                   value={formData.centre}
                   onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
                   {CENTRE_OPTIONS.map((c) => (
@@ -616,7 +616,7 @@ const UsersPage: React.FC = () => {
                 <select
                   value={formData.line}
                   onChange={(e) => setFormData({ ...formData, line: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
                   {LINE_OPTIONS.map((l) => (
@@ -631,14 +631,14 @@ const UsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowNewModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-[8px] transition-all cursor-pointer"
+                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-[8px] transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
                 >
                   {isSubmitting ? 'Saving...' : 'Confirm'}
                 </button>
@@ -651,11 +651,11 @@ const UsersPage: React.FC = () => {
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[12px] w-[420px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl w-105 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-[17px] font-bold text-slate-800">Edit User</h3>
               <button onClick={() => setShowEditModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors">
-                <svg className="w-[24px] h-[24px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
@@ -670,7 +670,7 @@ const UsersPage: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Enter"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -680,7 +680,7 @@ const UsersPage: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
               </div>
 
@@ -691,7 +691,7 @@ const UsersPage: React.FC = () => {
                     required
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                   >
                     <option value="" disabled>Select role</option>
                     {rolesHook.roleOptions.map((r) => (
@@ -704,7 +704,7 @@ const UsersPage: React.FC = () => {
                     required
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                   />
                 )}
               </div>
@@ -714,7 +714,7 @@ const UsersPage: React.FC = () => {
                 <select
                   value={formData.centre}
                   onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
                   {CENTRE_OPTIONS.map((c) => (
@@ -728,7 +728,7 @@ const UsersPage: React.FC = () => {
                 <select
                   value={formData.line}
                   onChange={(e) => setFormData({ ...formData, line: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
                   {LINE_OPTIONS.map((l) => (
@@ -743,14 +743,14 @@ const UsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-[8px] transition-all cursor-pointer"
+                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-[8px] transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
                 >
                   {isSubmitting ? 'Saving...' : 'Confirm'}
                 </button>
@@ -763,7 +763,7 @@ const UsersPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[16px] w-[400px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-100 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="mb-4">
               <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="4" y="4" width="48" height="48" rx="24" fill="#FEE4E2" style={{ fill: '#FEE4E2', fillOpacity: 1 }} />
@@ -800,11 +800,11 @@ const UsersPage: React.FC = () => {
       {/* New Role Modal */}
       {showNewRoleModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[12px] w-[500px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl w-125 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-[17px] font-bold text-slate-800">New Role</h3>
               <button onClick={() => setShowNewRoleModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
-                <svg className="w-[24px] h-[24px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
@@ -819,7 +819,7 @@ const UsersPage: React.FC = () => {
                   value={roleFormData.role_name}
                   onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
                   placeholder="e.g. admin"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -829,7 +829,7 @@ const UsersPage: React.FC = () => {
                   onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
                   placeholder="Optional description"
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
               </div>
               {formError && <p className="text-sm text-red-600">{formError}</p>}
@@ -837,14 +837,14 @@ const UsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowNewRoleModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-[8px] transition-all cursor-pointer"
+                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-[8px] transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
                 >
                   {isSubmitting ? 'Saving...' : 'Confirm'}
                 </button>
@@ -857,11 +857,11 @@ const UsersPage: React.FC = () => {
       {/* Edit Role Modal */}
       {showEditRoleModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[12px] w-[500px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl w-125 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-[17px] font-bold text-slate-800">Edit Role</h3>
               <button onClick={() => setShowEditRoleModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
-                <svg className="w-[24px] h-[24px]" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
@@ -875,7 +875,7 @@ const UsersPage: React.FC = () => {
                   required
                   value={roleFormData.role_name}
                   onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
               </div>
               <div>
@@ -884,7 +884,7 @@ const UsersPage: React.FC = () => {
                   value={roleFormData.description}
                   onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-[8px] text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
               </div>
               {formError && <p className="text-sm text-red-600">{formError}</p>}
@@ -892,14 +892,14 @@ const UsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowEditRoleModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-[8px] transition-all cursor-pointer"
+                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-[8px] transition-all cursor-pointer disabled:opacity-60"
+                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -912,7 +912,7 @@ const UsersPage: React.FC = () => {
       {/* Delete Role Modal */}
       {showDeleteRoleModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-[16px] w-[400px] p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-100 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
             <div className="mb-4">
               <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="4" y="4" width="48" height="48" rx="24" fill="#FEE4E2" style={{ fill: '#FEE4E2', fillOpacity: 1 }} />
@@ -949,7 +949,7 @@ const UsersPage: React.FC = () => {
       {/* View User Modal */}
       {showViewModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-[480px] p-6 shadow-2xl border border-neutral-100">
+          <div className="bg-white rounded-2xl w-120 p-6 shadow-2xl border border-neutral-100">
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-neutral-100">
               <div>
                 <h3 className="text-[18px] font-bold text-gray-900">{selectedUser.name}</h3>
@@ -974,7 +974,7 @@ const UsersPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="block text-[12px] font-bold text-neutral-400 uppercase tracking-wider">Status</span>
-                  <span className={`inline-flex items-center mt-1 px-3 py-1 rounded-[8px] text-[12.5px] font-semibold border select-none ${selectedUser.status === 'Active'
+                  <span className={`inline-flex items-center mt-1 px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${selectedUser.status === 'Active'
                     ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
                     : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
                     }`}>
