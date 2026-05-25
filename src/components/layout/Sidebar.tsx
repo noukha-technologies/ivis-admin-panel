@@ -1,6 +1,28 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import opalLogo from '../../assets/images/opal_logo.svg';
+import { getUser, clearAuth } from '../../utils/storage';
+import { authService } from '../../api/services/auth.service';
+
+const AVATAR_COLOR_PALETTES = [
+  { bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700' },
+  { bg: 'bg-emerald-50 border border-emerald-200 text-emerald-700' },
+  { bg: 'bg-sky-50 border border-sky-200 text-sky-700' },
+  { bg: 'bg-amber-50 border border-amber-200 text-amber-700' },
+  { bg: 'bg-rose-50 border border-rose-200 text-rose-700' },
+  { bg: 'bg-violet-50 border border-violet-200 text-violet-700' },
+  { bg: 'bg-teal-50 border border-teal-200 text-teal-700' },
+  { bg: 'bg-orange-50 border border-orange-200 text-orange-700' },
+];
+
+const getAvatarPalette = (name: string) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % AVATAR_COLOR_PALETTES.length;
+  return AVATAR_COLOR_PALETTES[index];
+};
 
 interface SidebarProps {
   activeMenu: string;
@@ -10,6 +32,34 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const location = useLocation();
+  const [showPopup, setShowPopup] = React.useState(false);
+  const profileRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowPopup(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const user = getUser();
+  const userName = user?.user_name || 'User';
+  const roleName = user?.role || 'Guest';
+  const avatarPalette = getAvatarPalette(userName);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      clearAuth();
+      window.location.href = '/login';
+    }
+  };
 
   const isConfiguration = location.pathname.startsWith('/configuration');
   const searchParams = new URLSearchParams(location.search);
@@ -20,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       name: 'Dashboard',
       icon: (
         <svg className="w-5 h-5 flex-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
         </svg>
       )
     },
@@ -139,7 +189,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const menuItems = isConfiguration ? configurationMenuItems : defaultMenuItems;
 
   return (
-    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-8 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
+    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-[260px] px-4'}`}>
 
       {/* Collapse Toggle Button */}
       <button
@@ -201,6 +251,58 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
           );
         })}
       </nav>
+
+      {/* User Profile Section at bottom */}
+      <div ref={profileRef} className={`relative mt-auto border-t border-neutral-200/60 pt-4 ${isCollapsed ? 'px-0 flex justify-center' : 'px-1'}`}>
+        <button
+          onClick={() => setShowPopup(!showPopup)}
+          className={`flex items-center gap-3 w-full text-left p-2 hover:bg-neutral-200/50 rounded-xl transition-all cursor-pointer ${showPopup ? 'bg-neutral-200/50' : ''
+            } ${isCollapsed ? 'justify-center' : ''}`}
+        >
+          {/* Avatar with initials */}
+          <div className={`w-10 h-10 rounded-xl font-bold text-[16px] flex items-center justify-center shadow-sm flex-shrink-0 select-none transition-all ${avatarPalette.bg}`}>
+            {userName.charAt(0).toUpperCase()}
+          </div>
+
+          {!isCollapsed && (
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[13.5px] font-bold text-slate-800 truncate leading-snug">
+                {userName}
+              </span>
+              <span className="text-[11.5px] font-semibold text-slate-500 truncate mt-0.5 uppercase tracking-wider">
+                {roleName.replace(/_/g, ' ')}
+              </span>
+            </div>
+          )}
+
+          {!isCollapsed && (
+            <svg className="w-4 h-4 text-slate-400 flex-shrink-0 ml-auto" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+            </svg>
+          )}
+        </button>
+
+        {/* Mini Popover Sign Out */}
+        {showPopup && (
+          <div
+            className={`absolute bg-white border border-neutral-100 rounded-xl shadow-xl p-1.5 z-[100] animate-fadeInMenu ${isCollapsed
+              ? 'left-16 bottom-2 w-[180px]'
+              : 'left-2 right-2 bottom-16'
+              }`}
+            style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
+          >
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-3 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2.5 transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-rose-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        )}
+      </div>
     </aside>
   );
 };

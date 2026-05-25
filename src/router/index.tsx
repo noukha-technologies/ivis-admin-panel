@@ -4,6 +4,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
 import PrivateRoute from './PrivateRoute';
+import PublicRoute from './PublicRoute';
 import MainLayout from '../components/layout/MainLayout';
 import DashboardPage from '../pages/dashboard/DashboardPage';
 import AppointmentsPage from '../pages/appointments/AppointmentsPage';
@@ -26,7 +27,7 @@ const AppRouter = () => {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+        <Route path={ROUTES.LOGIN} element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
 
         {/* Protected routes with layout */}
