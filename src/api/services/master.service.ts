@@ -26,6 +26,24 @@ import type {
   UpdateLinePayload,
   LineListParams,
 } from '../../interfaces/line.interface';
+import type {
+  ApiAdminPc,
+  CreateAdminPcPayload,
+  UpdateAdminPcPayload,
+  AdminPcListParams,
+} from '../../interfaces/admin-pc.interface';
+import type {
+  ApiCamera,
+  CreateCameraPayload,
+  UpdateCameraPayload,
+  CameraListParams,
+} from '../../interfaces/camera.interface';
+import type {
+  ApiPayment,
+  CreatePaymentPayload,
+  UpdatePaymentPayload,
+  PaymentListParams,
+} from '../../interfaces/payment.interface';
 
 export type {
   ApiVehicle,
@@ -44,6 +62,18 @@ export type {
   CreateLinePayload,
   UpdateLinePayload,
   LineListParams,
+  ApiAdminPc,
+  CreateAdminPcPayload,
+  UpdateAdminPcPayload,
+  AdminPcListParams,
+  ApiCamera,
+  CreateCameraPayload,
+  UpdateCameraPayload,
+  CameraListParams,
+  ApiPayment,
+  CreatePaymentPayload,
+  UpdatePaymentPayload,
+  PaymentListParams,
 };
 
 export const masterService = {
@@ -189,6 +219,114 @@ export const masterService = {
 
     delete: async (id: string): Promise<void> => {
       await axiosInstance.delete(ENDPOINTS.LINES.BY_ID(id));
+    },
+  },
+  pcs: {
+    getAll: async (params?: AdminPcListParams): Promise<PaginatedResult<ApiAdminPc>> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiAdminPc[]>>(
+        ENDPOINTS.ADMIN_PCS.BASE,
+        { params }
+      );
+      return unwrapPaginated(response);
+    },
+
+    getById: async (id: string): Promise<ApiAdminPc> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiAdminPc>>(
+        ENDPOINTS.ADMIN_PCS.BY_ID(id)
+      );
+      return unwrapData(response);
+    },
+
+    create: async (data: CreateAdminPcPayload): Promise<ApiAdminPc> => {
+      const response = await axiosInstance.post<ApiEnvelope<ApiAdminPc>>(
+        ENDPOINTS.ADMIN_PCS.BASE,
+        data
+      );
+      return unwrapData(response);
+    },
+
+    update: async (id: string, data: UpdateAdminPcPayload): Promise<ApiAdminPc> => {
+      const response = await axiosInstance.patch<ApiEnvelope<ApiAdminPc>>(
+        ENDPOINTS.ADMIN_PCS.BY_ID(id),
+        data
+      );
+      return unwrapData(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await axiosInstance.delete(ENDPOINTS.ADMIN_PCS.BY_ID(id));
+    },
+  },
+  cameras: {
+    getAll: async (params?: CameraListParams): Promise<PaginatedResult<ApiCamera>> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiCamera[]>>(
+        ENDPOINTS.CAMERAS.BASE,
+        { params }
+      );
+      return unwrapPaginated(response);
+    },
+
+    getById: async (id: string): Promise<ApiCamera> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiCamera>>(
+        ENDPOINTS.CAMERAS.BY_ID(id)
+      );
+      return unwrapData(response);
+    },
+
+    create: async (data: CreateCameraPayload): Promise<ApiCamera> => {
+      const response = await axiosInstance.post<ApiEnvelope<ApiCamera>>(
+        ENDPOINTS.CAMERAS.BASE,
+        data
+      );
+      return unwrapData(response);
+    },
+
+    update: async (id: string, data: UpdateCameraPayload): Promise<ApiCamera> => {
+      const response = await axiosInstance.patch<ApiEnvelope<ApiCamera>>(
+        ENDPOINTS.CAMERAS.BY_ID(id),
+        data
+      );
+      return unwrapData(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await axiosInstance.delete(ENDPOINTS.CAMERAS.BY_ID(id));
+    },
+  },
+  payments: {
+    getAll: async (params?: PaymentListParams): Promise<PaginatedResult<ApiPayment>> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiPayment[]>>(
+        ENDPOINTS.PAYMENTS.BASE,
+        { params }
+      );
+      return unwrapPaginated(response);
+    },
+
+    getById: async (id: string): Promise<ApiPayment> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiPayment>>(
+        ENDPOINTS.PAYMENTS.BY_ID(id)
+      );
+      return unwrapData(response);
+    },
+
+    create: async (data: CreatePaymentPayload): Promise<ApiPayment> => {
+      const response = await axiosInstance.post<ApiEnvelope<ApiPayment>>(
+        ENDPOINTS.PAYMENTS.BASE,
+        data
+      );
+      return unwrapData(response);
+    },
+
+    update: async (id: string, data: UpdatePaymentPayload): Promise<ApiPayment> => {
+      const response = await axiosInstance.patch<ApiEnvelope<ApiPayment>>(
+        ENDPOINTS.PAYMENTS.BY_ID(id),
+        data
+      );
+      return unwrapData(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await axiosInstance.delete(ENDPOINTS.PAYMENTS.BY_ID(id));
     },
   },
 };

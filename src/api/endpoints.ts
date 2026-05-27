@@ -34,6 +34,18 @@ export const ENDPOINTS = {
     BASE: '/masters/lines',
     BY_ID: (id: string) => `/masters/lines/${id}`,
   },
+  ADMIN_PCS: {
+    BASE: '/masters/admin-pcs',
+    BY_ID: (id: string) => `/masters/admin-pcs/${id}`,
+  },
+  CAMERAS: {
+    BASE: '/masters/cameras',
+    BY_ID: (id: string) => `/masters/cameras/${id}`,
+  },
+  PAYMENTS: {
+    BASE: '/masters/payments',
+    BY_ID: (id: string) => `/masters/payments/${id}`,
+  },
   DASHBOARD: {
     STATS: '/dashboard/stats',
     REVENUE: '/dashboard/revenue',

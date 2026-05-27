@@ -20,6 +20,7 @@ export const ROUTES = {
   MASTER_LINES: '/master-management/lines',
   MASTER_PCS: '/master-management/pcs',
   MASTER_CAMERAS: '/master-management/cameras',
+  MASTER_PAYMENTS: '/master-management/payments',
   USERS: '/users',
   USER_DETAIL: '/users/:id',
   CONFIGURATION: '/configuration',

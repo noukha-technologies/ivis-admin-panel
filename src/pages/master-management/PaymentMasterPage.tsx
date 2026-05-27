@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { masterService } from '../../api/services/master.service';
-import type { ApiAdminPc } from '../../interfaces/admin-pc.interface';
-import type { ApiLine } from '../../interfaces/line.interface';
+import type { ApiPayment } from '../../interfaces/payment.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import type { PaginationMeta } from '../../types/api.types';
 import { toast } from 'react-hot-toast';
 
-const AdminPcMasterPage: React.FC = () => {
-  const [pcs, setPcs] = useState<ApiAdminPc[]>([]);
-  const [lines, setLines] = useState<ApiLine[]>([]);
+const PaymentMasterPage: React.FC = () => {
+  const [payments, setPayments] = useState<ApiPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,7 +30,7 @@ const AdminPcMasterPage: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Modal States
-  const [selectedItem, setSelectedItem] = useState<ApiAdminPc | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ApiPayment | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -42,9 +40,6 @@ const AdminPcMasterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    ip_address: '',
-    line_id: '',
-    description: '',
     status: 'Active' as 'Active' | 'Inactive',
   });
 
@@ -56,46 +51,32 @@ const AdminPcMasterPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch active lines for the dropdown select options
-  const fetchLines = async () => {
-    try {
-      const response = await masterService.lines.getAll({ nonPaginated: true });
-      setLines(response.data);
-    } catch (err) {
-      toast.error('Failed to load lines list for dropdown.');
-    }
-  };
-
-  // Fetch admin PCs on filter/pagination changes
-  const fetchPcs = async () => {
+  // Fetch payments on filter/pagination changes
+  const fetchPayments = async () => {
     setIsLoading(true);
     try {
-      const result = await masterService.pcs.getAll({
+      const result = await masterService.payments.getAll({
         page: currentPage,
         limit: ITEMS_PER_PAGE,
         search: debouncedSearch || undefined,
         sortBy: sortBy || undefined,
         sortOrder: sortAsc ? 'ASC' : 'DESC',
       });
-      setPcs(result.data);
+      setPayments(result.data);
       setMeta(result.meta);
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to retrieve Admin PC records.'));
+      toast.error(getApiErrorMessage(err, 'Failed to retrieve payment records.'));
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLines();
-  }, []);
-
-  useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, sortBy, sortAsc]);
 
   useEffect(() => {
-    fetchPcs();
+    fetchPayments();
   }, [currentPage, debouncedSearch, sortBy, sortAsc]);
 
   // Close dropdown on click outside
@@ -113,9 +94,6 @@ const AdminPcMasterPage: React.FC = () => {
     setFormData({
       name: '',
       code: '',
-      ip_address: '',
-      line_id: lines[0]?.id || '',
-      description: '',
       status: 'Active',
     });
   };
@@ -125,21 +103,18 @@ const AdminPcMasterPage: React.FC = () => {
     setShowNewModal(true);
   };
 
-  const handleOpenEdit = (item: ApiAdminPc) => {
+  const handleOpenEdit = (item: ApiPayment) => {
     setSelectedItem(item);
     setFormData({
       name: item.name,
       code: item.code,
-      ip_address: item.ip_address,
-      line_id: item.line_id,
-      description: item.description || '',
       status: item.status,
     });
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleOpenView = (item: ApiAdminPc) => {
+  const handleOpenView = (item: ApiPayment) => {
     setSelectedItem(item);
     setShowViewModal(true);
     setActiveDropdownId(null);
@@ -147,27 +122,20 @@ const AdminPcMasterPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.line_id) {
-      toast.error('Please assign a Line.');
-      return;
-    }
     setIsSubmitting(true);
 
     try {
-      await masterService.pcs.create({
+      await masterService.payments.create({
         name: formData.name.trim(),
         code: formData.code.trim(),
-        ip_address: formData.ip_address.trim(),
-        line_id: formData.line_id,
-        description: formData.description.trim() || undefined,
         status: formData.status,
       });
       setShowNewModal(false);
       resetForm();
-      fetchPcs();
-      toast.success('Admin PC master record created successfully.');
+      fetchPayments();
+      toast.success('Payment master record created successfully.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to create Admin PC record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to create payment record.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -176,27 +144,20 @@ const AdminPcMasterPage: React.FC = () => {
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
-    if (!formData.line_id) {
-      toast.error('Please assign a Line.');
-      return;
-    }
     setIsSubmitting(true);
 
     try {
-      await masterService.pcs.update(selectedItem.id, {
+      await masterService.payments.update(selectedItem.id, {
         name: formData.name.trim(),
         code: formData.code.trim(),
-        ip_address: formData.ip_address.trim(),
-        line_id: formData.line_id,
-        description: formData.description.trim() || undefined,
         status: formData.status,
       });
       setShowEditModal(false);
       setSelectedItem(null);
-      fetchPcs();
-      toast.success('Admin PC master record updated successfully.');
+      fetchPayments();
+      toast.success('Payment master record updated successfully.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to update Admin PC record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to update payment record.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -211,13 +172,13 @@ const AdminPcMasterPage: React.FC = () => {
   const confirmDelete = async () => {
     if (!deleteId) return;
     try {
-      await masterService.pcs.delete(deleteId);
+      await masterService.payments.delete(deleteId);
       setShowDeleteModal(false);
       setDeleteId(null);
-      fetchPcs();
-      toast.success('Admin PC record deleted successfully.');
+      fetchPayments();
+      toast.success('Payment record deleted successfully.');
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Failed to delete Admin PC record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to delete payment record.'));
       setShowDeleteModal(false);
     }
   };
@@ -276,14 +237,14 @@ const AdminPcMasterPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          <span>Add Admin PC</span>
+          <span>Add Payment</span>
         </button>
       </div>
 
       {/* Main Table Grid Card */}
       <div className="bg-white border border-neutral-200/90 rounded-2xl shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto w-full">
-          {isLoading && pcs.length === 0 ? (
+          {isLoading && payments.length === 0 ? (
             <div className="w-full min-h-75 flex flex-col p-6 space-y-4 justify-center">
               <div className="h-5 bg-neutral-100 rounded animate-pulse w-3/4"></div>
               <div className="h-10 bg-neutral-50 rounded animate-pulse w-full"></div>
@@ -297,7 +258,7 @@ const AdminPcMasterPage: React.FC = () => {
                   <th
                     onClick={() => toggleSort('name')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '22%' }}
+                    style={{ padding: '12px 20px', width: '38%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Name
@@ -311,7 +272,7 @@ const AdminPcMasterPage: React.FC = () => {
                   <th
                     onClick={() => toggleSort('code')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '13%' }}
+                    style={{ padding: '12px 20px', width: '20%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Code
@@ -323,24 +284,9 @@ const AdminPcMasterPage: React.FC = () => {
                     </span>
                   </th>
                   <th
-                    onClick={() => toggleSort('ip_address')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '21%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      LP Address
-                      {sortBy === 'ip_address' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '14%' }}>Line</th>
-                  <th
                     onClick={() => toggleSort('status')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '10%' }}
+                    style={{ padding: '12px 20px', width: '18%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Status
@@ -354,7 +300,7 @@ const AdminPcMasterPage: React.FC = () => {
                   <th
                     onClick={() => toggleSort('created_at')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '10%' }}
+                    style={{ padding: '12px 20px', width: '14%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Created
@@ -369,9 +315,9 @@ const AdminPcMasterPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {pcs.length === 0 ? (
+                {payments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center bg-white">
+                    <td colSpan={5} className="px-6 py-16 text-center bg-white">
                       <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                         <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
                           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -384,12 +330,10 @@ const AdminPcMasterPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  pcs.map((item) => (
+                  payments.map((item) => (
                     <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
                       <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
                       <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                      <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.ip_address}</td>
-                      <td className="px-6 py-4.5 text-sm text-gray-600 font-semibold">{item.line?.name || '—'}</td>
                       <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
                         <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
                           ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
@@ -459,7 +403,7 @@ const AdminPcMasterPage: React.FC = () => {
         </div>
 
         {/* Pagination control */}
-        {!isLoading && pcs.length > 0 && (
+        {!isLoading && payments.length > 0 && (
           <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
             <span className="text-gray-500 font-medium">
               Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * meta.limit + 1}</span> to{' '}
@@ -506,7 +450,7 @@ const AdminPcMasterPage: React.FC = () => {
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-125 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between">
-              <h3 className="text-[17px] font-bold text-neutral-800">Admin PC Details</h3>
+              <h3 className="text-[17px] font-bold text-neutral-800">Payment Master Details</h3>
               <button
                 onClick={() => setShowViewModal(false)}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-neutral-100 cursor-pointer"
@@ -522,28 +466,16 @@ const AdminPcMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-bold">{selectedItem.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">PC ID</span>
-                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.admin_pc_id}</span>
+                <span className="text-gray-400 font-medium">Payment ID</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.payment_id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Name</span>
                 <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.name}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">PC Code</span>
+                <span className="text-gray-400 font-medium">Payment Code</span>
                 <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.code}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">IP Address</span>
-                <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.ip_address}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Assigned Line</span>
-                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.line?.name || '—'}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Description</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.description || 'No description provided'}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Status</span>
@@ -581,7 +513,7 @@ const AdminPcMasterPage: React.FC = () => {
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
-              <h3 className="text-[18px] font-bold text-[#101828]">Add Admin PC</h3>
+              <h3 className="text-[18px] font-bold text-[#101828]">Add Payment</h3>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
@@ -594,7 +526,7 @@ const AdminPcMasterPage: React.FC = () => {
               </button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
@@ -622,57 +554,10 @@ const AdminPcMasterPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">IP Address</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      disabled={isSubmitting}
-                      value={formData.ip_address}
-                      onChange={(e) => setFormData({ ...formData, ip_address: e.target.value })}
-                      className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
-                    <select
-                      required
-                      disabled={isSubmitting || lines.length === 0}
-                      value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
-                    >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
-                      ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
-                    placeholder="Enter"
-                    disabled={isSubmitting}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm resize-none"
-                  />
-                </div>
-
                 <div className="flex items-center justify-between pt-2">
                   <span className="flex flex-col">
                     <span className="text-[13.5px] font-semibold text-[#344054]">Active Status</span>
-                    <span className="text-[12.5px] text-gray-400 font-medium">Control whether this Admin PC is online.</span>
+                    <span className="text-[12.5px] text-gray-400 font-medium">Control whether this payment option is enabled.</span>
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
                     <input
@@ -719,7 +604,7 @@ const AdminPcMasterPage: React.FC = () => {
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
-              <h3 className="text-[18px] font-bold text-[#101828]">Edit Admin PC</h3>
+              <h3 className="text-[18px] font-bold text-[#101828]">Edit Payment</h3>
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
@@ -732,7 +617,7 @@ const AdminPcMasterPage: React.FC = () => {
               </button>
             </div>
             <form onSubmit={handleEditSave}>
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
@@ -760,57 +645,10 @@ const AdminPcMasterPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">IP Address</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      disabled={isSubmitting}
-                      value={formData.ip_address}
-                      onChange={(e) => setFormData({ ...formData, ip_address: e.target.value })}
-                      className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
-                    <select
-                      required
-                      disabled={isSubmitting || lines.length === 0}
-                      value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl focus:outline-none focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
-                    >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
-                      ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
-                    placeholder="Enter"
-                    disabled={isSubmitting}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="w-full px-3.5 py-2 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm resize-none"
-                  />
-                </div>
-
                 <div className="flex items-center justify-between pt-2">
                   <span className="flex flex-col">
                     <span className="text-[13.5px] font-semibold text-[#344054]">Active Status</span>
-                    <span className="text-[12.5px] text-gray-400 font-medium">Control whether this Admin PC is online.</span>
+                    <span className="text-[12.5px] text-gray-400 font-medium">Control whether this payment option is enabled.</span>
                   </span>
                   <label className="relative inline-flex items-center cursor-pointer select-none">
                     <input
@@ -864,9 +702,9 @@ const AdminPcMasterPage: React.FC = () => {
                   </svg>
                 </div>
                 <div className="space-y-1.5">
-                  <h4 className="text-[16px] font-bold text-neutral-800">Delete Admin PC Master Record</h4>
+                  <h4 className="text-[16px] font-bold text-neutral-800">Delete Payment Master Record</h4>
                   <p className="text-[13.5px] text-gray-500 leading-relaxed">
-                    Are you sure you want to delete this Admin PC master record? This action soft-deletes the record and cannot be undone.
+                    Are you sure you want to delete this payment mode? This action soft-deletes the record and cannot be undone.
                   </p>
                 </div>
               </div>
@@ -894,4 +732,4 @@ const AdminPcMasterPage: React.FC = () => {
   );
 };
 
-export default AdminPcMasterPage;
+export default PaymentMasterPage;

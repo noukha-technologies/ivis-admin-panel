@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-type TabType = 'Vehicle' | 'Manual Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR';
+type TabType = 'Vehicle' | 'Manual Test' | 'Centre' | 'Line' | 'Admin PC' | 'Camera / ANPR' | 'Payments';
 
 const tabs: { label: TabType; path: string }[] = [
   { label: 'Vehicle', path: '/master-management/vehicles' },
@@ -10,6 +10,7 @@ const tabs: { label: TabType; path: string }[] = [
   { label: 'Line', path: '/master-management/lines' },
   { label: 'Admin PC', path: '/master-management/pcs' },
   { label: 'Camera / ANPR', path: '/master-management/cameras' },
+  { label: 'Payments', path: '/master-management/payments' },
 ];
 
 const MasterManagementPage: React.FC = () => {
@@ -23,6 +24,7 @@ const MasterManagementPage: React.FC = () => {
     if (path.endsWith('/lines')) return 'Line';
     if (path.endsWith('/pcs')) return 'Admin PC';
     if (path.endsWith('/cameras')) return 'Camera / ANPR';
+    if (path.endsWith('/payments')) return 'Payments';
     return 'Vehicle';
   };
 

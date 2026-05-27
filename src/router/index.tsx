@@ -20,6 +20,7 @@ import CentreMasterPage from '../pages/master-management/CentreMasterPage';
 import LineMasterPage from '../pages/master-management/LineMasterPage';
 import AdminPcMasterPage from '../pages/master-management/AdminPcMasterPage';
 import CameraMasterPage from '../pages/master-management/CameraMasterPage';
+import PaymentMasterPage from '../pages/master-management/PaymentMasterPage';
 import UsersPage from '../pages/users/UsersPage';
 import ConfigurationPage from '../pages/configuration/ConfigurationPage';
 import FileProcessingPage from '../pages/file-processing/FileProcessingPage';
@@ -54,6 +55,7 @@ const AppRouter = () => {
             <Route path="lines" element={<LineMasterPage />} />
             <Route path="pcs" element={<AdminPcMasterPage />} />
             <Route path="cameras" element={<CameraMasterPage />} />
+            <Route path="payments" element={<PaymentMasterPage />} />
           </Route>
 
           <Route path={ROUTES.USERS} element={<UsersPage />} />
