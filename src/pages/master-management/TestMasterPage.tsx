@@ -196,7 +196,7 @@ const TestMasterPage: React.FC = () => {
   return (
     <div className="w-full flex flex-col">
       {/* Search bar & Action Button */}
-      <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-5 flex items-center justify-end flex-wrap gap-4">
         <div className="relative w-full max-w-85">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">

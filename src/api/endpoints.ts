@@ -30,6 +30,10 @@ export const ENDPOINTS = {
     BASE: '/masters/centres',
     BY_ID: (id: string) => `/masters/centres/${id}`,
   },
+  LINES: {
+    BASE: '/masters/lines',
+    BY_ID: (id: string) => `/masters/lines/${id}`,
+  },
   DASHBOARD: {
     STATS: '/dashboard/stats',
     REVENUE: '/dashboard/revenue',

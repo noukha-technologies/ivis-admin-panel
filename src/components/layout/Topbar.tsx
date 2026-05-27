@@ -126,7 +126,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
                     setIsMenuOpen(false);
                     const dest = itemRouteMap[item.name];
                     if (dest) {
-                      navigate(dest);
+                      window.open(dest, '_blank');
                     }
                   }}
                   style={{

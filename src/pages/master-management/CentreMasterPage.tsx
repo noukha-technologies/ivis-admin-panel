@@ -210,7 +210,7 @@ const CentreMasterPage: React.FC = () => {
   return (
     <div className="w-full flex flex-col relative">
       {/* Search bar & Action Button */}
-      <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-5 flex items-center justify-end flex-wrap gap-4">
         <div className="relative w-full max-w-85">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -275,16 +275,6 @@ const CentreMasterPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
-          ) : centres.length === 0 ? (
-            <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your search query or database filter.</p>
-            </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
@@ -350,8 +340,23 @@ const CentreMasterPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {centres.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
+                {centres.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-16 text-center bg-white">
+                      <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-[14.5px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
+                        <p className="text-[13px] text-[#64748b] leading-relaxed">No entries match your search query or database filter.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  centres.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium max-w-72 truncate" title={item.description}>
@@ -418,7 +423,8 @@ const CentreMasterPage: React.FC = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           )}

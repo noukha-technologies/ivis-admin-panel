@@ -1,48 +1,87 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { masterService } from '../../api/services/master.service';
+import type { ApiLine } from '../../interfaces/line.interface';
+import { getApiErrorMessage } from '../../api/apiResponse';
+import type { PaginationMeta } from '../../types/api.types';
 import { toast } from 'react-hot-toast';
 
-interface LineMaster {
-  id: string;
-  name: string;
-  code: string;
-  module?: string;
-  displayOrder?: string;
-  details: string;
-  status: 'Active' | 'Inactive';
-  created: string;
-}
-
 const LineMasterPage: React.FC = () => {
-  const [lines, setLines] = useState<LineMaster[]>([
-    { id: 'L-401', name: 'Line 1 (Light)', code: 'LINE-01', module: 'Visual', displayOrder: '1', details: 'Light vehicle inspection lane at Muscat Main Hub', status: 'Active', created: '2026-01-01' },
-    { id: 'L-402', name: 'Line 2 (Heavy)', code: 'LINE-02', module: 'Safety', displayOrder: '2', details: 'Heavy duty truck inspection lane at Muscat Main Hub', status: 'Active', created: '2026-01-01' },
-    { id: 'L-403', name: 'Line 3 (Mixed)', code: 'LINE-03', module: 'Environmental', displayOrder: '3', details: 'Mixed vehicle lane at Salalah Centre', status: 'Active', created: '2026-01-10' },
-    { id: 'L-404', name: 'Line 4 (Bikes)', code: 'LINE-04', module: 'Mechanical', displayOrder: '4', details: 'Two-wheeler inspection at Muscat Main Hub', status: 'Inactive', created: '2026-02-15' },
-  ]);
+  const [lines, setLines] = useState<ApiLine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Search, Pagination and Sort States
   const [searchQuery, setSearchQuery] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [sortAsc, setSortAsc] = useState<boolean | null>(true);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortAsc, setSortAsc] = useState<boolean>(false); // default descending (newest first)
+  const [meta, setMeta] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 8,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  const ITEMS_PER_PAGE = 8;
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const ITEMS_PER_PAGE = 8;
 
-  const [selectedItem, setSelectedItem] = useState<LineMaster | null>(null);
+  // Modal States
+  const [selectedItem, setSelectedItem] = useState<ApiLine | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Record<string, string>>({
+  const [formData, setFormData] = useState({
     name: '',
     code: '',
-    module: '',
-    displayOrder: '',
-    details: '',
-    status: 'Active',
+    display_order: 1,
+    description: '',
+    status: 'Active' as 'Active' | 'Inactive',
   });
 
+  // Debounce search query to prevent backend spamming
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch lines on filter/pagination changes
+  const fetchLines = async () => {
+    setIsLoading(true);
+    try {
+      const result = await masterService.lines.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        search: debouncedSearch || undefined,
+        sortBy: sortBy || undefined,
+        sortOrder: sortAsc ? 'ASC' : 'DESC',
+      });
+      setLines(result.data);
+      setMeta(result.meta);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to retrieve line records.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, sortBy, sortAsc]);
+
+  useEffect(() => {
+    fetchLines();
+  }, [currentPage, debouncedSearch, sortBy, sortAsc]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -57,9 +96,8 @@ const LineMasterPage: React.FC = () => {
     setFormData({
       name: '',
       code: '',
-      module: '',
-      displayOrder: '',
-      details: '',
+      display_order: 1,
+      description: '',
       status: 'Active',
     });
   };
@@ -69,62 +107,70 @@ const LineMasterPage: React.FC = () => {
     setShowNewModal(true);
   };
 
-  const handleOpenEdit = (item: LineMaster) => {
+  const handleOpenEdit = (item: ApiLine) => {
     setSelectedItem(item);
     setFormData({
       name: item.name,
       code: item.code,
-      module: item.module || '',
-      displayOrder: item.displayOrder || '',
-      details: item.details,
+      display_order: item.display_order,
+      description: item.description || '',
       status: item.status,
     });
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleOpenView = (item: LineMaster) => {
+  const handleOpenView = (item: ApiLine) => {
     setSelectedItem(item);
     setShowViewModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedId = `L-${Math.floor(405 + Math.random() * 900)}`;
-    const formattedDate = new Date().toISOString().split('T')[0];
+    setIsSubmitting(true);
 
-    const newLine: LineMaster = {
-      id: generatedId,
-      name: formData.name || 'Unnamed',
-      code: formData.code || 'N/A',
-      module: formData.module || '',
-      displayOrder: formData.displayOrder || '',
-      details: formData.details || 'N/A',
-      status: (formData.status as 'Active' | 'Inactive') || 'Active',
-      created: formattedDate,
-    };
-
-    setLines([newLine, ...lines]);
-    setShowNewModal(false);
-    resetForm();
-    toast.success('Line master record created successfully.');
+    try {
+      await masterService.lines.create({
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        display_order: formData.display_order,
+        description: formData.description.trim() || undefined,
+        status: formData.status,
+      });
+      setShowNewModal(false);
+      resetForm();
+      fetchLines();
+      toast.success('Line master record created successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to create line record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditSave = (e: React.FormEvent) => {
+  const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    setIsSubmitting(true);
 
-    setLines(
-      lines.map((l) =>
-        l.id === selectedItem.id
-          ? ({ ...l, ...formData } as LineMaster)
-          : l
-      )
-    );
-    setShowEditModal(false);
-    setSelectedItem(null);
-    toast.success('Line master record updated successfully.');
+    try {
+      await masterService.lines.update(selectedItem.id, {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        display_order: formData.display_order,
+        description: formData.description.trim() || undefined,
+        status: formData.status,
+      });
+      setShowEditModal(false);
+      setSelectedItem(null);
+      fetchLines();
+      toast.success('Line master record updated successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update line record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openDeleteModal = (id: string) => {
@@ -133,45 +179,47 @@ const LineMasterPage: React.FC = () => {
     setActiveDropdownId(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    setLines(lines.filter((l) => l.id !== deleteId));
-    setShowDeleteModal(false);
-    setDeleteId(null);
-    toast.success('Line master record deleted successfully.');
+    try {
+      await masterService.lines.delete(deleteId);
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      fetchLines();
+      toast.success('Line record deleted successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete line record.'));
+      setShowDeleteModal(false);
+    }
   };
 
-  const filteredList = lines.filter((item) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (item.name && item.name.toLowerCase().includes(q)) ||
-      (item.code && item.code.toLowerCase().includes(q)) ||
-      (item.module && item.module.toLowerCase().includes(q)) ||
-      (item.details && item.details.toLowerCase().includes(q))
-    );
-  });
+  const toggleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(column);
+      setSortAsc(true);
+    }
+  };
 
-  const sortedList = [...filteredList].sort((a, b) => {
-    if (sortAsc === null) return 0;
-    const nameA = (a.name || '').toLowerCase();
-    const nameB = (b.name || '').toLowerCase();
-    if (nameA < nameB) return sortAsc ? -1 : 1;
-    if (nameA > nameB) return sortAsc ? 1 : -1;
-    return 0;
-  });
+  const formatDate = (dateString: string) => {
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return dateString;
+      return d.toISOString().split('T')[0];
+    } catch {
+      return dateString;
+    }
+  };
 
-  const totalPages = Math.ceil(sortedList.length / ITEMS_PER_PAGE) || 1;
-  const paginatedList = sortedList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const toggleSort = () => {
-    setSortAsc((prev) => (prev === true ? false : prev === false ? true : true));
+  const formatDisplayOrder = (order: number) => {
+    return String(order).padStart(2, '0');
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col relative">
       {/* Search bar & Action Button */}
-      <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-5 flex items-center justify-end flex-wrap gap-4">
         <div className="relative w-full max-w-85">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -180,12 +228,9 @@ const LineMasterPage: React.FC = () => {
           </span>
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search line by name or code"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
           />
           {searchQuery && (
@@ -207,58 +252,142 @@ const LineMasterPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
           </svg>
-          <span>New Line</span>
+          <span>Add Line</span>
         </button>
       </div>
 
-      {/* Main card box containing only the table */}
-      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
+      {/* Main card box containing the table */}
+      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="w-full overflow-x-auto">
-          {paginatedList.length === 0 ? (
-            <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your filter. Try adjusting your search query or clear the filter.</p>
-            </div>
-          ) : (
+          {isLoading ? (
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                  <th
-                    onClick={toggleSort}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '20%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Name
-                      <svg
-                        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${!sortAsc ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Code</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Details</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '10%' }}>Status</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Name</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '13%' }}>Code</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Display Order</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '26%' }}>Description</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Status</th>
                   <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
                   <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedList.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="border-b border-gray-50 bg-white animate-pulse">
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-10"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-36"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-6 bg-neutral-100 rounded-lg w-16"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
+                    <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                  <th
+                    onClick={() => toggleSort('name')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '22%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Name
+                      {sortBy === 'name' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('code')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '13%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Code
+                      {sortBy === 'code' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('display_order')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '15%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Display Order
+                      {sortBy === 'display_order' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '26%' }}>Description</th>
+                  <th
+                    onClick={() => toggleSort('status')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Status
+                      {sortBy === 'status' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('created_at')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Created
+                      {sortBy === 'created_at' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center bg-white">
+                      <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-[14.5px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
+                        <p className="text-[13px] text-[#64748b] leading-relaxed">No entries match your search query or database filter.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  lines.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-50" title={item.details}>{item.details || '—'}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-bold">{formatDisplayOrder(item.display_order)}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium max-w-72 truncate" title={item.description}>
+                      {item.description || '—'}
+                    </td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
                         ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
@@ -267,7 +396,7 @@ const LineMasterPage: React.FC = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.created}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{formatDate(item.created_at)}</td>
                     <td className="px-6 py-4.5 text-right relative">
                       <button
                         onClick={(e) => {
@@ -284,7 +413,7 @@ const LineMasterPage: React.FC = () => {
                       {activeDropdownId === item.id && (
                         <div
                           ref={dropdownRef}
-                          className="absolute right-6 mt-1 w-36 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-40 text-left"
+                          className="absolute right-6 mt-1 w-38 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-40 text-left"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -320,34 +449,36 @@ const LineMasterPage: React.FC = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           )}
         </div>
 
         {/* Pagination control */}
-        {sortedList.length > 0 && (
+        {!isLoading && lines.length > 0 && (
           <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
             <span className="text-gray-500 font-medium">
-              Showing <span className="font-semibold text-neutral-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+              Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * meta.limit + 1}</span> to{' '}
               <span className="font-semibold text-neutral-800">
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedList.length)}
+                {Math.min(meta.page * meta.limit, meta.total)}
               </span>{' '}
-              of <span className="font-semibold text-neutral-800">{sortedList.length}</span> results
+              of <span className="font-semibold text-neutral-800">{meta.total}</span> results
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={!meta.hasPreviousPage || isSubmitting}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pg) => (
+              {Array.from({ length: meta.totalPages }, (_, idx) => idx + 1).map((pg) => (
                 <button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
+                  disabled={isSubmitting}
                   className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${currentPage === pg
                     ? 'bg-[#171717] text-white shadow-sm border border-[#171717]'
                     : 'border border-neutral-200 text-gray-500 hover:bg-neutral-50'
@@ -357,8 +488,8 @@ const LineMasterPage: React.FC = () => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
+                disabled={!meta.hasNextPage || isSubmitting}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Next
@@ -370,7 +501,7 @@ const LineMasterPage: React.FC = () => {
 
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-125 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between">
               <h3 className="text-[17px] font-bold text-neutral-800">Line Master Details</h3>
@@ -389,36 +520,42 @@ const LineMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-bold">{selectedItem.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Line ID</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.line_id}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Name</span>
                 <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.name}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Code</span>
+                <span className="text-gray-400 font-medium">Line Code</span>
                 <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.code}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Module</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.module || '—'}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Display Order</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.displayOrder || '—'}</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{formatDisplayOrder(selectedItem.display_order)}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Details</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.details}</span>
+                <span className="text-gray-400 font-medium">Description</span>
+                <span className="col-span-2 text-neutral-700">{selectedItem.description || 'No description provided'}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Status</span>
                 <span className="col-span-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12.5px] font-bold ${selectedItem.status === 'Active' ? 'bg-emerald-50 text-[#047857]' : 'bg-neutral-100 text-neutral-500'}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-[12.5px] font-bold ${selectedItem.status === 'Active' ? 'bg-emerald-50 text-[#047857] border border-emerald-200' : 'bg-neutral-50 text-neutral-500 border border-neutral-200'}`}>
                     {selectedItem.status}
                   </span>
                 </span>
               </div>
+              {selectedItem.created_by && (
+                <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                  <span className="text-gray-400 font-medium">Created By</span>
+                  <span className="col-span-2 text-neutral-700">{selectedItem.created_by}</span>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2 py-1.5">
                 <span className="text-gray-400 font-medium">Created Date</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.created}</span>
+                <span className="col-span-2 text-neutral-700">{formatDate(selectedItem.created_at)}</span>
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50 flex items-center justify-end">
@@ -435,14 +572,15 @@ const LineMasterPage: React.FC = () => {
 
       {/* CREATE MODAL */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Add Line</h3>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
+                disabled={isSubmitting}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer disabled:opacity-50"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -458,9 +596,10 @@ const LineMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.name || ''}
+                      disabled={isSubmitting}
+                      value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                   <div>
@@ -469,80 +608,64 @@ const LineMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.code || ''}
+                      disabled={isSubmitting}
+                      value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Module</label>
-                    <select
-                      required
-                      value={formData.module || ''}
-                      onChange={(e) => setFormData({ ...formData, module: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Safety">Safety</option>
-                      <option value="Environmental">Environmental</option>
-                      <option value="Visual">Visual</option>
-                      <option value="Mechanical">Mechanical</option>
-                      <option value="General">General</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Display Order</label>
-                    <select
-                      required
-                      value={formData.displayOrder || ''}
-                      onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={String(num)}>{num}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Display Order</label>
+                  <select
+                    required
+                    disabled={isSubmitting}
+                    value={formData.display_order}
+                    onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8 disabled:bg-neutral-50 disabled:text-neutral-400"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 12px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '16px',
+                    }}
+                  >
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={num}>
+                        {formatDisplayOrder(num)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
                   <textarea
-                    required
                     rows={3}
                     placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    disabled={isSubmitting}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 py-2 border-t border-b border-neutral-50">
+                <div className="flex items-center justify-between py-2 border-t border-b border-neutral-50">
+                  <div className="flex flex-col">
+                    <span className="text-[14px] font-semibold text-[#344054]">Status</span>
+                    <span className="text-[12.5px] text-[#667085]">Set the operational status of the line</span>
+                  </div>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() =>
                       setFormData({
                         ...formData,
                         status: formData.status === 'Active' ? 'Inactive' : 'Active',
                       })
                     }
-                    className="focus:outline-none cursor-pointer flex items-center gap-3"
+                    className="focus:outline-none cursor-pointer disabled:opacity-50"
                   >
                     <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
@@ -551,7 +674,6 @@ const LineMasterPage: React.FC = () => {
                       <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
                         }`} />
                     </div>
-                    <span className="text-[14px] font-semibold text-[#344054]">Active</span>
                   </button>
                 </div>
 
@@ -559,15 +681,23 @@ const LineMasterPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowNewModal(false)}
-                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-2"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -578,17 +708,18 @@ const LineMasterPage: React.FC = () => {
 
       {/* EDIT MODAL */}
       {showEditModal && selectedItem && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Edit Line</h3>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedItem(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer disabled:opacity-50"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -604,9 +735,10 @@ const LineMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.name || ''}
+                      disabled={isSubmitting}
+                      value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                   <div>
@@ -615,80 +747,64 @@ const LineMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.code || ''}
+                      disabled={isSubmitting}
+                      value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Module</label>
-                    <select
-                      required
-                      value={formData.module || ''}
-                      onChange={(e) => setFormData({ ...formData, module: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Safety">Safety</option>
-                      <option value="Environmental">Environmental</option>
-                      <option value="Visual">Visual</option>
-                      <option value="Mechanical">Mechanical</option>
-                      <option value="General">General</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Display Order</label>
-                    <select
-                      required
-                      value={formData.displayOrder || ''}
-                      onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                        <option key={num} value={String(num)}>{num}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Display Order</label>
+                  <select
+                    required
+                    disabled={isSubmitting}
+                    value={formData.display_order}
+                    onChange={(e) => setFormData({ ...formData, display_order: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8 disabled:bg-neutral-50 disabled:text-neutral-400"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                      backgroundPosition: 'right 12px center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '16px',
+                    }}
+                  >
+                    {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={num}>
+                        {formatDisplayOrder(num)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
                   <textarea
-                    required
                     rows={3}
                     placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    disabled={isSubmitting}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 py-2 border-t border-b border-neutral-50">
+                <div className="flex items-center justify-between py-2 border-t border-b border-neutral-50">
+                  <div className="flex flex-col">
+                    <span className="text-[14px] font-semibold text-[#344054]">Status</span>
+                    <span className="text-[12.5px] text-[#667085]">Set the operational status of the line</span>
+                  </div>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() =>
                       setFormData({
                         ...formData,
                         status: formData.status === 'Active' ? 'Inactive' : 'Active',
                       })
                     }
-                    className="focus:outline-none cursor-pointer flex items-center gap-3"
+                    className="focus:outline-none cursor-pointer disabled:opacity-50"
                   >
                     <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
@@ -697,7 +813,6 @@ const LineMasterPage: React.FC = () => {
                       <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
                         }`} />
                     </div>
-                    <span className="text-[14px] font-semibold text-[#344054]">Active</span>
                   </button>
                 </div>
 
@@ -708,15 +823,23 @@ const LineMasterPage: React.FC = () => {
                       setShowEditModal(false);
                       setSelectedItem(null);
                     }}
-                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-2"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -727,7 +850,7 @@ const LineMasterPage: React.FC = () => {
 
       {/* DELETE CONFIRMATION MODAL */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-100 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
@@ -744,15 +867,23 @@ const LineMasterPage: React.FC = () => {
                   setShowDeleteModal(false);
                   setDeleteId(null);
                 }}
-                className="flex-1 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[13.5px] font-semibold rounded-xl cursor-pointer transition-all"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[13.5px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
               >
                 No, Keep it
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[13.5px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[13.5px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
-                Yes, Delete
+                {isSubmitting && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                <span>Yes, Delete</span>
               </button>
             </div>
           </div>

@@ -20,6 +20,12 @@ import type {
   UpdateCentrePayload,
   CentreListParams,
 } from '../../interfaces/centre.interface';
+import type {
+  ApiLine,
+  CreateLinePayload,
+  UpdateLinePayload,
+  LineListParams,
+} from '../../interfaces/line.interface';
 
 export type {
   ApiVehicle,
@@ -34,6 +40,10 @@ export type {
   CreateCentrePayload,
   UpdateCentrePayload,
   CentreListParams,
+  ApiLine,
+  CreateLinePayload,
+  UpdateLinePayload,
+  LineListParams,
 };
 
 export const masterService = {
@@ -143,6 +153,42 @@ export const masterService = {
 
     delete: async (id: string): Promise<void> => {
       await axiosInstance.delete(ENDPOINTS.CENTRES.BY_ID(id));
+    },
+  },
+  lines: {
+    getAll: async (params?: LineListParams): Promise<PaginatedResult<ApiLine>> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiLine[]>>(
+        ENDPOINTS.LINES.BASE,
+        { params }
+      );
+      return unwrapPaginated(response);
+    },
+
+    getById: async (id: string): Promise<ApiLine> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiLine>>(
+        ENDPOINTS.LINES.BY_ID(id)
+      );
+      return unwrapData(response);
+    },
+
+    create: async (data: CreateLinePayload): Promise<ApiLine> => {
+      const response = await axiosInstance.post<ApiEnvelope<ApiLine>>(
+        ENDPOINTS.LINES.BASE,
+        data
+      );
+      return unwrapData(response);
+    },
+
+    update: async (id: string, data: UpdateLinePayload): Promise<ApiLine> => {
+      const response = await axiosInstance.patch<ApiEnvelope<ApiLine>>(
+        ENDPOINTS.LINES.BY_ID(id),
+        data
+      );
+      return unwrapData(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await axiosInstance.delete(ENDPOINTS.LINES.BY_ID(id));
     },
   },
 };
