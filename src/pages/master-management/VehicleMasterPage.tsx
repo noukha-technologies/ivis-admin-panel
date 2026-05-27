@@ -3,13 +3,12 @@ import { masterService } from '../../api/services/master.service';
 import type { ApiVehicle } from '../../interfaces/vehicle.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import type { PaginationMeta } from '../../types/api.types';
+import { toast } from 'react-hot-toast';
 
 const VehicleMasterPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Search, Pagination and Sort States
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +36,6 @@ const VehicleMasterPage: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
 
   // Lists for Form dropdowns
   const brandsList = ['Toyota', 'Nissan', 'Hyundai', 'Lexus', 'Kia', 'Honda', 'Mercedes-Benz', 'BMW', 'Tesla', 'Ford', 'Chevrolet'];
@@ -63,7 +61,6 @@ const VehicleMasterPage: React.FC = () => {
   // Fetch vehicles on filter/pagination changes
   const fetchVehicles = async () => {
     setIsLoading(true);
-    setErrorMessage(null);
     try {
       const result = await masterService.vehicles.getAll({
         page: currentPage,
@@ -75,7 +72,7 @@ const VehicleMasterPage: React.FC = () => {
       setVehicles(result.data);
       setMeta(result.meta);
     } catch (err) {
-      setErrorMessage(getApiErrorMessage(err, 'Failed to retrieve vehicle records.'));
+      toast.error(getApiErrorMessage(err, 'Failed to retrieve vehicle records.'));
     } finally {
       setIsLoading(false);
     }
@@ -100,12 +97,6 @@ const VehicleMasterPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Flash success messages
-  const triggerSuccess = (msg: string) => {
-    setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(null), 4000);
-  };
-
   const resetForm = () => {
     setFormData({
       vehicle_id: '',
@@ -114,7 +105,6 @@ const VehicleMasterPage: React.FC = () => {
       vehicle_type: '',
       vehicle_color: '',
     });
-    setFormError(null);
   };
 
   const handleOpenAddModal = () => {
@@ -131,7 +121,6 @@ const VehicleMasterPage: React.FC = () => {
       vehicle_type: item.vehicle_type,
       vehicle_color: item.vehicle_color,
     });
-    setFormError(null);
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
@@ -145,11 +134,9 @@ const VehicleMasterPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setFormError(null);
 
     try {
       await masterService.vehicles.create({
-        vehicle_id: formData.vehicle_id ? parseInt(formData.vehicle_id, 10) : undefined,
         plate_number: formData.plate_number.trim(),
         vehicle_brand: formData.vehicle_brand,
         vehicle_type: formData.vehicle_type,
@@ -158,9 +145,9 @@ const VehicleMasterPage: React.FC = () => {
       setShowNewModal(false);
       resetForm();
       fetchVehicles();
-      triggerSuccess('Vehicle master record created successfully.');
+      toast.success('Vehicle master record created successfully.');
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Failed to create vehicle record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to create vehicle record.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -170,7 +157,6 @@ const VehicleMasterPage: React.FC = () => {
     e.preventDefault();
     if (!selectedItem) return;
     setIsSubmitting(true);
-    setFormError(null);
 
     try {
       await masterService.vehicles.update(selectedItem.id, {
@@ -182,9 +168,9 @@ const VehicleMasterPage: React.FC = () => {
       setShowEditModal(false);
       setSelectedItem(null);
       fetchVehicles();
-      triggerSuccess('Vehicle master record updated successfully.');
+      toast.success('Vehicle master record updated successfully.');
     } catch (err) {
-      setFormError(getApiErrorMessage(err, 'Failed to update vehicle record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to update vehicle record.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -203,9 +189,9 @@ const VehicleMasterPage: React.FC = () => {
       setShowDeleteModal(false);
       setDeleteId(null);
       fetchVehicles();
-      triggerSuccess('Vehicle record deleted successfully.');
+      toast.success('Vehicle record deleted successfully.');
     } catch (err) {
-      setErrorMessage(getApiErrorMessage(err, 'Failed to delete vehicle record.'));
+      toast.error(getApiErrorMessage(err, 'Failed to delete vehicle record.'));
       setShowDeleteModal(false);
     }
   };
@@ -221,33 +207,6 @@ const VehicleMasterPage: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col relative">
-      {/* Dynamic Success Alert Toast */}
-      {successMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-[#e6f4ea] border border-[#34a853]/30 text-[#137333] px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 font-medium">
-          <svg className="w-5 h-5 text-[#34a853]" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>{successMessage}</span>
-        </div>
-      )}
-
-      {/* Global Error Banner */}
-      {errorMessage && (
-        <div className="mb-4 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">
-          <div className="flex items-center gap-3">
-            <svg className="w-5 h-5 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            <span className="text-[13.5px] font-semibold">{errorMessage}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-[#c5221f] hover:opacity-80">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
       {/* Search bar & Action Button */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
         <div className="relative w-full max-w-85">
@@ -258,10 +217,10 @@ const VehicleMasterPage: React.FC = () => {
           </span>
           <input
             type="text"
-            placeholder="Search by plate, brand or type..."
+            placeholder="Search plate, type, brand or color"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
           />
           {searchQuery && (
             <button
@@ -282,40 +241,38 @@ const VehicleMasterPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
           </svg>
-          <span>New Vehicle</span>
+          <span>Add Vehicle</span>
         </button>
       </div>
 
-      {/* Main card box containing only the table */}
-      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
+      {/* Main card box containing the table */}
+      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="w-full overflow-x-auto">
           {isLoading ? (
-            /* Premium shimmer loading state */
-            <div className="w-full">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Plate Number</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Brand</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Type</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Created</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Plate Number</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Brand</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Type</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '15%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="border-b border-gray-50 bg-white animate-pulse">
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-10"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-24"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
+                    <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: 5 }).map((_, idx) => (
-                    <tr key={idx} className="border-b border-gray-50 bg-white">
-                      {Array.from({ length: 6 }).map((__, tdIdx) => (
-                        <td key={tdIdx} className="px-6 py-4.5">
-                          <div className="h-4 bg-neutral-100 rounded-md w-3/4 animate-pulse"></div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : vehicles.length === 0 ? (
             <div className="w-full py-16 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
@@ -386,62 +343,53 @@ const VehicleMasterPage: React.FC = () => {
                       )}
                     </span>
                   </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
                   <th
-                    onClick={() => toggleSort('created_at')}
+                    onClick={() => toggleSort('vehicle_color')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
                     style={{ padding: '12px 20px', width: '15%' }}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Created
-                      {sortBy === 'created_at' && (
+                      Color
+                      {sortBy === 'vehicle_color' && (
                         <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                       )}
                     </span>
                   </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '15%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {vehicles.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
-                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900 font-mono">#{item.vehicle_id}</td>
+                    <td className="px-6 py-4.5 text-sm font-semibold text-neutral-500">#{item.vehicle_id}</td>
                     <td className="px-6 py-4.5">
-                      {/* Premium License Plate Look */}
-                      <span className="inline-flex items-center px-3 py-1 bg-neutral-50 border-2 border-neutral-800 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded-md shadow-xs select-none">
+                      <span className="inline-flex items-center px-3 py-0.5 bg-[#f8fafc] border border-neutral-300 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded">
                         {item.plate_number}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-semibold">{item.vehicle_brand}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
-                      <span className="inline-flex items-center px-2 py-0.5 bg-neutral-100 rounded text-neutral-600 text-[12px] font-semibold">
-                        {item.vehicle_type}
-                      </span>
-                    </td>
+                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.vehicle_brand}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-semibold">{item.vehicle_type}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
                       <div className="flex items-center gap-2">
                         <span
-                          className="w-2.5 h-2.5 rounded-full inline-block border border-neutral-200"
+                          className="w-3.5 h-3.5 rounded-full inline-block border border-neutral-300 shadow-sm"
                           style={{
                             backgroundColor: item.vehicle_color.toLowerCase() === 'white' ? '#ffffff' :
                               item.vehicle_color.toLowerCase() === 'black' ? '#171717' :
-                              item.vehicle_color.toLowerCase() === 'silver' ? '#c0c0c0' :
-                              item.vehicle_color.toLowerCase() === 'gray' ? '#808080' :
-                              item.vehicle_color.toLowerCase() === 'red' ? '#ea4335' :
-                              item.vehicle_color.toLowerCase() === 'blue' ? '#4285f4' :
-                              item.vehicle_color.toLowerCase() === 'green' ? '#34a853' :
-                              item.vehicle_color.toLowerCase() === 'yellow' ? '#fbbc05' :
-                              item.vehicle_color.toLowerCase() === 'gold' ? '#ffd700' :
-                              item.vehicle_color.toLowerCase(),
+                                item.vehicle_color.toLowerCase() === 'silver' ? '#c0c0c0' :
+                                  item.vehicle_color.toLowerCase() === 'gray' ? '#808080' :
+                                    item.vehicle_color.toLowerCase() === 'red' ? '#ea4335' :
+                                      item.vehicle_color.toLowerCase() === 'blue' ? '#4285f4' :
+                                        item.vehicle_color.toLowerCase() === 'green' ? '#34a853' :
+                                          item.vehicle_color.toLowerCase() === 'yellow' ? '#fbbc05' :
+                                            item.vehicle_color.toLowerCase() === 'gold' ? '#ffd700' :
+                                              item.vehicle_color.toLowerCase(),
                           }}
                         ></span>
                         <span>{item.vehicle_color}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-500 font-medium">
-                      {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                     <td className="px-6 py-4.5 text-right relative">
                       <button
@@ -642,39 +590,16 @@ const VehicleMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleCreate}>
               <div className="p-6 space-y-5">
-                {formError && (
-                  <div className="p-3 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] text-[13px] font-semibold rounded-xl flex items-start gap-2.5">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <span>{formError}</span>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Plate Number</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. 9845-KA"
-                      value={formData.plate_number}
-                      onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm font-mono uppercase"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">
-                      Vehicle ID <span className="text-gray-400 font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Auto-generated if empty"
-                      value={formData.vehicle_id}
-                      onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Plate Number</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 9845-KA"
+                    value={formData.plate_number}
+                    onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm font-mono uppercase"
+                  />
                 </div>
 
                 <div className="grid grid-cols-10 gap-3">
@@ -789,15 +714,6 @@ const VehicleMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleEditSave}>
               <div className="p-6 space-y-5">
-                {formError && (
-                  <div className="p-3 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] text-[13px] font-semibold rounded-xl flex items-start gap-2.5">
-                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <span>{formError}</span>
-                  </div>
-                )}
-
                 <div>
                   <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Plate Number</label>
                   <input

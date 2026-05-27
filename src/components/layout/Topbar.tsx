@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../../api/services/auth.service';
 import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
+import { toast } from 'react-hot-toast';
 
 interface TopbarProps {
   title?: string;
@@ -35,6 +36,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
     setIsMenuOpen(false);
     try {
       await authService.logout();
+      toast.success('Successfully signed out.');
     } catch {
       // clearAuth runs in authService.finally
     }

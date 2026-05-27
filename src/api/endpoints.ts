@@ -22,6 +22,10 @@ export const ENDPOINTS = {
     BASE: '/masters/vehicles',
     BY_ID: (id: string) => `/masters/vehicles/${id}`,
   },
+  TESTS: {
+    BASE: '/masters/tests',
+    BY_ID: (id: string) => `/masters/tests/${id}`,
+  },
   DASHBOARD: {
     STATS: '/dashboard/stats',
     REVENUE: '/dashboard/revenue',

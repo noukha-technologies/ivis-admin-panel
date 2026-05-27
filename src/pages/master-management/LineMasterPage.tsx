@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface LineMaster {
   id: string;
@@ -107,6 +108,7 @@ const LineMasterPage: React.FC = () => {
     setLines([newLine, ...lines]);
     setShowNewModal(false);
     resetForm();
+    toast.success('Line master record created successfully.');
   };
 
   const handleEditSave = (e: React.FormEvent) => {
@@ -122,6 +124,7 @@ const LineMasterPage: React.FC = () => {
     );
     setShowEditModal(false);
     setSelectedItem(null);
+    toast.success('Line master record updated successfully.');
   };
 
   const openDeleteModal = (id: string) => {
@@ -135,6 +138,7 @@ const LineMasterPage: React.FC = () => {
     setLines(lines.filter((l) => l.id !== deleteId));
     setShowDeleteModal(false);
     setDeleteId(null);
+    toast.success('Line master record deleted successfully.');
   };
 
   const filteredList = lines.filter((item) => {

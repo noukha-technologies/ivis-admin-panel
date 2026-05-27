@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface CameraMaster {
   id: string;
@@ -123,6 +124,7 @@ const CameraMasterPage: React.FC = () => {
     setCameras([newCamera, ...cameras]);
     setShowNewModal(false);
     resetForm();
+    toast.success('Camera master record created successfully.');
   };
 
   const handleEditSave = (e: React.FormEvent) => {
@@ -138,6 +140,7 @@ const CameraMasterPage: React.FC = () => {
     );
     setShowEditModal(false);
     setSelectedItem(null);
+    toast.success('Camera master record updated successfully.');
   };
 
   const openDeleteModal = (id: string) => {
@@ -151,6 +154,7 @@ const CameraMasterPage: React.FC = () => {
     setCameras(cameras.filter((c) => c.id !== deleteId));
     setShowDeleteModal(false);
     setDeleteId(null);
+    toast.success('Camera master record deleted successfully.');
   };
 
   const filteredList = cameras.filter((item) => {

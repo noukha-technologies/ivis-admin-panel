@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { ROUTES } from '../../router/routes';
 import { authService } from '../../api/services/auth.service';
 import { getApiErrorMessage } from '../../api/apiResponse';
@@ -48,6 +49,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await authService.login({ email: email.trim(), password });
+      toast.success('Successfully signed in.');
       navigate(ROUTES.DASHBOARD);
     } catch (err: unknown) {
       const status =
@@ -55,11 +57,14 @@ const LoginPage: React.FC = () => {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { status?: number } }).response?.status;
+      let msg = '';
       if (status === 401) {
-        setLoginError('Invalid email or password');
+        msg = 'Invalid email or password';
       } else {
-        setLoginError(getApiErrorMessage(err, 'An error occurred. Please try again.'));
+        msg = getApiErrorMessage(err, 'An error occurred. Please try again.');
       }
+      setLoginError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

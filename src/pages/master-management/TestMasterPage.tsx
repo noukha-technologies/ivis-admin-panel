@@ -1,48 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-interface TestMaster {
-  id: string;
-  name: string;
-  testCode: string;
-  category: string;
-  resultType: string;
-  details: string;
-  status: 'Active' | 'Inactive';
-  created: string;
-}
+import { masterService } from '../../api/services/master.service';
+import type { ApiTest } from '../../interfaces/test.interface';
+import { getApiErrorMessage } from '../../api/apiResponse';
+import type { PaginationMeta } from '../../types/api.types';
+import { toast } from 'react-hot-toast';
 
 const TestMasterPage: React.FC = () => {
-  const [tests, setTests] = useState<TestMaster[]>([
-    { id: 'T-201', name: 'Brake Test', testCode: 'TEST-BRK', category: 'Safety', resultType: 'Numeric', details: 'Efficiency & Balance', status: 'Active', created: '2026-01-05' },
-    { id: 'T-202', name: 'Emission Test', testCode: 'TEST-EMS', category: 'Environmental', resultType: 'Numeric', details: 'CO2 & Opacity level', status: 'Active', created: '2026-01-08' },
-    { id: 'T-203', name: 'Headlight Alignment', testCode: 'TEST-HDL', category: 'Visual', resultType: 'Pass/Fail', details: 'Intensity & Aiming', status: 'Active', created: '2026-01-12' },
-    { id: 'T-204', name: 'Suspension Play', testCode: 'TEST-SUS', category: 'Mechanical', resultType: 'Pass/Fail', details: 'Visual & Play Detector', status: 'Inactive', created: '2026-02-20' },
-    { id: 'T-205', name: 'Side Slip Test', testCode: 'TEST-SSL', category: 'Safety', resultType: 'Numeric', details: 'Wheel alignment dev', status: 'Active', created: '2026-03-02' },
-  ]);
+  const [tests, setTests] = useState<ApiTest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Search, Pagination and Sort States
   const [searchQuery, setSearchQuery] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [sortAsc, setSortAsc] = useState<boolean | null>(true);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortAsc, setSortAsc] = useState<boolean>(false); // default descending (newest first)
+  const [meta, setMeta] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 8,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  const ITEMS_PER_PAGE = 8;
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const ITEMS_PER_PAGE = 8;
 
-  const [selectedItem, setSelectedItem] = useState<TestMaster | null>(null);
+  // Modal States
+  const [selectedItem, setSelectedItem] = useState<ApiTest | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Record<string, string>>({
+  const [formData, setFormData] = useState({
     name: '',
     code: '',
-    category: '',
-    resultType: '',
-    details: '',
-    status: 'Active',
+    status: 'Active' as 'Active' | 'Inactive',
   });
 
+  // Debounce search query to prevent backend spamming
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch tests on filter/pagination changes
+  const fetchTests = async () => {
+    setIsLoading(true);
+    try {
+      const result = await masterService.tests.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        search: debouncedSearch || undefined,
+        sortBy: sortBy || undefined,
+        sortOrder: sortAsc ? 'ASC' : 'DESC',
+      });
+      setTests(result.data);
+      setMeta(result.meta);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to retrieve test records.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, sortBy, sortAsc]);
+
+  useEffect(() => {
+    fetchTests();
+  }, [currentPage, debouncedSearch, sortBy, sortAsc]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -57,9 +94,6 @@ const TestMasterPage: React.FC = () => {
     setFormData({
       name: '',
       code: '',
-      category: '',
-      resultType: '',
-      details: '',
       status: 'Active',
     });
   };
@@ -69,60 +103,64 @@ const TestMasterPage: React.FC = () => {
     setShowNewModal(true);
   };
 
-  const handleOpenEdit = (item: TestMaster) => {
+  const handleOpenEdit = (item: ApiTest) => {
     setSelectedItem(item);
     setFormData({
       name: item.name,
-      code: item.testCode,
-      category: item.category,
-      resultType: item.resultType,
-      details: item.details,
+      code: item.code,
       status: item.status,
     });
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleOpenView = (item: TestMaster) => {
+  const handleOpenView = (item: ApiTest) => {
     setSelectedItem(item);
     setShowViewModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedId = `T-${Math.floor(206 + Math.random() * 900)}`;
-    const formattedDate = new Date().toISOString().split('T')[0];
+    setIsSubmitting(true);
 
-    const newTest: TestMaster = {
-      id: generatedId,
-      name: formData.name || 'Unnamed',
-      testCode: formData.code || 'N/A',
-      category: formData.category || 'Safety',
-      resultType: formData.resultType || 'Pass/Fail',
-      details: formData.details || 'N/A',
-      status: (formData.status as 'Active' | 'Inactive') || 'Active',
-      created: formattedDate,
-    };
-
-    setTests([newTest, ...tests]);
-    setShowNewModal(false);
-    resetForm();
+    try {
+      await masterService.tests.create({
+        name: formData.name.trim(),
+        code: formData.code.trim().toUpperCase(),
+        status: formData.status,
+      });
+      setShowNewModal(false);
+      resetForm();
+      fetchTests();
+      toast.success('Test master record created successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to create test record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditSave = (e: React.FormEvent) => {
+  const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    setIsSubmitting(true);
 
-    setTests(
-      tests.map((t) =>
-        t.id === selectedItem.id
-          ? ({ ...t, name: formData.name, testCode: formData.code, category: formData.category, resultType: formData.resultType, details: formData.details, status: formData.status } as TestMaster)
-          : t
-      )
-    );
-    setShowEditModal(false);
-    setSelectedItem(null);
+    try {
+      await masterService.tests.update(selectedItem.id, {
+        name: formData.name.trim(),
+        code: formData.code.trim().toUpperCase(),
+        status: formData.status,
+      });
+      setShowEditModal(false);
+      setSelectedItem(null);
+      fetchTests();
+      toast.success('Test master record updated successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update test record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openDeleteModal = (id: string) => {
@@ -131,39 +169,28 @@ const TestMasterPage: React.FC = () => {
     setActiveDropdownId(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    setTests(tests.filter((t) => t.id !== deleteId));
-    setShowDeleteModal(false);
-    setDeleteId(null);
+    try {
+      await masterService.tests.delete(deleteId);
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      fetchTests();
+      toast.success('Test master record deleted successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete test record.'));
+      setShowDeleteModal(false);
+      setDeleteId(null);
+    }
   };
 
-  const filteredList = tests.filter((item) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (item.name && item.name.toLowerCase().includes(q)) ||
-      (item.testCode && item.testCode.toLowerCase().includes(q)) ||
-      (item.category && item.category.toLowerCase().includes(q)) ||
-      (item.resultType && item.resultType.toLowerCase().includes(q)) ||
-      (item.details && item.details.toLowerCase().includes(q))
-    );
-  });
-
-  const sortedList = [...filteredList].sort((a, b) => {
-    if (sortAsc === null) return 0;
-    const nameA = (a.name || '').toLowerCase();
-    const nameB = (b.name || '').toLowerCase();
-    if (nameA < nameB) return sortAsc ? -1 : 1;
-    if (nameA > nameB) return sortAsc ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedList.length / ITEMS_PER_PAGE) || 1;
-  const paginatedList = sortedList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const toggleSort = () => {
-    setSortAsc((prev) => (prev === true ? false : prev === false ? true : true));
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(field);
+      setSortAsc(true);
+    }
   };
 
   return (
@@ -180,10 +207,7 @@ const TestMasterPage: React.FC = () => {
             type="text"
             placeholder="Search"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
           />
           {searchQuery && (
@@ -205,14 +229,39 @@ const TestMasterPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
           </svg>
-          <span>New Manual Test</span>
+          <span>Add Test</span>
         </button>
       </div>
 
-      {/* Main card box containing only the table */}
-      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
+      {/* Main Table Box */}
+      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="w-full overflow-x-auto">
-          {paginatedList.length === 0 ? (
+          {isLoading ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '38%' }}>Name</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Code</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Status</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '8%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="border-b border-gray-50 bg-white">
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-10"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-48"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-20"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-6.5 bg-neutral-100 rounded-lg animate-pulse w-16"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-24"></div></td>
+                    <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg animate-pulse w-7 ml-auto"></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : tests.length === 0 ? (
             <div className="w-full py-16 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -220,43 +269,91 @@ const TestMasterPage: React.FC = () => {
                 </svg>
               </div>
               <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your filter. Try adjusting your search query or clear the filter.</p>
+              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your search query or database filter.</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-[#F9FAFB]">
                   <th
-                    onClick={toggleSort}
+                    onClick={() => toggleSort('test_id')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '20%' }}
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      ID
+                      {sortBy === 'test_id' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('name')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '38%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Name
-                      <svg
-                        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${!sortAsc ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
+                      {sortBy === 'name' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
                     </span>
                   </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Code</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Details</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '10%' }}>Status</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
+                  <th
+                    onClick={() => toggleSort('code')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '18%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Code
+                      {sortBy === 'code' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('status')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Status
+                      {sortBy === 'status' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('created_at')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Created
+                      {sortBy === 'created_at' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '8%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedList.map((item) => (
+                {tests.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
+                    <td className="px-6 py-4.5 text-sm font-semibold text-neutral-500">#{item.test_id}</td>
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.testCode}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.details || '—'}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono uppercase">{item.code}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
                         ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
@@ -265,7 +362,9 @@ const TestMasterPage: React.FC = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.created}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
+                      {new Date(item.created_at).toISOString().split('T')[0]}
+                    </td>
                     <td className="px-6 py-4.5 text-right relative">
                       <button
                         onClick={(e) => {
@@ -325,28 +424,28 @@ const TestMasterPage: React.FC = () => {
         </div>
 
         {/* Pagination control */}
-        {sortedList.length > 0 && (
+        {!isLoading && tests.length > 0 && (
           <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
             <span className="text-gray-500 font-medium">
-              Showing <span className="font-semibold text-neutral-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+              Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
               <span className="font-semibold text-neutral-800">
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedList.length)}
+                {Math.min(meta.page * ITEMS_PER_PAGE, meta.total)}
               </span>{' '}
-              of <span className="font-semibold text-neutral-800">{sortedList.length}</span> results
+              of <span className="font-semibold text-neutral-800">{meta.total}</span> results
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={!meta.hasPreviousPage}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pg) => (
+              {Array.from({ length: meta.totalPages }, (_, idx) => idx + 1).map((pg) => (
                 <button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
-                  className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${currentPage === pg
+                  className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${meta.page === pg
                     ? 'bg-[#171717] text-white shadow-sm border border-[#171717]'
                     : 'border border-neutral-200 text-gray-500 hover:bg-neutral-50'
                     }`}
@@ -355,8 +454,8 @@ const TestMasterPage: React.FC = () => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
+                disabled={!meta.hasNextPage}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Next
@@ -371,7 +470,7 @@ const TestMasterPage: React.FC = () => {
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-125 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between">
-              <h3 className="text-[17px] font-bold text-neutral-800">Manual Testing Master Details</h3>
+              <h3 className="text-[17px] font-bold text-neutral-800">Test Master Details</h3>
               <button
                 onClick={() => setShowViewModal(false)}
                 className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-neutral-100 cursor-pointer"
@@ -387,24 +486,16 @@ const TestMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-bold">{selectedItem.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Test ID</span>
+                <span className="col-span-2 text-neutral-800 font-mono font-bold">#{selectedItem.test_id}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Name</span>
                 <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.name}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Code</span>
-                <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.testCode}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Test Type</span>
-                <span className="col-span-2 text-neutral-800 font-medium">{selectedItem.category}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Result Type</span>
-                <span className="col-span-2 text-neutral-800 font-medium">{selectedItem.resultType || '—'}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Description</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.details || '—'}</span>
+                <span className="col-span-2 text-neutral-800 font-mono font-semibold uppercase">{selectedItem.code}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Status</span>
@@ -414,9 +505,23 @@ const TestMasterPage: React.FC = () => {
                   </span>
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5">
+              {selectedItem.created_by && (
+                <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                  <span className="text-gray-400 font-medium">Created By</span>
+                  <span className="col-span-2 text-neutral-800 font-mono">{selectedItem.created_by}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Created Date</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.created}</span>
+                <span className="col-span-2 text-neutral-700">
+                  {new Date(selectedItem.created_at).toLocaleString()}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5">
+                <span className="text-gray-400 font-medium">Last Updated</span>
+                <span className="col-span-2 text-neutral-700">
+                  {new Date(selectedItem.updated_at).toLocaleString()}
+                </span>
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50 flex items-center justify-end">
@@ -449,84 +554,27 @@ const TestMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleCreate}>
               <div className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.code || ''}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Test Type</label>
-                    <select
-                      required
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Safety">Safety</option>
-                      <option value="Environmental">Environmental</option>
-                      <option value="Visual">Visual</option>
-                      <option value="Mechanical">Mechanical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Result Type</label>
-                    <select
-                      required
-                      value={formData.resultType || ''}
-                      onChange={(e) => setFormData({ ...formData, resultType: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Pass/Fail">Pass/Fail</option>
-                      <option value="Numeric">Numeric</option>
-                      <option value="Visual Confirmation">Visual Confirmation</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+                  <input
+                    type="text"
                     required
-                    rows={3}
                     placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    value={formData.code || ''}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm uppercase font-mono"
                   />
                 </div>
 
@@ -562,9 +610,16 @@ const TestMasterPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -594,84 +649,27 @@ const TestMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleEditSave}>
               <div className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.code || ''}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Test Type</label>
-                    <select
-                      required
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Safety">Safety</option>
-                      <option value="Environmental">Environmental</option>
-                      <option value="Visual">Visual</option>
-                      <option value="Mechanical">Mechanical</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Result Type</label>
-                    <select
-                      required
-                      value={formData.resultType || ''}
-                      onChange={(e) => setFormData({ ...formData, resultType: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Pass/Fail">Pass/Fail</option>
-                      <option value="Numeric">Numeric</option>
-                      <option value="Visual Confirmation">Visual Confirmation</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+                  <input
+                    type="text"
                     required
-                    rows={3}
                     placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    value={formData.code || ''}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm uppercase font-mono"
                   />
                 </div>
 
@@ -710,9 +708,16 @@ const TestMasterPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -731,7 +736,7 @@ const TestMasterPage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <h3 className="text-[17px] font-bold text-neutral-800 mb-1">Delete Manual Test</h3>
+              <h3 className="text-[17px] font-bold text-neutral-800 mb-1">Delete Test Master</h3>
               <p className="text-[13px] text-gray-500 max-w-70 mx-auto">Are you sure you want to delete this record? This action cannot be undone.</p>
             </div>
             <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-center gap-3">

@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import opalLogo from '../../assets/images/opal_logo.svg';
 import { getUser, clearAuth } from '../../utils/storage';
 import { authService } from '../../api/services/auth.service';
+import { toast } from 'react-hot-toast';
 
 const AVATAR_COLOR_PALETTES = [
   { bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700' },
@@ -53,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const handleLogout = async () => {
     try {
       await authService.logout();
+      toast.success('Successfully signed out.');
     } catch (err) {
       console.error('Logout failed:', err);
     } finally {

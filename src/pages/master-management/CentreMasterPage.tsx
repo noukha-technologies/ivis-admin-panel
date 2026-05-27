@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface CentreMaster {
   id: string;
@@ -107,6 +108,7 @@ const CentreMasterPage: React.FC = () => {
     setCentres([newCentre, ...centres]);
     setShowNewModal(false);
     resetForm();
+    toast.success('Centre master record created successfully.');
   };
 
   const handleEditSave = (e: React.FormEvent) => {
@@ -122,6 +124,7 @@ const CentreMasterPage: React.FC = () => {
     );
     setShowEditModal(false);
     setSelectedItem(null);
+    toast.success('Centre master record updated successfully.');
   };
 
   const openDeleteModal = (id: string) => {
@@ -135,6 +138,7 @@ const CentreMasterPage: React.FC = () => {
     setCentres(centres.filter((c) => c.id !== deleteId));
     setShowDeleteModal(false);
     setDeleteId(null);
+    toast.success('Centre master record deleted successfully.');
   };
 
   const filteredList = centres.filter((item) => {

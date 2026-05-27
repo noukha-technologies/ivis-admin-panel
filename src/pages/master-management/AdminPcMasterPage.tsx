@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 interface AdminPcMaster {
   id: string;
@@ -114,6 +115,7 @@ const AdminPcMasterPage: React.FC = () => {
     setPcs([newPc, ...pcs]);
     setShowNewModal(false);
     resetForm();
+    toast.success('Admin PC master record created successfully.');
   };
 
   const handleEditSave = (e: React.FormEvent) => {
@@ -129,6 +131,7 @@ const AdminPcMasterPage: React.FC = () => {
     );
     setShowEditModal(false);
     setSelectedItem(null);
+    toast.success('Admin PC master record updated successfully.');
   };
 
   const openDeleteModal = (id: string) => {
@@ -142,6 +145,7 @@ const AdminPcMasterPage: React.FC = () => {
     setPcs(pcs.filter((p) => p.id !== deleteId));
     setShowDeleteModal(false);
     setDeleteId(null);
+    toast.success('Admin PC master record deleted successfully.');
   };
 
   const filteredList = pcs.filter((item) => {
