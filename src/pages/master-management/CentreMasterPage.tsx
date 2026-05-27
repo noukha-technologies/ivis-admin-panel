@@ -1,48 +1,86 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { masterService } from '../../api/services/master.service';
+import type { ApiCentre } from '../../interfaces/centre.interface';
+import { getApiErrorMessage } from '../../api/apiResponse';
+import type { PaginationMeta } from '../../types/api.types';
 import { toast } from 'react-hot-toast';
 
-interface CentreMaster {
-  id: string;
-  name: string;
-  code: string;
-  city: string;
-  region: string;
-  description: string;
-  status: 'Active' | 'Inactive';
-  created: string;
-}
-
 const CentreMasterPage: React.FC = () => {
-  const [centres, setCentres] = useState<CentreMaster[]>([
-    { id: 'C-301', name: 'Muscat Main Hub', code: 'MCT-01', city: 'Muscat', region: 'Muscat Governorate', description: 'Main inspection hub in Al Azaiba', status: 'Active', created: '2025-11-15' },
-    { id: 'C-302', name: 'Salalah Centre', code: 'SLL-02', city: 'Salalah', region: 'Dhofar Governorate', description: 'Primary hub for the southern region', status: 'Active', created: '2025-12-01' },
-    { id: 'C-303', name: 'Sohar Branch', code: 'SOH-03', city: 'Sohar', region: 'Al Batinah North', description: 'Serves the Batinah coast and port area', status: 'Active', created: '2026-01-20' },
-    { id: 'C-304', name: 'Nizwa Station', code: 'NZW-04', city: 'Nizwa', region: 'Ad Dakhiliyah', description: 'Interior region diagnostic facility', status: 'Inactive', created: '2026-02-10' },
-  ]);
+  const [centres, setCentres] = useState<ApiCentre[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Search, Pagination and Sort States
   const [searchQuery, setSearchQuery] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [sortAsc, setSortAsc] = useState<boolean | null>(true);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortAsc, setSortAsc] = useState<boolean>(false); // default descending (newest first)
+  const [meta, setMeta] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 8,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  const ITEMS_PER_PAGE = 8;
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const ITEMS_PER_PAGE = 8;
 
-  const [selectedItem, setSelectedItem] = useState<CentreMaster | null>(null);
+  // Modal States
+  const [selectedItem, setSelectedItem] = useState<ApiCentre | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Record<string, string>>({
+  const [formData, setFormData] = useState({
     name: '',
     code: '',
-    city: '',
-    region: '',
     description: '',
-    status: 'Active',
+    status: 'Active' as 'Active' | 'Inactive',
   });
 
+  // Debounce search query to prevent backend spamming
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch centres on filter/pagination changes
+  const fetchCentres = async () => {
+    setIsLoading(true);
+    try {
+      const result = await masterService.centres.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        search: debouncedSearch || undefined,
+        sortBy: sortBy || undefined,
+        sortOrder: sortAsc ? 'ASC' : 'DESC',
+      });
+      setCentres(result.data);
+      setMeta(result.meta);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to retrieve centre records.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, sortBy, sortAsc]);
+
+  useEffect(() => {
+    fetchCentres();
+  }, [currentPage, debouncedSearch, sortBy, sortAsc]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -57,8 +95,6 @@ const CentreMasterPage: React.FC = () => {
     setFormData({
       name: '',
       code: '',
-      city: '',
-      region: '',
       description: '',
       status: 'Active',
     });
@@ -69,62 +105,67 @@ const CentreMasterPage: React.FC = () => {
     setShowNewModal(true);
   };
 
-  const handleOpenEdit = (item: CentreMaster) => {
+  const handleOpenEdit = (item: ApiCentre) => {
     setSelectedItem(item);
     setFormData({
       name: item.name,
       code: item.code,
-      city: item.city,
-      region: item.region,
-      description: item.description,
+      description: item.description || '',
       status: item.status,
     });
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleOpenView = (item: CentreMaster) => {
+  const handleOpenView = (item: ApiCentre) => {
     setSelectedItem(item);
     setShowViewModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedId = `C-${Math.floor(305 + Math.random() * 900)}`;
-    const formattedDate = new Date().toISOString().split('T')[0];
+    setIsSubmitting(true);
 
-    const newCentre: CentreMaster = {
-      id: generatedId,
-      name: formData.name || 'Unnamed',
-      code: formData.code || 'N/A',
-      city: formData.city || '',
-      region: formData.region || '',
-      description: formData.description || '',
-      status: (formData.status as 'Active' | 'Inactive') || 'Active',
-      created: formattedDate,
-    };
-
-    setCentres([newCentre, ...centres]);
-    setShowNewModal(false);
-    resetForm();
-    toast.success('Centre master record created successfully.');
+    try {
+      await masterService.centres.create({
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        description: formData.description.trim() || undefined,
+        status: formData.status,
+      });
+      setShowNewModal(false);
+      resetForm();
+      fetchCentres();
+      toast.success('Centre master record created successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to create centre record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditSave = (e: React.FormEvent) => {
+  const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    setIsSubmitting(true);
 
-    setCentres(
-      centres.map((c) =>
-        c.id === selectedItem.id
-          ? ({ ...c, ...formData } as CentreMaster)
-          : c
-      )
-    );
-    setShowEditModal(false);
-    setSelectedItem(null);
-    toast.success('Centre master record updated successfully.');
+    try {
+      await masterService.centres.update(selectedItem.id, {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        description: formData.description.trim() || undefined,
+        status: formData.status,
+      });
+      setShowEditModal(false);
+      setSelectedItem(null);
+      fetchCentres();
+      toast.success('Centre master record updated successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to update centre record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openDeleteModal = (id: string) => {
@@ -133,44 +174,41 @@ const CentreMasterPage: React.FC = () => {
     setActiveDropdownId(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    setCentres(centres.filter((c) => c.id !== deleteId));
-    setShowDeleteModal(false);
-    setDeleteId(null);
-    toast.success('Centre master record deleted successfully.');
+    try {
+      await masterService.centres.delete(deleteId);
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      fetchCentres();
+      toast.success('Centre record deleted successfully.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to delete centre record.'));
+      setShowDeleteModal(false);
+    }
   };
 
-  const filteredList = centres.filter((item) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (item.name && item.name.toLowerCase().includes(q)) ||
-      (item.code && item.code.toLowerCase().includes(q)) ||
-      (item.city && item.city.toLowerCase().includes(q)) ||
-      (item.region && item.region.toLowerCase().includes(q)) ||
-      (item.description && item.description.toLowerCase().includes(q))
-    );
-  });
+  const toggleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(column);
+      setSortAsc(true);
+    }
+  };
 
-  const sortedList = [...filteredList].sort((a, b) => {
-    if (sortAsc === null) return 0;
-    const nameA = (a.name || '').toLowerCase();
-    const nameB = (b.name || '').toLowerCase();
-    if (nameA < nameB) return sortAsc ? -1 : 1;
-    if (nameA > nameB) return sortAsc ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedList.length / ITEMS_PER_PAGE) || 1;
-  const paginatedList = sortedList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const toggleSort = () => {
-    setSortAsc((prev) => (prev === true ? false : prev === false ? true : true));
+  const formatDate = (dateString: string) => {
+    try {
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return dateString;
+      return d.toISOString().split('T')[0];
+    } catch {
+      return dateString;
+    }
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col relative">
       {/* Search bar & Action Button */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
         <div className="relative w-full max-w-85">
@@ -181,12 +219,9 @@ const CentreMasterPage: React.FC = () => {
           </span>
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search centre by name or code"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
           />
           {searchQuery && (
@@ -208,14 +243,39 @@ const CentreMasterPage: React.FC = () => {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
           </svg>
-          <span>New Centre</span>
+          <span>Add Centre</span>
         </button>
       </div>
 
-      {/* Main card box containing only the table */}
-      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
+      {/* Main card box containing the table */}
+      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="w-full overflow-x-auto">
-          {paginatedList.length === 0 ? (
+          {isLoading ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Name</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Code</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '26%' }}>Description</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Status</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '13%' }}>Created</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '12%' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <tr key={index} className="border-b border-gray-50 bg-white animate-pulse">
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-36"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-6 bg-neutral-100 rounded-lg w-16"></div></td>
+                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
+                    <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : centres.length === 0 ? (
             <div className="w-full py-16 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -223,43 +283,80 @@ const CentreMasterPage: React.FC = () => {
                 </svg>
               </div>
               <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your filter. Try adjusting your search query or clear the filter.</p>
+              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your search query or database filter.</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-[#F9FAFB]">
                   <th
-                    onClick={toggleSort}
+                    onClick={() => toggleSort('name')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '20%' }}
+                    style={{ padding: '12px 20px', width: '22%' }}
                   >
                     <span className="inline-flex items-center gap-1">
                       Name
-                      <svg
-                        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${!sortAsc ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
+                      {sortBy === 'name' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
                     </span>
                   </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Code</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Details</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '10%' }}>Status</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
+                  <th
+                    onClick={() => toggleSort('code')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '15%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Code
+                      {sortBy === 'code' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '26%' }}>Description</th>
+                  <th
+                    onClick={() => toggleSort('status')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '12%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Status
+                      {sortBy === 'status' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('created_at')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '13%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Created
+                      {sortBy === 'created_at' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '12%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedList.map((item) => (
+                {centres.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.city}, {item.region} — {item.description}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium max-w-72 truncate" title={item.description}>
+                      {item.description || '—'}
+                    </td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
                       <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
                         ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
@@ -268,7 +365,7 @@ const CentreMasterPage: React.FC = () => {
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.created}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{formatDate(item.created_at)}</td>
                     <td className="px-6 py-4.5 text-right relative">
                       <button
                         onClick={(e) => {
@@ -285,7 +382,7 @@ const CentreMasterPage: React.FC = () => {
                       {activeDropdownId === item.id && (
                         <div
                           ref={dropdownRef}
-                          className="absolute right-6 mt-1 w-36 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-40 text-left"
+                          className="absolute right-6 mt-1 w-38 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-40 text-left"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <button
@@ -328,27 +425,28 @@ const CentreMasterPage: React.FC = () => {
         </div>
 
         {/* Pagination control */}
-        {sortedList.length > 0 && (
+        {!isLoading && centres.length > 0 && (
           <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
             <span className="text-gray-500 font-medium">
-              Showing <span className="font-semibold text-neutral-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+              Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * meta.limit + 1}</span> to{' '}
               <span className="font-semibold text-neutral-800">
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedList.length)}
+                {Math.min(meta.page * meta.limit, meta.total)}
               </span>{' '}
-              of <span className="font-semibold text-neutral-800">{sortedList.length}</span> results
+              of <span className="font-semibold text-neutral-800">{meta.total}</span> results
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={!meta.hasPreviousPage || isSubmitting}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pg) => (
+              {Array.from({ length: meta.totalPages }, (_, idx) => idx + 1).map((pg) => (
                 <button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
+                  disabled={isSubmitting}
                   className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${currentPage === pg
                     ? 'bg-[#171717] text-white shadow-sm border border-[#171717]'
                     : 'border border-neutral-200 text-gray-500 hover:bg-neutral-50'
@@ -358,8 +456,8 @@ const CentreMasterPage: React.FC = () => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
+                disabled={!meta.hasNextPage || isSubmitting}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Next
@@ -371,7 +469,7 @@ const CentreMasterPage: React.FC = () => {
 
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-125 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between">
               <h3 className="text-[17px] font-bold text-neutral-800">Centre Master Details</h3>
@@ -390,6 +488,10 @@ const CentreMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-bold">{selectedItem.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Centre ID</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.centre_id}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Name</span>
                 <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.name}</span>
               </div>
@@ -398,28 +500,26 @@ const CentreMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.code}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">City</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.city}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Region</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.region}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Description</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.description}</span>
+                <span className="col-span-2 text-neutral-700">{selectedItem.description || 'No description provided'}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Status</span>
                 <span className="col-span-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12.5px] font-bold ${selectedItem.status === 'Active' ? 'bg-emerald-50 text-[#047857]' : 'bg-neutral-100 text-neutral-500'}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-[12.5px] font-bold ${selectedItem.status === 'Active' ? 'bg-emerald-50 text-[#047857] border border-emerald-200' : 'bg-neutral-50 text-neutral-500 border border-neutral-200'}`}>
                     {selectedItem.status}
                   </span>
                 </span>
               </div>
+              {selectedItem.created_by && (
+                <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                  <span className="text-gray-400 font-medium">Created By</span>
+                  <span className="col-span-2 text-neutral-700">{selectedItem.created_by}</span>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2 py-1.5">
                 <span className="text-gray-400 font-medium">Created Date</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.created}</span>
+                <span className="col-span-2 text-neutral-700">{formatDate(selectedItem.created_at)}</span>
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50 flex items-center justify-end">
@@ -436,14 +536,15 @@ const CentreMasterPage: React.FC = () => {
 
       {/* CREATE MODAL */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-125 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Add Centre</h3>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
+                disabled={isSubmitting}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer disabled:opacity-50"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -459,9 +560,10 @@ const CentreMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.name || ''}
+                      disabled={isSubmitting}
+                      value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                   <div>
@@ -470,71 +572,23 @@ const CentreMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.code || ''}
+                      disabled={isSubmitting}
+                      value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">City</label>
-                    <select
-                      required
-                      value={formData.city || ''}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Muscat">Muscat</option>
-                      <option value="Salalah">Salalah</option>
-                      <option value="Sohar">Sohar</option>
-                      <option value="Nizwa">Nizwa</option>
-                      <option value="Sur">Sur</option>
-                      <option value="Ibri">Ibri</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Region</label>
-                    <select
-                      required
-                      value={formData.region || ''}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Muscat Governorate">Muscat Governorate</option>
-                      <option value="Dhofar Governorate">Dhofar Governorate</option>
-                      <option value="Al Batinah North">Al Batinah North</option>
-                      <option value="Ad Dakhiliyah">Ad Dakhiliyah</option>
-                      <option value="Ash Sharqiyah South">Ash Sharqiyah South</option>
-                      <option value="Ad Dhahirah">Ad Dhahirah</option>
-                    </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
                   <textarea
-                    required
                     rows={3}
                     placeholder="Enter"
-                    value={formData.description || ''}
+                    disabled={isSubmitting}
+                    value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                   />
                 </div>
 
@@ -545,13 +599,14 @@ const CentreMasterPage: React.FC = () => {
                   </div>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() =>
                       setFormData({
                         ...formData,
                         status: formData.status === 'Active' ? 'Inactive' : 'Active',
                       })
                     }
-                    className="focus:outline-none cursor-pointer"
+                    className="focus:outline-none cursor-pointer disabled:opacity-50"
                   >
                     <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
@@ -567,15 +622,23 @@ const CentreMasterPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowNewModal(false)}
-                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-2"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -586,17 +649,18 @@ const CentreMasterPage: React.FC = () => {
 
       {/* EDIT MODAL */}
       {showEditModal && selectedItem && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-125 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Edit Centre</h3>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedItem(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer disabled:opacity-50"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -612,9 +676,10 @@ const CentreMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.name || ''}
+                      disabled={isSubmitting}
+                      value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
                   <div>
@@ -623,71 +688,23 @@ const CentreMasterPage: React.FC = () => {
                       type="text"
                       required
                       placeholder="Enter"
-                      value={formData.code || ''}
+                      disabled={isSubmitting}
+                      value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">City</label>
-                    <select
-                      required
-                      value={formData.city || ''}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Muscat">Muscat</option>
-                      <option value="Salalah">Salalah</option>
-                      <option value="Sohar">Sohar</option>
-                      <option value="Nizwa">Nizwa</option>
-                      <option value="Sur">Sur</option>
-                      <option value="Ibri">Ibri</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Region</label>
-                    <select
-                      required
-                      value={formData.region || ''}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px',
-                      }}
-                    >
-                      <option value="" disabled>Select</option>
-                      <option value="Muscat Governorate">Muscat Governorate</option>
-                      <option value="Dhofar Governorate">Dhofar Governorate</option>
-                      <option value="Al Batinah North">Al Batinah North</option>
-                      <option value="Ad Dakhiliyah">Ad Dakhiliyah</option>
-                      <option value="Ash Sharqiyah South">Ash Sharqiyah South</option>
-                      <option value="Ad Dhahirah">Ad Dhahirah</option>
-                    </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
                   <textarea
-                    required
                     rows={3}
                     placeholder="Enter"
-                    value={formData.description || ''}
+                    disabled={isSubmitting}
+                    value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                   />
                 </div>
 
@@ -698,13 +715,14 @@ const CentreMasterPage: React.FC = () => {
                   </div>
                   <button
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() =>
                       setFormData({
                         ...formData,
                         status: formData.status === 'Active' ? 'Inactive' : 'Active',
                       })
                     }
-                    className="focus:outline-none cursor-pointer"
+                    className="focus:outline-none cursor-pointer disabled:opacity-50"
                   >
                     <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
@@ -723,15 +741,23 @@ const CentreMasterPage: React.FC = () => {
                       setShowEditModal(false);
                       setSelectedItem(null);
                     }}
-                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[14px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-2"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -742,7 +768,7 @@ const CentreMasterPage: React.FC = () => {
 
       {/* DELETE CONFIRMATION MODAL */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4 animate-fadeIn">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-100 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
@@ -759,15 +785,23 @@ const CentreMasterPage: React.FC = () => {
                   setShowDeleteModal(false);
                   setDeleteId(null);
                 }}
-                className="flex-1 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[13.5px] font-semibold rounded-xl cursor-pointer transition-all"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 border border-[#d0d5dd] hover:bg-neutral-50 text-[#344054] text-[13.5px] font-semibold rounded-xl cursor-pointer transition-all disabled:opacity-50"
               >
                 No, Keep it
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[13.5px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-[13.5px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
-                Yes, Delete
+                {isSubmitting && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                <span>Yes, Delete</span>
               </button>
             </div>
           </div>

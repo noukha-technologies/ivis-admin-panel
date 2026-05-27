@@ -14,6 +14,12 @@ import type {
   UpdateTestPayload,
   TestListParams,
 } from '../../interfaces/test.interface';
+import type {
+  ApiCentre,
+  CreateCentrePayload,
+  UpdateCentrePayload,
+  CentreListParams,
+} from '../../interfaces/centre.interface';
 
 export type {
   ApiVehicle,
@@ -24,6 +30,10 @@ export type {
   CreateTestPayload,
   UpdateTestPayload,
   TestListParams,
+  ApiCentre,
+  CreateCentrePayload,
+  UpdateCentrePayload,
+  CentreListParams,
 };
 
 export const masterService = {
@@ -97,6 +107,42 @@ export const masterService = {
 
     delete: async (id: string): Promise<void> => {
       await axiosInstance.delete(ENDPOINTS.TESTS.BY_ID(id));
+    },
+  },
+  centres: {
+    getAll: async (params?: CentreListParams): Promise<PaginatedResult<ApiCentre>> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiCentre[]>>(
+        ENDPOINTS.CENTRES.BASE,
+        { params }
+      );
+      return unwrapPaginated(response);
+    },
+
+    getById: async (id: string): Promise<ApiCentre> => {
+      const response = await axiosInstance.get<ApiEnvelope<ApiCentre>>(
+        ENDPOINTS.CENTRES.BY_ID(id)
+      );
+      return unwrapData(response);
+    },
+
+    create: async (data: CreateCentrePayload): Promise<ApiCentre> => {
+      const response = await axiosInstance.post<ApiEnvelope<ApiCentre>>(
+        ENDPOINTS.CENTRES.BASE,
+        data
+      );
+      return unwrapData(response);
+    },
+
+    update: async (id: string, data: UpdateCentrePayload): Promise<ApiCentre> => {
+      const response = await axiosInstance.patch<ApiEnvelope<ApiCentre>>(
+        ENDPOINTS.CENTRES.BY_ID(id),
+        data
+      );
+      return unwrapData(response);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await axiosInstance.delete(ENDPOINTS.CENTRES.BY_ID(id));
     },
   },
 };
