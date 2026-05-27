@@ -2,32 +2,19 @@ import axiosInstance from '../axios.instance';
 import { ENDPOINTS } from '../endpoints';
 import { unwrapData, unwrapPaginated } from '../apiResponse';
 import type { ApiEnvelope, PaginatedResult } from '../../types/api.types';
+import type {
+  ApiRole,
+  CreateRolePayload,
+  UpdateRolePayload,
+  RoleListParams,
+} from '../../interfaces/role.interface';
 
-export interface ApiRole {
-  id: string;
-  role_id: number;
-  role_name: string;
-  description?: string;
-  created_at: string;
-  updated_at?: string;
-  is_deleted?: boolean;
-}
-
-export interface CreateRolePayload {
-  role_name: string;
-  description?: string;
-}
-
-export interface UpdateRolePayload {
-  role_name?: string;
-  description?: string;
-}
-
-export interface RoleListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
+export type {
+  ApiRole,
+  CreateRolePayload,
+  UpdateRolePayload,
+  RoleListParams,
+};
 
 export const roleService = {
   getAll: async (params?: RoleListParams): Promise<PaginatedResult<ApiRole>> => {

@@ -1,53 +1,95 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-interface VehicleMaster {
-  id: string;
-  name: string;
-  chassisNo: string;
-  category: string;
-  fuelType: string;
-  capacityRange: string;
-  code: string;
-  details: string;
-  status: 'Active' | 'Inactive';
-  created: string;
-}
+import { masterService } from '../../api/services/master.service';
+import type { ApiVehicle } from '../../interfaces/vehicle.interface';
+import { getApiErrorMessage } from '../../api/apiResponse';
+import type { PaginationMeta } from '../../types/api.types';
 
 const VehicleMasterPage: React.FC = () => {
-  const [vehicles, setVehicles] = useState<VehicleMaster[]>([
-    { id: 'V-101', name: 'Sedan', chassisNo: 'CH-SED-2026-001', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '1.5L-2.0L', code: 'VT-SED Light', details: 'Standard passenger sedan', status: 'Active', created: '2026-01-10' },
-    { id: 'V-102', name: 'SUV', chassisNo: 'CH-SUV-2026-042', category: 'Heavy Vehicle', fuelType: 'Diesel', capacityRange: '2.5L-3.0L', code: 'VT-SUV Heavy', details: 'Sports utility vehicle', status: 'Active', created: '2026-02-14' },
-    { id: 'V-103', name: 'Hatchback', chassisNo: 'CH-HAT-2026-113', category: 'Light Vehicle', fuelType: 'Electric', capacityRange: '100kW-150kW', code: 'VT-HB Compact', details: 'Compact electric hatchback', status: 'Active', created: '2026-03-01' },
-    { id: 'V-104', name: 'Coupe', chassisNo: 'CH-COU-2026-088', category: 'Light Vehicle', fuelType: 'Petrol', capacityRange: '2.0L-3.0L', code: 'VT-COU Sport', details: 'Two-door sports coupe', status: 'Inactive', created: '2026-03-15' },
-    { id: 'V-105', name: 'Motorcycle', chassisNo: 'CH-MTC-2026-205', category: 'Two-Wheeler', fuelType: 'Petrol', capacityRange: '0.5L-1.0L', code: 'VT-MC Standard', details: 'Standard motorcycle', status: 'Active', created: '2026-04-02' },
-    { id: 'V-106', name: 'Truck', chassisNo: 'CH-TRK-2026-017', category: 'Commercial', fuelType: 'Diesel', capacityRange: '5.0L-8.0L', code: 'VT-TRK Heavy', details: 'Heavy commercial duty truck', status: 'Active', created: '2026-04-10' },
-    { id: 'V-107', name: 'Pickup', chassisNo: 'CH-PKP-2026-092', category: 'Commercial', fuelType: 'Petrol', capacityRange: '3.5L', code: 'VT-PKP Mid', details: 'Mid-size utility pickup', status: 'Active', created: '2026-04-18' },
-  ]);
+  const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Search, Pagination and Sort States
   const [searchQuery, setSearchQuery] = useState('');
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [sortAsc, setSortAsc] = useState<boolean | null>(true);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortAsc, setSortAsc] = useState<boolean>(false); // default descending (newest first)
+  const [meta, setMeta] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 8,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+
+  const ITEMS_PER_PAGE = 8;
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const ITEMS_PER_PAGE = 8;
 
-  const [selectedItem, setSelectedItem] = useState<VehicleMaster | null>(null);
+  // Modal States
+  const [selectedItem, setSelectedItem] = useState<ApiVehicle | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<Record<string, string>>({
-    name: '',
-    code: '',
-    category: '',
-    fuelType: '',
-    capacityRange: '',
-    details: '',
-    status: 'Active',
+  // Lists for Form dropdowns
+  const brandsList = ['Toyota', 'Nissan', 'Hyundai', 'Lexus', 'Kia', 'Honda', 'Mercedes-Benz', 'BMW', 'Tesla', 'Ford', 'Chevrolet'];
+  const typesList = ['Sedan', 'SUV', 'Light Vehicle', 'Heavy Vehicle', 'Commercial', 'Pickup', 'Two-Wheeler'];
+  const colorsList = ['White', 'Black', 'Silver', 'Gray', 'Red', 'Blue', 'Green', 'Brown', 'Yellow', 'Gold'];
+
+  const [formData, setFormData] = useState({
+    vehicle_id: '',
+    plate_number: '',
+    vehicle_brand: '',
+    vehicle_type: '',
+    vehicle_color: '',
   });
 
+  // Debounce search query to prevent backend spamming
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch vehicles on filter/pagination changes
+  const fetchVehicles = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const result = await masterService.vehicles.getAll({
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+        search: debouncedSearch || undefined,
+        sortBy: sortBy || undefined,
+        sortOrder: sortAsc ? 'ASC' : 'DESC',
+      });
+      setVehicles(result.data);
+      setMeta(result.meta);
+    } catch (err) {
+      setErrorMessage(getApiErrorMessage(err, 'Failed to retrieve vehicle records.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, sortBy, sortAsc]);
+
+  useEffect(() => {
+    fetchVehicles();
+  }, [currentPage, debouncedSearch, sortBy, sortAsc]);
+
+  // Close dropdown on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -58,16 +100,21 @@ const VehicleMasterPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  // Flash success messages
+  const triggerSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 4000);
+  };
+
   const resetForm = () => {
     setFormData({
-      name: '',
-      code: '',
-      category: '',
-      fuelType: '',
-      capacityRange: '',
-      details: '',
-      status: 'Active',
+      vehicle_id: '',
+      plate_number: '',
+      vehicle_brand: '',
+      vehicle_type: '',
+      vehicle_color: '',
     });
+    setFormError(null);
   };
 
   const handleOpenAddModal = () => {
@@ -75,63 +122,72 @@ const VehicleMasterPage: React.FC = () => {
     setShowNewModal(true);
   };
 
-  const handleOpenEdit = (item: VehicleMaster) => {
+  const handleOpenEdit = (item: ApiVehicle) => {
     setSelectedItem(item);
     setFormData({
-      name: item.name,
-      code: item.code,
-      category: item.category,
-      fuelType: item.fuelType,
-      capacityRange: item.capacityRange,
-      details: item.details,
-      status: item.status,
+      vehicle_id: String(item.vehicle_id),
+      plate_number: item.plate_number,
+      vehicle_brand: item.vehicle_brand,
+      vehicle_type: item.vehicle_type,
+      vehicle_color: item.vehicle_color,
     });
+    setFormError(null);
     setShowEditModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleOpenView = (item: VehicleMaster) => {
+  const handleOpenView = (item: ApiVehicle) => {
     setSelectedItem(item);
     setShowViewModal(true);
     setActiveDropdownId(null);
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedId = `V-${Math.floor(108 + Math.random() * 900)}`;
-    const formattedDate = new Date().toISOString().split('T')[0];
+    setIsSubmitting(true);
+    setFormError(null);
 
-    const newVehicle: VehicleMaster = {
-      id: generatedId,
-      name: formData.name || 'Unnamed',
-      chassisNo: `CH-${(formData.name || 'VEH').substring(0, 3).toUpperCase()}-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
-      category: formData.category || 'Light Vehicle',
-      fuelType: formData.fuelType || 'Petrol',
-      capacityRange: formData.capacityRange || 'N/A',
-      code: formData.code || 'N/A',
-      details: formData.details || 'N/A',
-      status: (formData.status as 'Active' | 'Inactive') || 'Active',
-      created: formattedDate,
-    };
-
-    setVehicles([newVehicle, ...vehicles]);
-    setShowNewModal(false);
-    resetForm();
+    try {
+      await masterService.vehicles.create({
+        vehicle_id: formData.vehicle_id ? parseInt(formData.vehicle_id, 10) : undefined,
+        plate_number: formData.plate_number.trim(),
+        vehicle_brand: formData.vehicle_brand,
+        vehicle_type: formData.vehicle_type,
+        vehicle_color: formData.vehicle_color,
+      });
+      setShowNewModal(false);
+      resetForm();
+      fetchVehicles();
+      triggerSuccess('Vehicle master record created successfully.');
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, 'Failed to create vehicle record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEditSave = (e: React.FormEvent) => {
+  const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    setIsSubmitting(true);
+    setFormError(null);
 
-    setVehicles(
-      vehicles.map((v) =>
-        v.id === selectedItem.id
-          ? ({ ...v, ...formData } as VehicleMaster)
-          : v
-      )
-    );
-    setShowEditModal(false);
-    setSelectedItem(null);
+    try {
+      await masterService.vehicles.update(selectedItem.id, {
+        plate_number: formData.plate_number.trim(),
+        vehicle_brand: formData.vehicle_brand,
+        vehicle_type: formData.vehicle_type,
+        vehicle_color: formData.vehicle_color,
+      });
+      setShowEditModal(false);
+      setSelectedItem(null);
+      fetchVehicles();
+      triggerSuccess('Vehicle master record updated successfully.');
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, 'Failed to update vehicle record.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openDeleteModal = (id: string) => {
@@ -140,45 +196,58 @@ const VehicleMasterPage: React.FC = () => {
     setActiveDropdownId(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    setVehicles(vehicles.filter((v) => v.id !== deleteId));
-    setShowDeleteModal(false);
-    setDeleteId(null);
+    try {
+      await masterService.vehicles.delete(deleteId);
+      setShowDeleteModal(false);
+      setDeleteId(null);
+      fetchVehicles();
+      triggerSuccess('Vehicle record deleted successfully.');
+    } catch (err) {
+      setErrorMessage(getApiErrorMessage(err, 'Failed to delete vehicle record.'));
+      setShowDeleteModal(false);
+    }
   };
 
-  const filteredList = vehicles.filter((item) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (item.name && item.name.toLowerCase().includes(q)) ||
-      (item.code && item.code.toLowerCase().includes(q)) ||
-      (item.chassisNo && item.chassisNo.toLowerCase().includes(q)) ||
-      (item.category && item.category.toLowerCase().includes(q)) ||
-      (item.fuelType && item.fuelType.toLowerCase().includes(q)) ||
-      (item.capacityRange && item.capacityRange.toLowerCase().includes(q)) ||
-      (item.details && item.details.toLowerCase().includes(q))
-    );
-  });
-
-  const sortedList = [...filteredList].sort((a, b) => {
-    if (sortAsc === null) return 0;
-    const nameA = (a.name || '').toLowerCase();
-    const nameB = (b.name || '').toLowerCase();
-    if (nameA < nameB) return sortAsc ? -1 : 1;
-    if (nameA > nameB) return sortAsc ? 1 : -1;
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedList.length / ITEMS_PER_PAGE) || 1;
-  const paginatedList = sortedList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
-  const toggleSort = () => {
-    setSortAsc((prev) => (prev === true ? false : prev === false ? true : true));
+  const toggleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortBy(column);
+      setSortAsc(true);
+    }
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col relative">
+      {/* Dynamic Success Alert Toast */}
+      {successMessage && (
+        <div className="fixed top-6 right-6 z-50 bg-[#e6f4ea] border border-[#34a853]/30 text-[#137333] px-5 py-3.5 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 font-medium">
+          <svg className="w-5 h-5 text-[#34a853]" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {/* Global Error Banner */}
+      {errorMessage && (
+        <div className="mb-4 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] p-4 rounded-xl flex items-center justify-between shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="text-[13.5px] font-semibold">{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-[#c5221f] hover:opacity-80">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Search bar & Action Button */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
         <div className="relative w-full max-w-85">
@@ -189,13 +258,10 @@ const VehicleMasterPage: React.FC = () => {
           </span>
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search by plate, brand or type..."
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
           />
           {searchQuery && (
             <button
@@ -223,7 +289,34 @@ const VehicleMasterPage: React.FC = () => {
       {/* Main card box containing only the table */}
       <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden animate-fadeIn">
         <div className="w-full overflow-x-auto">
-          {paginatedList.length === 0 ? (
+          {isLoading ? (
+            /* Premium shimmer loading state */
+            <div className="w-full">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Plate Number</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Brand</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Type</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="border-b border-gray-50 bg-white">
+                      {Array.from({ length: 6 }).map((__, tdIdx) => (
+                        <td key={tdIdx} className="px-6 py-4.5">
+                          <div className="h-4 bg-neutral-100 rounded-md w-3/4 animate-pulse"></div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : vehicles.length === 0 ? (
             <div className="w-full py-16 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -231,56 +324,125 @@ const VehicleMasterPage: React.FC = () => {
                 </svg>
               </div>
               <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your filter. Try adjusting your search query or clear the filter.</p>
+              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your search query or database filter.</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-100 bg-[#F9FAFB]">
                   <th
-                    onClick={toggleSort}
+                    onClick={() => toggleSort('vehicle_id')}
                     className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '20%' }}
+                    style={{ padding: '12px 20px', width: '12%' }}
                   >
                     <span className="inline-flex items-center gap-1">
-                      Name
-                      <svg
-                        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${!sortAsc ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
+                      ID
+                      {sortBy === 'vehicle_id' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
                     </span>
                   </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Chassis No</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Code</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px' }}>Details</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '10%' }}>Status</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
+                  <th
+                    onClick={() => toggleSort('plate_number')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '22%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Plate Number
+                      {sortBy === 'plate_number' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('vehicle_brand')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '18%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Brand
+                      {sortBy === 'vehicle_brand' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('vehicle_type')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '18%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Type
+                      {sortBy === 'vehicle_type' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
+                  <th
+                    onClick={() => toggleSort('created_at')}
+                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
+                    style={{ padding: '12px 20px', width: '15%' }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      Created
+                      {sortBy === 'created_at' && (
+                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </span>
+                  </th>
                   <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedList.map((item) => (
+                {vehicles.map((item) => (
                   <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
-                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.chassisNo || '—'}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-50" title={item.details}>
-                      {item.details}
-                    </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
-                        ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
-                        : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
-                        }`}>
-                        {item.status}
+                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900 font-mono">#{item.vehicle_id}</td>
+                    <td className="px-6 py-4.5">
+                      {/* Premium License Plate Look */}
+                      <span className="inline-flex items-center px-3 py-1 bg-neutral-50 border-2 border-neutral-800 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded-md shadow-xs select-none">
+                        {item.plate_number}
                       </span>
                     </td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{item.created}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-semibold">{item.vehicle_brand}</td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
+                      <span className="inline-flex items-center px-2 py-0.5 bg-neutral-100 rounded text-neutral-600 text-[12px] font-semibold">
+                        {item.vehicle_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full inline-block border border-neutral-200"
+                          style={{
+                            backgroundColor: item.vehicle_color.toLowerCase() === 'white' ? '#ffffff' :
+                              item.vehicle_color.toLowerCase() === 'black' ? '#171717' :
+                              item.vehicle_color.toLowerCase() === 'silver' ? '#c0c0c0' :
+                              item.vehicle_color.toLowerCase() === 'gray' ? '#808080' :
+                              item.vehicle_color.toLowerCase() === 'red' ? '#ea4335' :
+                              item.vehicle_color.toLowerCase() === 'blue' ? '#4285f4' :
+                              item.vehicle_color.toLowerCase() === 'green' ? '#34a853' :
+                              item.vehicle_color.toLowerCase() === 'yellow' ? '#fbbc05' :
+                              item.vehicle_color.toLowerCase() === 'gold' ? '#ffd700' :
+                              item.vehicle_color.toLowerCase(),
+                          }}
+                        ></span>
+                        <span>{item.vehicle_color}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4.5 text-sm text-gray-500 font-medium">
+                      {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
                     <td className="px-6 py-4.5 text-right relative">
                       <button
                         onClick={(e) => {
@@ -340,28 +502,28 @@ const VehicleMasterPage: React.FC = () => {
         </div>
 
         {/* Pagination control */}
-        {sortedList.length > 0 && (
+        {!isLoading && vehicles.length > 0 && (
           <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
             <span className="text-gray-500 font-medium">
-              Showing <span className="font-semibold text-neutral-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+              Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
               <span className="font-semibold text-neutral-800">
-                {Math.min(currentPage * ITEMS_PER_PAGE, sortedList.length)}
+                {Math.min(meta.page * ITEMS_PER_PAGE, meta.total)}
               </span>{' '}
-              of <span className="font-semibold text-neutral-800">{sortedList.length}</span> results
+              of <span className="font-semibold text-neutral-800">{meta.total}</span> results
             </span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={!meta.hasPreviousPage}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pg) => (
+              {Array.from({ length: meta.totalPages }, (_, idx) => idx + 1).map((pg) => (
                 <button
                   key={pg}
                   onClick={() => setCurrentPage(pg)}
-                  className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${currentPage === pg
+                  className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${meta.page === pg
                     ? 'bg-[#171717] text-white shadow-sm border border-[#171717]'
                     : 'border border-neutral-200 text-gray-500 hover:bg-neutral-50'
                     }`}
@@ -370,8 +532,8 @@ const VehicleMasterPage: React.FC = () => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
+                disabled={!meta.hasNextPage}
                 className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
               >
                 Next
@@ -402,44 +564,52 @@ const VehicleMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-bold">{selectedItem.id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Name</span>
-                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.name}</span>
+                <span className="text-gray-400 font-medium">Vehicle ID</span>
+                <span className="col-span-2 text-neutral-800 font-mono font-bold">#{selectedItem.vehicle_id}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Chassis No</span>
-                <span className="col-span-2 text-neutral-800 font-mono">{selectedItem.chassisNo}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Code</span>
-                <span className="col-span-2 text-neutral-800 font-semibold">{selectedItem.code}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Category</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.category}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Fuel Type</span>
-                <span className="col-span-2 text-neutral-800">{selectedItem.fuelType}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Capacity Range</span>
-                <span className="col-span-2 text-neutral-800 font-mono">{selectedItem.capacityRange}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Description</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.details}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Status</span>
+                <span className="text-gray-400 font-medium">Plate Number</span>
                 <span className="col-span-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[12.5px] font-bold ${selectedItem.status === 'Active' ? 'bg-emerald-50 text-[#047857]' : 'bg-neutral-100 text-neutral-500'}`}>
-                    {selectedItem.status}
+                  <span className="inline-flex items-center px-3 py-0.5 bg-neutral-50 border-2 border-neutral-800 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded">
+                    {selectedItem.plate_number}
                   </span>
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 py-1.5">
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Brand</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.vehicle_brand}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Type</span>
+                <span className="col-span-2 text-neutral-800 font-semibold">{selectedItem.vehicle_type}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Color</span>
+                <span className="col-span-2 text-neutral-800 flex items-center gap-2">
+                  <span
+                    className="w-3 h-3 rounded-full inline-block border border-neutral-200"
+                    style={{ backgroundColor: selectedItem.vehicle_color.toLowerCase() }}
+                  ></span>
+                  <span>{selectedItem.vehicle_color}</span>
+                </span>
+              </div>
+              {selectedItem.created_by && (
+                <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                  <span className="text-gray-400 font-medium">Created By</span>
+                  <span className="col-span-2 text-neutral-800 font-mono">{selectedItem.created_by}</span>
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Created Date</span>
-                <span className="col-span-2 text-neutral-700">{selectedItem.created}</span>
+                <span className="col-span-2 text-neutral-700">
+                  {new Date(selectedItem.created_at).toLocaleString()}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5">
+                <span className="text-gray-400 font-medium">Last Updated</span>
+                <span className="col-span-2 text-neutral-700">
+                  {new Date(selectedItem.updated_at).toLocaleString()}
+                </span>
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 bg-neutral-50 flex items-center justify-end">
@@ -472,26 +642,36 @@ const VehicleMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleCreate}>
               <div className="p-6 space-y-5">
+                {formError && (
+                  <div className="p-3 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] text-[13px] font-semibold rounded-xl flex items-start gap-2.5">
+                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>{formError}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Plate Number</label>
                     <input
                       type="text"
                       required
-                      placeholder="Enter"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
+                      placeholder="e.g. 9845-KA"
+                      value={formData.plate_number}
+                      onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm font-mono uppercase"
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">
+                      Vehicle ID <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
                     <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.code || ''}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                      type="number"
+                      placeholder="Auto-generated if empty"
+                      value={formData.vehicle_id}
+                      onChange={(e) => setFormData({ ...formData, vehicle_id: e.target.value })}
                       className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
                     />
                   </div>
@@ -499,11 +679,11 @@ const VehicleMasterPage: React.FC = () => {
 
                 <div className="grid grid-cols-10 gap-3">
                   <div className="col-span-4">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Category</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Brand</label>
                     <select
                       required
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      value={formData.vehicle_brand}
+                      onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
                       style={{
                         backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
@@ -513,18 +693,17 @@ const VehicleMasterPage: React.FC = () => {
                       }}
                     >
                       <option value="" disabled>Select</option>
-                      <option value="Light Vehicle">Light Vehicle</option>
-                      <option value="Heavy Vehicle">Heavy Vehicle</option>
-                      <option value="Commercial">Commercial</option>
-                      <option value="Two-Wheeler">Two-Wheeler</option>
+                      {brandsList.map((brand) => (
+                        <option key={brand} value={brand}>{brand}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Fuel Type</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                     <select
                       required
-                      value={formData.fuelType || ''}
-                      onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
+                      value={formData.vehicle_type}
+                      onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
                       style={{
                         backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
@@ -534,60 +713,31 @@ const VehicleMasterPage: React.FC = () => {
                       }}
                     >
                       <option value="" disabled>Select</option>
-                      <option value="Petrol">Petrol</option>
-                      <option value="Diesel">Diesel</option>
-                      <option value="Electric">Electric</option>
-                      <option value="Hybrid">Hybrid</option>
+                      {typesList.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Capacity</label>
-                    <input
-                      type="text"
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Color</label>
+                    <select
                       required
-                      placeholder="Enter"
-                      value={formData.capacityRange || ''}
-                      onChange={(e) => setFormData({ ...formData, capacityRange: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
+                      value={formData.vehicle_color}
+                      onChange={(e) => setFormData({ ...formData, vehicle_color: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                        backgroundPosition: 'right 10px center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: '18px',
+                      }}
+                    >
+                      <option value="" disabled>Select</option>
+                      {colorsList.map((color) => (
+                        <option key={color} value={color}>{color}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between py-2 border-t border-b border-neutral-50">
-                  <div className="flex flex-col">
-                    <span className="text-[14px] font-semibold text-[#344054]">Status</span>
-                    <span className="text-[12.5px] text-[#667085]">Set the operational status of the vehicle</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        status: formData.status === 'Active' ? 'Inactive' : 'Active',
-                      })
-                    }
-                    className="focus:outline-none cursor-pointer"
-                  >
-                    <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                      ? 'bg-[#171717] border-[#171717]'
-                      : 'bg-[#f2f4f7] border-[#d0d5dd]'
-                      }`}>
-                      <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
-                        }`} />
-                    </div>
-                  </button>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-3">
@@ -600,9 +750,16 @@ const VehicleMasterPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>
@@ -632,38 +789,34 @@ const VehicleMasterPage: React.FC = () => {
             </div>
             <form onSubmit={handleEditSave}>
               <div className="p-6 space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
+                {formError && (
+                  <div className="p-3 bg-[#fce8e6] border border-[#ea4335]/20 text-[#c5221f] text-[13px] font-semibold rounded-xl flex items-start gap-2.5">
+                    <svg className="w-4 h-4 mt-0.5 shrink-0 text-[#ea4335]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span>{formError}</span>
                   </div>
-                  <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Enter"
-                      value={formData.code || ''}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
-                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Plate Number</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 9845-KA"
+                    value={formData.plate_number}
+                    onChange={(e) => setFormData({ ...formData, plate_number: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm font-mono uppercase"
+                  />
                 </div>
 
                 <div className="grid grid-cols-10 gap-3">
                   <div className="col-span-4">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Category</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Brand</label>
                     <select
                       required
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      value={formData.vehicle_brand}
+                      onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
                       style={{
                         backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
@@ -673,18 +826,17 @@ const VehicleMasterPage: React.FC = () => {
                       }}
                     >
                       <option value="" disabled>Select</option>
-                      <option value="Light Vehicle">Light Vehicle</option>
-                      <option value="Heavy Vehicle">Heavy Vehicle</option>
-                      <option value="Commercial">Commercial</option>
-                      <option value="Two-Wheeler">Two-Wheeler</option>
+                      {brandsList.map((brand) => (
+                        <option key={brand} value={brand}>{brand}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Fuel Type</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
                     <select
                       required
-                      value={formData.fuelType || ''}
-                      onChange={(e) => setFormData({ ...formData, fuelType: e.target.value })}
+                      value={formData.vehicle_type}
+                      onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
                       style={{
                         backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
@@ -694,60 +846,31 @@ const VehicleMasterPage: React.FC = () => {
                       }}
                     >
                       <option value="" disabled>Select</option>
-                      <option value="Petrol">Petrol</option>
-                      <option value="Diesel">Diesel</option>
-                      <option value="Electric">Electric</option>
-                      <option value="Hybrid">Hybrid</option>
+                      {typesList.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Capacity</label>
-                    <input
-                      type="text"
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Color</label>
+                    <select
                       required
-                      placeholder="Enter"
-                      value={formData.capacityRange || ''}
-                      onChange={(e) => setFormData({ ...formData, capacityRange: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm"
-                    />
+                      value={formData.vehicle_color}
+                      onChange={(e) => setFormData({ ...formData, vehicle_color: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer appearance-none pr-8"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23667085' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                        backgroundPosition: 'right 10px center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: '18px',
+                      }}
+                    >
+                      <option value="" disabled>Select</option>
+                      {colorsList.map((color) => (
+                        <option key={color} value={color}>{color}</option>
+                      ))}
+                    </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Description</label>
-                  <textarea
-                    required
-                    rows={3}
-                    placeholder="Enter"
-                    value={formData.details || ''}
-                    onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all resize-none shadow-sm"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between py-2 border-t border-b border-neutral-50">
-                  <div className="flex flex-col">
-                    <span className="text-[14px] font-semibold text-[#344054]">Status</span>
-                    <span className="text-[12.5px] text-[#667085]">Set the operational status of the vehicle</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        status: formData.status === 'Active' ? 'Inactive' : 'Active',
-                      })
-                    }
-                    className="focus:outline-none cursor-pointer"
-                  >
-                    <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
-                      ? 'bg-[#171717] border-[#171717]'
-                      : 'bg-[#f2f4f7] border-[#d0d5dd]'
-                      }`}>
-                      <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
-                        }`} />
-                    </div>
-                  </button>
                 </div>
 
                 <div className="flex items-center justify-end gap-3 pt-3">
@@ -763,9 +886,16 @@ const VehicleMasterPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white text-[14px] font-semibold rounded-xl cursor-pointer shadow-sm transition-all disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
-                    Save
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    )}
+                    <span>Save</span>
                   </button>
                 </div>
               </div>

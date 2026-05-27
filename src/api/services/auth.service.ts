@@ -11,28 +11,17 @@ import {
   clearAuth,
 } from '../../utils/storage';
 import { resolvePermissionsForRole } from '../../constants/rolePermissions';
+import type {
+  LoginPayload,
+  AuthUser,
+  LoginResponse,
+} from '../../interfaces/auth.interface';
 
-export interface LoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface AuthUser {
-  id: string;
-  user_id: number;
-  user_name: string;
-  email: string;
-  role: string;
-  center?: string;
-  line?: string;
-}
-
-export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  user: AuthUser;
-}
+export type {
+  LoginPayload,
+  AuthUser,
+  LoginResponse,
+};
 
 export const authService = {
   login: async (payload: LoginPayload): Promise<LoginResponse> => {

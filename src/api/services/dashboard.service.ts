@@ -1,17 +1,8 @@
 import axiosInstance from '../axios.instance';
 import { ENDPOINTS } from '../endpoints';
+import type { DashboardStats, RevenueData } from '../../interfaces/dashboard.interface';
 
-export interface DashboardStats {
-  totalUsers: number;
-  activeUsers: number;
-  revenue: number;
-  growth: number;
-}
-
-export interface RevenueData {
-  month: string;
-  amount: number;
-}
+export type { DashboardStats, RevenueData };
 
 export const dashboardService = {
   getStats: () =>

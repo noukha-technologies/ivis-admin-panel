@@ -2,43 +2,19 @@ import axiosInstance from '../axios.instance';
 import { ENDPOINTS } from '../endpoints';
 import { unwrapData, unwrapPaginated } from '../apiResponse';
 import type { ApiEnvelope, PaginatedResult } from '../../types/api.types';
+import type {
+  ApiUser,
+  CreateUserPayload,
+  UpdateUserPayload,
+  UserListParams,
+} from '../../interfaces/user.interface';
 
-export interface ApiUser {
-  id: string;
-  user_id: number;
-  user_name: string;
-  email: string;
-  role: string;
-  center?: string;
-  line?: string;
-  created_at: string;
-  updated_at?: string;
-  is_deleted?: boolean;
-}
-
-export interface CreateUserPayload {
-  user_id: number;
-  user_name: string;
-  email: string;
-  role_id: number;
-  password?: string;
-  center?: string;
-  line?: string;
-}
-
-export interface UpdateUserPayload {
-  user_name?: string;
-  email?: string;
-  role_id?: number;
-  center?: string;
-  line?: string;
-}
-
-export interface UserListParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-}
+export type {
+  ApiUser,
+  CreateUserPayload,
+  UpdateUserPayload,
+  UserListParams,
+};
 
 export const userService = {
   getAll: async (params?: UserListParams): Promise<PaginatedResult<ApiUser>> => {
