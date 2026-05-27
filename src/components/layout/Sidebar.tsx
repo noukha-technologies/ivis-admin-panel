@@ -233,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className={`flex flex-col gap-y-1.5 ${isCollapsed ? 'px-0' : ''}`}>
+      <nav className={`flex flex-col gap-y-3 mt-2 ${isCollapsed ? 'px-0' : ''}`}>
         {menuItems.map((item) => {
           const isActive = isConfiguration ? activeTab === item.name : activeMenu === item.name;
           return (

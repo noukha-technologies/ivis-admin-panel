@@ -14,6 +14,12 @@ import CustomersPage from '../pages/customers/CustomersPage';
 import RopManagementPage from '../pages/rop-management/RopManagementPage';
 import JobManagementPage from '../pages/job-management/JobManagementPage';
 import MasterManagementPage from '../pages/master-management/MasterManagementPage';
+import VehicleMasterPage from '../pages/master-management/VehicleMasterPage';
+import TestMasterPage from '../pages/master-management/TestMasterPage';
+import CentreMasterPage from '../pages/master-management/CentreMasterPage';
+import LineMasterPage from '../pages/master-management/LineMasterPage';
+import AdminPcMasterPage from '../pages/master-management/AdminPcMasterPage';
+import CameraMasterPage from '../pages/master-management/CameraMasterPage';
 import UsersPage from '../pages/users/UsersPage';
 import ConfigurationPage from '../pages/configuration/ConfigurationPage';
 import FileProcessingPage from '../pages/file-processing/FileProcessingPage';
@@ -39,7 +45,17 @@ const AppRouter = () => {
           <Route path={ROUTES.CUSTOMERS} element={<CustomersPage />} />
           <Route path={ROUTES.ROP_MANAGEMENT} element={<RopManagementPage />} />
           <Route path={ROUTES.JOB_MANAGEMENT} element={<JobManagementPage />} />
-          <Route path={ROUTES.MASTER_MANAGEMENT} element={<MasterManagementPage />} />
+          
+          <Route path={ROUTES.MASTER_MANAGEMENT} element={<MasterManagementPage />}>
+            <Route index element={<Navigate to={ROUTES.MASTER_VEHICLES} replace />} />
+            <Route path="vehicles" element={<VehicleMasterPage />} />
+            <Route path="tests" element={<TestMasterPage />} />
+            <Route path="centres" element={<CentreMasterPage />} />
+            <Route path="lines" element={<LineMasterPage />} />
+            <Route path="pcs" element={<AdminPcMasterPage />} />
+            <Route path="cameras" element={<CameraMasterPage />} />
+          </Route>
+
           <Route path={ROUTES.USERS} element={<UsersPage />} />
           <Route path={ROUTES.CONFIGURATION} element={<ConfigurationPage />} />
           <Route path={ROUTES.FILE_PROCESSING} element={<FileProcessingPage />} />

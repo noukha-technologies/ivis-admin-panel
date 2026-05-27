@@ -37,6 +37,12 @@ const routeToTitle: Record<string, string> = {
   '/rop-management': 'ROP Management',
   '/reports': 'Reports & Analytics',
   '/master-management': 'Master Management',
+  '/master-management/vehicles': 'Vehicle Master',
+  '/master-management/tests': 'Manual Testing Master',
+  '/master-management/centres': 'Centre Master',
+  '/master-management/lines': 'Line Master',
+  '/master-management/pcs': 'Admin PC Master',
+  '/master-management/cameras': 'Camera & ANPR Master',
   '/users': 'User Management',
   '/configuration': 'Configuration',
   '/file-processing': 'File Processing',
@@ -52,6 +58,12 @@ const routeToSubtitle: Record<string, string> = {
   '/rop-management': 'ROP integration and management',
   '/reports': 'Analytics and reporting insights',
   '/master-management': 'Vehicle types, categories, fuel & capacity ranges',
+  '/master-management/vehicles': 'Vehicle types, categories, fuel & capacity ranges',
+  '/master-management/tests': 'Manage testing categories, result types, and criteria',
+  '/master-management/centres': 'Manage testing centers, locations, and operational capacities',
+  '/master-management/lines': 'Inspection lines, lanes, and configurations per center',
+  '/master-management/pcs': 'Configured computer terminals and assigned receptionist users',
+  '/master-management/cameras': 'Automatic Number Plate Recognition (ANPR) cameras and feed setups',
   '/users': 'Manage system administrators, receptionists, and technical staff',
   '/configuration': 'Global application configurations, API keys, and settings',
   '/file-processing': 'Import, validate, and process external data files and ANPR logs',
@@ -62,7 +74,7 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
 
   // Derive active menu from current URL path
-  const activeMenu = routeToMenu[location.pathname] || 'Dashboard';
+  const activeMenu = location.pathname.startsWith('/master-management') ? 'Master Management' : (routeToMenu[location.pathname] || 'Dashboard');
   const pageTitle = routeToTitle[location.pathname] || 'Dashboard';
   const pageSubtitle = routeToSubtitle[location.pathname] || '';
 
@@ -79,8 +91,7 @@ const MainLayout: React.FC = () => {
   };
 
   // Hide the sidebar on management screens (except configuration which has its own sidebar menu)
-  const managementRoutes = ['/master-management', '/users', '/file-processing'];
-  const isSidebarHidden = managementRoutes.includes(location.pathname);
+  const isSidebarHidden = location.pathname.startsWith('/master-management') || location.pathname === '/users' || location.pathname === '/file-processing';
 
   return (
     <div className="flex h-screen w-full bg-[#f8f9fc] font-sans antialiased text-[#222] overflow-hidden">

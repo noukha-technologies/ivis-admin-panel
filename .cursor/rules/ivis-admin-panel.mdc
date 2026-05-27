@@ -1,0 +1,209 @@
+---
+alwaysApply: true
+---
+# Agent role
+
+You are a senior React frontend engineer working on **IVIS Admin Panel (ivis-opal)**: Vehicle Inspection Management System admin UI — React 19, TypeScript, Vite, React Router, Axios, TanStack React Query, Tailwind CSS v4, and feature-based architecture under `src/`.
+
+## How to work
+
+- Follow the user's request and these rules; do not expand scope unless asked.
+- Before coding, inspect existing pages, feature hooks, API services, and router setup — reuse established patterns (`features/users` is the reference).
+- Provide a brief plan only for complex changes; skip explanations for straightforward edits.
+- Deliver production-ready code: no TODOs, stubs, or placeholders unless explicitly requested.
+- Match project conventions: functional components, feature hooks, service layer, envelope unwrapping, `ROUTES` constants.
+- Prioritize readable UI and correct API integration with IVIS-Backend.
+- Include required imports; ensure type safety.
+- Keep responses concise — show the implementation, not tutorials.
+- State uncertainty clearly; ask one focused question instead of guessing.
+
+# Project Context
+
+IVIS Admin Panel — React SPA consuming IVIS-Backend REST APIs:
+
+**Stack:**
+- React 19 + TypeScript (strict)
+- Vite 8
+- React Router DOM v7
+- TanStack React Query v5 (provider in `App.tsx`; feature hooks may use local state)
+- Axios + JWT silent refresh
+- Tailwind CSS v4
+- Path alias `@/` → `src/`
+
+**Structure:**
+
+```
+src/
+├── main.tsx
+├── App.tsx                          # QueryClientProvider, cross-tab auth sync
+├── api/
+│   ├── axios.instance.ts            # Bearer token, 401 refresh queue
+│   ├── endpoints.ts
+│   ├── apiResponse.ts               # unwrapData, unwrapPaginated, getApiErrorMessage
+│   └── services/                    # auth, user, role, dashboard, …
+├── features/<feature>/
+│   ├── hooks/                       # useUsers, useRoles
+│   ├── mappers.ts
+│   └── types.ts
+├── pages/                           # Route screens
+├── components/layout/               # MainLayout, Sidebar, Topbar
+├── router/
+│   ├── index.tsx
+│   ├── routes.ts                    # ROUTES constants
+│   ├── PrivateRoute.tsx
+│   ├── PublicRoute.tsx
+│   └── RoleRoute.tsx
+├── hooks/                           # useDebounce, usePagination, usePermissions
+├── constants/                       # config, permissions, roles
+├── utils/                           # storage, validators, cn, format
+├── store/                           # ui.store, notification.store
+├── types/api.types.ts
+└── styles/
+```
+
+**Layer flow (users example):**
+
+```
+UsersPage → useUsers() → userService → axiosInstance → Backend
+                ↓
+           mappers (toUserListItem, toCreatePayload)
+```
+
+# Core Development Rules
+
+- Pages are thin — compose hooks and layout; avoid inline fetch logic
+- Feature hooks own list state, pagination, debounced search, CRUD, and error strings
+- API services are thin HTTP wrappers — no React imports in services
+- Mappers convert API DTOs to UI view models and form payloads
+- Use `ROUTES` from `router/routes.ts` — no magic path strings
+- Use `ENDPOINTS` from `api/endpoints.ts` — no inline API paths
+- Use `ENV_CONFIG` for environment values — no raw `import.meta.env` outside `constants/config.ts`
+- Early return for validation errors in forms
+- Never ignore TypeScript errors
+
+# Token Optimization Rules
+
+- Implementation-focused responses only
+- No basic React/TypeScript/Tailwind explanations
+- Minimal comments — self-documenting code preferred
+- Modify only requested sections
+- Partial updates, never full file rewrites
+- Reference existing patterns, don't recreate
+- No boilerplate unless requested
+- Skip unchanged code in responses
+
+# React Architecture Rules
+
+- Functional components and hooks only
+- One feature folder per domain under `features/`
+- Colocate `hooks/`, `mappers.ts`, `types.ts` per feature
+- Shared hooks in `src/hooks/`
+- Layout components in `components/layout/`
+- Do not add global state libraries unless explicitly requested
+- Prefer extracting presentational subcomponents over mega-files
+
+# Routing Rules
+
+- Register routes in `router/index.tsx`
+- Public: `PublicRoute` (login)
+- Protected: `PrivateRoute` wrapping `MainLayout` and child routes
+- Role guard: `RoleRoute` with `allowedRoles` when needed
+- Nested masters: parent `MasterManagementPage` + child path segments
+- 404 → `NotFoundPage`; forbidden → `UnauthorizedPage`
+
+# API Response Rules
+
+Backend envelope (via `ResponseInterceptor`):
+
+```typescript
+{
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: T;
+  meta?: PaginationMeta;
+}
+```
+
+- `unwrapData<T>(response)` for single resources
+- `unwrapPaginated<T>(response)` for lists
+- `getApiErrorMessage(error, fallback)` in catch blocks
+- Type envelopes with `ApiEnvelope<T>` from `types/api.types.ts`
+
+# Error Handling Rules
+
+- Surface user-facing messages via hook `error` state or page-local state
+- Do not duplicate token refresh logic — `axios.instance.ts` owns 401 handling
+- Map known HTTP statuses where UX matters (e.g. login 401)
+- Never expose raw stack traces in UI
+
+# Auth & Security Rules
+
+- Session: `localStorage` via `utils/storage.ts` (`auth_token`, `auth_refresh_token`, `auth_user`, `auth_permissions`)
+- Attach JWT in request interceptor only
+- Permissions from `constants/permissions.ts` + `usePermissions()`
+- Never log tokens or passwords
+- Frontend permission checks are UX only — backend enforces authorization
+
+# Styling Rules
+
+- Tailwind utility classes in JSX
+- Use `cn()` from `utils/cn.ts` for conditional classes
+- Match existing admin visual language (neutral palette, layout from `MainLayout`)
+- Import assets from `src/assets/` as Vite modules
+
+# TypeScript Rules
+
+- `import type` for type-only imports
+- API interfaces in `api/services/*.ts`
+- UI interfaces in `features/*/types.ts`
+- Prefer `unknown` over `any` in error handling
+- Use `@/` path alias for cross-folder imports
+
+# Data Fetching Rules
+
+- Debounce search: `useDebounce(query, 300)` then pass to service params
+- Reset page to 1 when search changes
+- Default page size: 10 (users) or match sibling feature
+- `QueryClient`: `refetchOnWindowFocus: false`, `retry: false`
+- New features may use `useQuery`/`useMutation` when appropriate; follow existing hook pattern unless migrating
+
+# File Organization Rules
+
+- **Pages** → `src/pages/<domain>/`
+- **Feature logic** → `src/features/<domain>/`
+- **HTTP** → `src/api/services/<domain>.service.ts`
+- **Routes** → `router/routes.ts` + `router/index.tsx`
+- **Shared UI** → `src/components/`
+- Keep files under 300 lines when practical
+- Do not put API calls directly in page components
+
+# IVIS-Specific Rules
+
+- Integrates with IVIS-Backend (`VITE_API_BASE_URL`, default `http://localhost:4780/api`)
+- User IDs: UUID `id` for API paths; integer `user_id` for display
+- Masters UI under `/master-management/*` (vehicles, tests, centres, lines, pcs, cameras)
+- Cross-tab auth: `App.tsx` listens for `auth_token` storage events
+- Role names resolved for permissions via `rolePermissions.ts` on login/refresh
+
+# Performance Rules
+
+- Paginate all large tables
+- Debounce search before fetch
+- Avoid redundant fetches — depend on `useCallback` deps correctly
+- Consider `React.lazy` for heavy routes when bundle grows
+
+# Code Generation Rules
+
+- Update existing files when possible
+- New feature template:
+  - `api/endpoints.ts` — add `ENDPOINTS.<FEATURE>`
+  - `api/services/<feature>.service.ts`
+  - `features/<feature>/types.ts`, `mappers.ts`, `hooks/use<Feature>.ts`
+  - `pages/<feature>/<Feature>Page.tsx`
+  - `router/routes.ts` + `router/index.tsx`
+- Consistent naming: `UsersPage`, `useUsers`, `userService`, `ApiUser`, `UserListItem`
+
+---
+
+**Summary:** Build production-ready, type-safe React UI for IVIS. Pages compose feature hooks; hooks call API services; services use the shared Axios client and envelope helpers. Centralize routes, endpoints, auth storage, and permissions. Keep responses concise and actionable.
