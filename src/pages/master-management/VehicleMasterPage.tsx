@@ -181,7 +181,7 @@ const VehicleMasterPage: React.FC = () => {
     <div className="w-full flex flex-col">
       {/* Search bar & Action Button */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
-        <div className="relative w-full max-w-[340px]">
+        <div className="relative w-full max-w-85">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -231,7 +231,7 @@ const VehicleMasterPage: React.FC = () => {
                 </svg>
               </div>
               <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-[280px]">No entries match your filter. Try adjusting your search query or clear the filter.</p>
+              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your filter. Try adjusting your search query or clear the filter.</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
@@ -269,11 +269,11 @@ const VehicleMasterPage: React.FC = () => {
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.name}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.chassisNo || '—'}</td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium font-mono">{item.code}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-[200px]" title={item.details}>
+                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium truncate max-w-50" title={item.details}>
                       {item.details}
                     </td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-[8px] text-[12.5px] font-semibold border select-none ${item.status === 'Active'
+                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${item.status === 'Active'
                         ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
                         : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
                         }`}>
@@ -384,7 +384,7 @@ const VehicleMasterPage: React.FC = () => {
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[500px] border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-125 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4.5 border-b border-neutral-100 flex items-center justify-between">
               <h3 className="text-[17px] font-bold text-neutral-800">Vehicle Master Details</h3>
               <button
@@ -457,7 +457,7 @@ const VehicleMasterPage: React.FC = () => {
       {/* CREATE MODAL */}
       {showNewModal && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[480px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Add Vehicle</h3>
               <button
@@ -580,11 +580,11 @@ const VehicleMasterPage: React.FC = () => {
                     }
                     className="focus:outline-none cursor-pointer"
                   >
-                    <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
+                    <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
                       : 'bg-[#f2f4f7] border-[#d0d5dd]'
                       }`}>
-                      <div className={`absolute top-[3px] left-[3px] w-[20px] h-[20px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-[24px]' : 'translate-x-0'
+                      <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
                         }`} />
                     </div>
                   </button>
@@ -614,7 +614,7 @@ const VehicleMasterPage: React.FC = () => {
       {/* EDIT MODAL */}
       {showEditModal && selectedItem && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[24px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-[480px] border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
               <h3 className="text-[18px] font-bold text-[#101828]">Edit Vehicle</h3>
               <button
@@ -740,11 +740,11 @@ const VehicleMasterPage: React.FC = () => {
                     }
                     className="focus:outline-none cursor-pointer"
                   >
-                    <div className={`relative w-[52px] h-[28px] rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
+                    <div className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
                       ? 'bg-[#171717] border-[#171717]'
                       : 'bg-[#f2f4f7] border-[#d0d5dd]'
                       }`}>
-                      <div className={`absolute top-[3px] left-[3px] w-[20px] h-[20px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-[24px]' : 'translate-x-0'
+                      <div className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
                         }`} />
                     </div>
                   </button>
@@ -777,7 +777,7 @@ const VehicleMasterPage: React.FC = () => {
       {/* DELETE CONFIRMATION MODAL */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[400px] border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-100 border border-neutral-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-4 border border-red-100">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -785,7 +785,7 @@ const VehicleMasterPage: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-[17px] font-bold text-neutral-800 mb-1">Delete Vehicle Master</h3>
-              <p className="text-[13px] text-gray-500 max-w-[280px] mx-auto">Are you sure you want to delete this record? This action cannot be undone.</p>
+              <p className="text-[13px] text-gray-500 max-w-70 mx-auto">Are you sure you want to delete this record? This action cannot be undone.</p>
             </div>
             <div className="px-6 py-4 bg-neutral-50 border-t border-neutral-100 flex items-center justify-center gap-3">
               <button

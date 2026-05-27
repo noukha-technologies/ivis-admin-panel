@@ -58,7 +58,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
 
   return (
     <header
-      className="h-[80px] bg-white border-b border-neutral-200/50 px-6 flex items-center justify-between flex-none select-none"
+      className="h-20 bg-white border-b border-neutral-200/50 px-6 flex items-center justify-between flex-none select-none"
       style={{
         marginBottom: '24px',
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.015)',
@@ -97,7 +97,7 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
           onClick={() => setIsMenuOpen((prev) => !prev)}
           className="w-10 h-10 flex items-center justify-center rounded-md hover:bg-neutral-100 active:bg-neutral-200 transition-all cursor-pointer border border-transparent"
         >
-          <img src={topNavIcon} alt="Apps Menu" className="w-[34px] h-[34px]" />
+          <img src={topNavIcon} alt="Apps Menu" className="w-8.5 h-8.5" />
         </button>
 
         {/* Dropdown Menu */}
