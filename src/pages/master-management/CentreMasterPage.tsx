@@ -3,7 +3,7 @@ import { masterService } from '../../api/services/master.service';
 import type { ApiCentre } from '../../interfaces/centre.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import type { PaginationMeta } from '../../types/api.types';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const CentreMasterPage: React.FC = () => {
   const [centres, setCentres] = useState<ApiCentre[]>([]);

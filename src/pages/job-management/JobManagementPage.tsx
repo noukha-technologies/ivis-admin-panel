@@ -1,30 +1,17 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import carImage from '../../assets/images/Png/car.png';
 import tickImg from '../../assets/icons/tick_img.svg';
-
-interface Job {
-  id: string;
-  vehicle: string;
-  customer: string;
-  center: string;
-  line: string;
-  created: string;
-  status: 'Pending' | 'In progress' | 'Redo Test' | 'Completed';
-}
+import { useJobs } from '../../features/jobs/hooks/useJobs';
+import type { JobDetailView, JobListItem, JobTabFilter } from '../../features/jobs/types';
 
 const JobManagementPage: React.FC = () => {
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [activeTab, setActiveTab] = useState<JobTabFilter>('Pending');
+  const jobsApi = useJobs(activeTab);
+  const [selectedJob, setSelectedJob] = useState<JobListItem | JobDetailView | null>(null);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [activeTab, setActiveTab] = useState<'Pending' | 'In progress' | 'Redo Test' | 'Completed'>('Pending');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNewJobModal, setShowNewJobModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeTab]);
 
   // Detail Page states
   const [adminPc, setAdminPc] = useState('Ramesh');
@@ -36,99 +23,47 @@ const JobManagementPage: React.FC = () => {
   const [newCenter, setNewCenter] = useState('Muscat');
   const [newLine, setNewLine] = useState('Line 1');
 
-  const [jobs, setJobs] = useState<Job[]>([
-    { id: '#J01', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Line 1', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J02', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J03', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J04', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J05', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J06', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J07', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J08', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J09', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-    { id: '#J10', vehicle: 'OM-1000', customer: 'Ahmed Al-Said', center: 'Muscat', line: 'Muscat', created: '2026-05-01 09:10', status: 'Pending' },
-
-    // Some dummy jobs for other tabs so they aren't empty
-    { id: '#J11', vehicle: 'OM-2045', customer: 'Fatima Al-Balushi', center: 'Sohar', line: 'Line 2', created: '02 Jan 2026 10:15', status: 'In progress' },
-    { id: '#J12', vehicle: 'OM-9011', customer: 'Salim Al-Harthy', center: 'Nizwa', line: 'Line 1', created: '02 Jan 2026 11:30', status: 'Redo Test' },
-    { id: '#J13', vehicle: 'OM-5566', customer: 'Muna Al-Zadjali', center: 'Muscat', line: 'Line 3', created: '03 Jan 2026 08:00', status: 'Completed' },
-  ]);
+  const displayJob = jobsApi.selectedDetail ?? selectedJob;
 
   const handleCreateJob = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newVehicle || !newCustomer) return;
-
-    const nextIdNum = jobs.length + 1;
-    const formattedId = `#J${nextIdNum < 10 ? '0' + nextIdNum : nextIdNum}`;
-
-    const now = new Date();
-    const formattedDate = `${now.getFullYear()}-${now.getMonth() + 1 < 10 ? '0' + (now.getMonth() + 1) : now.getMonth() + 1}-${now.getDate() < 10 ? '0' + now.getDate() : now.getDate()} ${now.getHours() < 10 ? '0' + now.getHours() : now.getHours()}:${now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes()}`;
-
-    const newJob: Job = {
-      id: formattedId,
-      vehicle: newVehicle,
-      customer: newCustomer,
-      center: newCenter,
-      line: newLine,
-      created: formattedDate,
-      status: 'Pending',
-    };
-
-    setJobs([newJob, ...jobs]);
-    setNewVehicle('');
-    setNewCustomer('');
-    setNewCenter('Muscat');
-    setNewLine('Line 1');
+    toast('Jobs are created when a payment is marked Paid');
     setShowNewJobModal(false);
-    setActiveTab('Pending');
   };
 
-  const handleStartTest = () => {
+  const handleStartTest = async (): Promise<void> => {
     if (selectedJob) {
-      // Transition job to In progress
-      const updatedJobs = jobs.map(j => {
-        if (j.id === selectedJob.id) {
-          return { ...j, status: 'In progress' as const };
-        }
-        return j;
-      });
-      setJobs(updatedJobs);
-      setSelectedJob({ ...selectedJob, status: 'In progress' });
-      setCurrentStep(2);
+      const ok = await jobsApi.updateJobStatus(selectedJob.id, 'InProgress');
+      if (ok) {
+        setSelectedJob({ ...selectedJob, status: 'In progress' });
+        setCurrentStep(2);
+        toast.success('Job started');
+      }
     }
   };
 
-  // Filter jobs based on active tab and search query
-  const filteredJobs = jobs.filter((job) => {
-    const matchesTab = job.status === activeTab;
-    const matchesSearch =
-      job.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.center.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.line.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + PAGE_SIZE);
+  const paginatedJobs = jobsApi.items;
 
   // If a job is selected, show the detail view
-  if (selectedJob) {
+  if (selectedJob && displayJob) {
+    const jobLabel =
+      'displayId' in displayJob
+        ? displayJob.displayId
+        : (displayJob as JobDetailView).id;
     return (
       <div className="flex flex-col gap-6 text-gray-900" style={{ marginLeft: '20px', marginRight: '20px' }}>
 
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2.5 text-sm font-medium text-gray-500">
           <button
-            onClick={() => setSelectedJob(null)}
+            onClick={() => { setSelectedJob(null); jobsApi.setSelectedDetail(null); }}
             className="hover:text-gray-900 transition-colors bg-transparent border-none cursor-pointer p-0 font-medium text-sm"
           >
             Job Management
           </button>
           <span>&gt;</span>
           <div className="flex items-center gap-1.5 text-gray-900 cursor-pointer">
-            <span>{selectedJob.id}</span>
+            <span>{jobLabel}</span>
             <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
@@ -139,23 +74,23 @@ const JobManagementPage: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-[26px] font-bold text-gray-900 tracking-tight leading-none">
-              Job - {selectedJob.id}
+              Job - {jobLabel}
             </h1>
             <p className="text-sm text-gray-500 mt-1.5 font-semibold">
-              {selectedJob.vehicle} • {selectedJob.center} • {selectedJob.line}
+              {'vehicle' in selectedJob ? `${selectedJob.vehicle} • ${selectedJob.center} • ${selectedJob.line}` : ''}
             </p>
           </div>
           {currentStep === 1 ? (
             <button
               onClick={handleStartTest}
-              className="bg-[#111827] text-white w-[160px] py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer text-center"
+              className="bg-[#111827] text-white w-40 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm cursor-pointer text-center"
             >
               Start Test
             </button>
           ) : (
             <button
-              onClick={() => alert('Jobs refreshed!')}
-              className="flex items-center justify-center gap-1.5 bg-white text-gray-700 border border-[#D0D5DD] w-[160px] py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
+              onClick={() => toast.success('Jobs refreshed!')}
+              className="flex items-center justify-center gap-1.5 bg-white text-gray-700 border border-[#D0D5DD] w-40 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
             >
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -166,7 +101,7 @@ const JobManagementPage: React.FC = () => {
         </div>
 
         {/* Stepper progress indicator */}
-        <div className="max-w-[400px] flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white select-none">
+        <div className="max-w-100 flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white select-none">
           {/* Step 1: Created */}
           <div
             onClick={() => setCurrentStep(1)}
@@ -223,7 +158,7 @@ const JobManagementPage: React.FC = () => {
 
         {/* Dropdowns side-by-side (Only visible in Step 1) */}
         {currentStep === 1 && (
-          <div className="grid grid-cols-2 gap-4 max-w-[1000px]">
+          <div className="grid grid-cols-2 gap-4 max-w-250">
             <div>
               <label className="block text-xs font-bold text-gray-600 mb-1.5">Admin PC</label>
               <select
@@ -382,14 +317,14 @@ const JobManagementPage: React.FC = () => {
 
                   <div className="flex justify-end gap-3">
                     <button
-                      onClick={() => alert('Opening preview...')}
-                      className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                      onClick={() => toast('Opening preview...')}
+                      className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-32.5 text-center shadow-sm"
                     >
                       Preview
                     </button>
                     <button
-                      onClick={() => alert('Downloading XML file...')}
-                      className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                      onClick={() => toast.success('Downloading XML file...')}
+                      className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-32.5 text-center shadow-sm"
                     >
                       Download
                     </button>
@@ -404,7 +339,7 @@ const JobManagementPage: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <h3 className="text-sm font-bold text-gray-900">In File</h3>
                     <button
-                      onClick={() => alert('Camera activated to capture image...')}
+                      onClick={() => toast('Camera activated to capture image...')}
                       className="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
                     >
                       Capture Image
@@ -412,11 +347,11 @@ const JobManagementPage: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="aspect-[16/9] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                    <div className="aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                       <img src={carImage} alt="Car" className="w-full h-full object-cover" />
                     </div>
-                    <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
-                    <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                    <div className="aspect-video rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                    <div className="aspect-video rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
                   </div>
                 </div>
 
@@ -444,14 +379,14 @@ const JobManagementPage: React.FC = () => {
 
                 <div className="flex justify-end gap-3">
                   <button
-                    onClick={() => alert('Opening preview...')}
-                    className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                    onClick={() => toast('Opening preview...')}
+                    className="px-5 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-32.5 text-center shadow-sm"
                   >
                     Preview
                   </button>
                   <button
-                    onClick={() => alert('Downloading XML file...')}
-                    className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-[130px] text-center shadow-sm"
+                    onClick={() => toast.success('Downloading XML file...')}
+                    className="px-5 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer w-32.5 text-center shadow-sm"
                   >
                     Download
                   </button>
@@ -464,7 +399,7 @@ const JobManagementPage: React.FC = () => {
                 <div className="grid grid-cols-3 gap-4">
                   {/* Brake System */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Brake System</p>
                       <p className="text-sm font-bold text-gray-900">Safety</p>
@@ -472,7 +407,7 @@ const JobManagementPage: React.FC = () => {
                   </div>
                   {/* Headlights */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Headlights</p>
                       <p className="text-sm font-bold text-gray-900">Lights</p>
@@ -480,7 +415,7 @@ const JobManagementPage: React.FC = () => {
                   </div>
                   {/* Suspension */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Suspension</p>
                       <p className="text-sm font-bold text-gray-900">Mechanical</p>
@@ -530,7 +465,7 @@ const JobManagementPage: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-bold text-gray-900">In File</h3>
                   <button
-                    onClick={() => alert('Camera activated to capture image...')}
+                    onClick={() => toast('Camera activated to capture image...')}
                     className="px-4 py-2.5 border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
                   >
                     Capture Image
@@ -538,11 +473,11 @@ const JobManagementPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="aspect-[16/9] rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                  <div className="aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
                     <img src={carImage} alt="Car" className="w-full h-full object-cover" />
                   </div>
-                  <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
-                  <div className="aspect-[16/9] rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                  <div className="aspect-video rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
+                  <div className="aspect-video rounded-lg border border-gray-200 bg-[#EFEFEF]"></div>
                 </div>
               </div>
 
@@ -552,7 +487,7 @@ const JobManagementPage: React.FC = () => {
                 <div className="grid grid-cols-3 gap-4">
                   {/* Brake System */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Brake System</p>
                       <p className="text-sm font-bold text-gray-900">Safety</p>
@@ -560,7 +495,7 @@ const JobManagementPage: React.FC = () => {
                   </div>
                   {/* Headlights */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Headlights</p>
                       <p className="text-sm font-bold text-gray-900">Lights</p>
@@ -568,7 +503,7 @@ const JobManagementPage: React.FC = () => {
                   </div>
                   {/* Suspension */}
                   <div className="bg-[#f2fbf4] border border-[#DCFCE7] rounded-xl p-4 flex items-center gap-3">
-                    <img src={tickImg} alt="Tick" className="w-[19px] h-[19px] flex-none" />
+                    <img src={tickImg} alt="Tick" className="w-4.75 h-4.75 flex-none" />
                     <div>
                       <p className="text-xs font-semibold text-gray-500">Suspension</p>
                       <p className="text-sm font-bold text-gray-900">Mechanical</p>
@@ -610,7 +545,7 @@ const JobManagementPage: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => alert('Submitting & Printing...')}
+                  onClick={() => toast.success('Submitting & Printing...')}
                   className="px-6 py-2.5 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
                 >
                   Submit & Print
@@ -636,8 +571,8 @@ const JobManagementPage: React.FC = () => {
       <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
         {/* Left Side: Search Box */}
         <div className="relative" style={{ width: '320px' }}>
-          <span className="absolute inset-y-0 left-[14px] flex items-center pointer-events-none">
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
+          <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+            <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="7" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -645,8 +580,8 @@ const JobManagementPage: React.FC = () => {
           <input
             type="text"
             placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={jobsApi.searchQuery}
+            onChange={(e) => jobsApi.setSearchQuery(e.target.value)}
             className="bg-white transition-all focus:outline-none focus:border-[#98A2B3]"
             style={{
               width: '100%',
@@ -730,25 +665,26 @@ const JobManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedJobs.length > 0 ? (
+              {jobsApi.isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">Loading…</td>
+                </tr>
+              ) : paginatedJobs.length > 0 ? (
                 paginatedJobs.map((job) => (
                   <tr
                     key={job.id}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedJob(job);
-                      if (job.status === 'Pending') {
-                        setCurrentStep(1);
-                      } else if (job.status === 'Completed') {
-                        setCurrentStep(3);
-                      } else {
-                        setCurrentStep(2);
-                      }
+                      await jobsApi.loadDetail(job.id);
+                      if (job.status === 'Pending') setCurrentStep(1);
+                      else if (job.status === 'Completed') setCurrentStep(3);
+                      else setCurrentStep(2);
                     }}
                     className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white cursor-pointer"
                   >
                     <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">
                       <span className="underline text-gray-900 hover:text-gray-600 transition-colors font-semibold">
-                        {job.id}
+                        {job.displayId}
                       </span>
                     </td>
                     <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.vehicle}</td>
@@ -792,7 +728,7 @@ const JobManagementPage: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                alert(`Editing inspection job: ${job.id}`);
+                                toast(`Editing inspection job: ${job.id}`);
                                 setActiveDropdownId(null);
                               }}
                               className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
@@ -802,8 +738,8 @@ const JobManagementPage: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm(`Are you sure you want to delete inspection job ${job.id}?`)) {
-                                  setJobs(jobs.filter(j => j.id !== job.id));
+                                if (confirm(`Are you sure you want to delete inspection job ${job.displayId}?`)) {
+                                  void jobsApi.removeJob(job.id);
                                 }
                                 setActiveDropdownId(null);
                               }}
@@ -830,20 +766,20 @@ const JobManagementPage: React.FC = () => {
         {/* Table Footer / Pagination */}
         <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-[#ffffff]">
           <span className="text-xs font-semibold text-gray-500">
-            Page {currentPage} of {Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE))} - {filteredJobs.length} Records
+            Page {jobsApi.page} of {jobsApi.totalPages}
           </span>
           <div className="flex gap-2">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              onClick={() => jobsApi.setPage(p => Math.max(1, p - 1))}
+              disabled={jobsApi.page === 1}
+              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${jobsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
             >
               Previous
             </button>
             <button
-              onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredJobs.length / PAGE_SIZE), p + 1))}
-              disabled={currentPage >= Math.ceil(filteredJobs.length / PAGE_SIZE)}
-              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${currentPage >= Math.ceil(filteredJobs.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              onClick={() => jobsApi.setPage(p => Math.min(jobsApi.totalPages, p + 1))}
+              disabled={jobsApi.page >= jobsApi.totalPages}
+              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${jobsApi.page >= jobsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
             >
               Next
             </button>

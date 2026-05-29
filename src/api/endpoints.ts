@@ -50,4 +50,28 @@ export const ENDPOINTS = {
     STATS: '/dashboard/stats',
     REVENUE: '/dashboard/revenue',
   },
+  ANPR_CAPTURES: {
+    BASE: '/transactions/anpr-captures',
+    BY_ID: (id: string) => `/transactions/anpr-captures/${id}`,
+  },
+  ROP_VERIFICATIONS: {
+    BASE: '/transactions/rop-verifications',
+    BY_ID: (id: string) => `/transactions/rop-verifications/${id}`,
+  },
+  CUSTOMERS: {
+    BASE: '/transactions/customers',
+    BY_ID: (id: string) => `/transactions/customers/${id}`,
+  },
+  APPOINTMENTS: {
+    BASE: '/appointments',
+    BY_ID: (id: string) => `/appointments/${id}`,
+  },
+  PAYMENT_TRANSACTIONS: {
+    BASE: '/transactions/payment-transactions',
+    BY_ID: (id: string) => `/transactions/payment-transactions/${id}`,
+  },
+  JOBS: {
+    BASE: '/jobs',
+    BY_ID: (id: string) => `/jobs/${id}`,
+  },
 } as const;

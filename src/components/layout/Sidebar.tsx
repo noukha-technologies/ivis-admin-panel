@@ -3,7 +3,8 @@ import { useLocation } from 'react-router-dom';
 import opalLogo from '../../assets/images/opal_logo.svg';
 import { getUser, clearAuth } from '../../utils/storage';
 import { authService } from '../../api/services/auth.service';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
+import { useAppStore } from '../../store/app.store';
 
 const AVATAR_COLOR_PALETTES = [
   { bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700' },
@@ -31,7 +32,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const { sidebarCollapsed, toggleSidebarCollapsed } = useAppStore();
   const location = useLocation();
   const [showPopup, setShowPopup] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement | null>(null);
@@ -159,11 +160,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const menuItems = isConfiguration ? configurationMenuItems : defaultMenuItems;
 
   return (
-    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${isCollapsed ? 'sidebar-collapsed' : 'w-65 px-4'}`}>
+    <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${sidebarCollapsed ? 'sidebar-collapsed' : 'w-65 px-4'}`}>
 
       {/* Collapse Toggle Button */}
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={toggleSidebarCollapsed}
         className="absolute w-6 h-6 rounded-full bg-white border border-neutral-200 shadow-sm flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-800 hover:bg-neutral-50 transition-all"
         style={{
           right: '-12px',
@@ -174,9 +175,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
           justifyContent: 'center',
           boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
         }}
-        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
       >
-        {isCollapsed ? (
+        {sidebarCollapsed ? (
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
@@ -188,8 +189,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       </button>
 
       {/* Logo */}
-      <div className={`sidebar-logo-container flex items-center justify-center ${isCollapsed ? 'mb-6 px-0 pl-0! pr-0!' : 'justify-start'}`}>
-        {isCollapsed ? (
+      <div className={`sidebar-logo-container flex items-center justify-center ${sidebarCollapsed ? 'mb-6 px-0 pl-0! pr-0!' : 'justify-start'}`}>
+        {sidebarCollapsed ? (
           <div className="w-10 h-10 flex items-center justify-center bg-white border border-neutral-200/80 rounded-xl shadow-sm overflow-hidden shrink-0">
             <img
               src="/favicon.svg"
@@ -203,7 +204,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className={`flex flex-col gap-y-3 mt-2 ${isCollapsed ? 'px-0' : ''}`}>
+      <nav className={`flex flex-col gap-y-3 mt-2 ${sidebarCollapsed ? 'px-0' : ''}`}>
         {menuItems.map((item) => {
           const isActive = isConfiguration ? activeTab === item.name : activeMenu === item.name;
           return (
@@ -211,15 +212,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
               key={item.name}
               onClick={() => onMenuChange(item.name)}
               className={`sidebar-btn ${isActive ? 'active' : ''}`}
-              title={isCollapsed ? item.name : undefined}
+              title={sidebarCollapsed ? item.name : undefined}
             >
-              <div className="flex items-center gap-3 w-full" style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start', gap: isCollapsed ? '0px' : '12px' }}>
+              <div className="flex items-center gap-3 w-full" style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: sidebarCollapsed ? '0px' : '12px' }}>
                 {item.icon && (
                   <span style={{ color: isActive ? '#111827' : '#4a5568' }} className="flex-none transition-colors">
                     {item.icon}
                   </span>
                 )}
-                {(!isCollapsed || !item.icon) && <span className="truncate">{item.name}</span>}
+                {(!sidebarCollapsed || !item.icon) && <span className="truncate">{item.name}</span>}
               </div>
             </button>
           );
@@ -227,18 +228,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       </nav>
 
       {/* User Profile Section at bottom */}
-      <div ref={profileRef} className={`relative mt-auto border-t border-neutral-200/60 pt-4 ${isCollapsed ? 'px-0 flex justify-center' : 'px-1'}`}>
+      <div ref={profileRef} className={`relative mt-auto border-t border-neutral-200/60 pt-4 ${sidebarCollapsed ? 'px-0 flex justify-center' : 'px-1'}`}>
         <button
           onClick={() => setShowPopup(!showPopup)}
           className={`flex items-center gap-3 w-full text-left p-2 hover:bg-neutral-200/50 rounded-xl transition-all cursor-pointer ${showPopup ? 'bg-neutral-200/50' : ''
-            } ${isCollapsed ? 'justify-center' : ''}`}
+            } ${sidebarCollapsed ? 'justify-center' : ''}`}
         >
           {/* Avatar with initials */}
           <div className={`w-10 h-10 rounded-xl font-bold text-[16px] flex items-center justify-center shadow-sm shrink-0 select-none transition-all ${avatarPalette.bg}`}>
             {userName.charAt(0).toUpperCase()}
           </div>
 
-          {!isCollapsed && (
+          {!sidebarCollapsed && (
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-[13.5px] font-bold text-slate-800 truncate leading-snug">
                 {userName}
@@ -249,7 +250,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
             </div>
           )}
 
-          {!isCollapsed && (
+          {!sidebarCollapsed && (
             <svg className="w-4 h-4 text-slate-400 shrink-0 ml-auto" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
             </svg>
@@ -259,7 +260,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
         {/* Mini Popover Sign Out */}
         {showPopup && (
           <div
-            className={`absolute bg-white border border-neutral-100 rounded-xl shadow-xl p-1.5 z-100 animate-fadeInMenu ${isCollapsed
+            className={`absolute bg-white border border-neutral-100 rounded-xl shadow-xl p-1.5 z-100 animate-fadeInMenu ${sidebarCollapsed
               ? 'left-16 bottom-2 w-45'
               : 'left-2 right-2 bottom-16'
               }`}

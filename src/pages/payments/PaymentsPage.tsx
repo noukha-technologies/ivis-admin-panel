@@ -1,97 +1,88 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import VehicleRecordsPage from '../vehicle-records/VehicleRecordsPage';
 import { FilterDropdown } from '../../components/ui/FilterDropdown';
 import CustomersPage from '../customers/CustomersPage';
 import FileProcessingPage from '../file-processing/FileProcessingPage';
 import RopManagementPage from '../rop-management/RopManagementPage';
-
-interface PaymentRecord {
-  id: string;
-  customer: string;
-  vehicle: string;
-  total: string;
-  mode: string;
-  type: string;
-}
+import { usePaymentTransactions } from '../../features/payments/hooks/usePaymentTransactions';
+import { useIntake } from '../../features/intake/IntakeContext';
+import { useMasterLookups } from '../../hooks/useMasterLookups';
 
 const PaymentsPage: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'Payments' | 'Vehicle Records' | 'Customers' | 'File Processing' | 'ROP Management'>('Payments');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
-  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({
+  const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({
     mode: [],
     type: [],
   });
 
-  const [customerName, setCustomerName] = useState('');
-  const [vehicleNo, setVehicleNo] = useState('OM-1000');
-  const [totalAmount, setTotalAmount] = useState('');
+  const intake = useIntake();
+  const { centres, lines, cameras, adminPcs, paymentModes } = useMasterLookups();
+  const paymentsApi = usePaymentTransactions();
+
+  const [totalAmount, setTotalAmount] = useState('31.5');
+  const [charges] = useState('30');
+  const [vat] = useState('1.5');
   const [paymentMode, setPaymentMode] = useState('Cash');
-  const [paymentType, setPaymentType] = useState('FOC');
+  const [centreId, setCentreId] = useState('');
+  const [lineId, setLineId] = useState('');
+  const [adminPcId, setAdminPcId] = useState('');
+  const [cameraId, setCameraId] = useState('');
 
-  const [payments, setPayments] = useState<PaymentRecord[]>([
-    { id: '#240526-01', customer: 'Ahmed', vehicle: 'OM-1000', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
-    { id: '#240526-02', customer: 'Salim Al-Harthy', vehicle: 'OM-4930', total: 'OMR 15.00', mode: 'Card', type: 'Standard' },
-    { id: '#240526-03', customer: 'Fatima Al-Balushi', vehicle: 'OM-8812', total: 'OMR 30.00', mode: 'Card', type: 'Premium' },
-    { id: '#240526-04', customer: 'John Doe', vehicle: 'OM-2033', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
-    { id: '#240526-05', customer: 'Khalid Al-Riyami', vehicle: 'OM-7721', total: 'OMR 15.00', mode: 'Cash', type: 'Standard' },
-    { id: '#240526-06', customer: 'Mazin Al-Sadi', vehicle: 'OM-1928', total: 'OMR 30.00', mode: 'Card', type: 'Premium' },
-    { id: '#240526-07', customer: 'Said Al-Habsi', vehicle: 'OM-3044', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
-    { id: '#240526-08', customer: 'Amna Al-Jahwari', vehicle: 'OM-9081', total: 'OMR 15.00', mode: 'Card', type: 'Standard' },
-    { id: '#240526-09', customer: 'Yahya Al-Kharusi', vehicle: 'OM-6677', total: 'OMR 30.00', mode: 'Cash', type: 'Premium' },
-    { id: '#240526-10', customer: 'Mona Al-Farsi', vehicle: 'OM-5522', total: 'OMR 26.25', mode: 'Card', type: 'FOC' },
-    { id: '#240526-11', customer: 'Hamed Al-Rawahi', vehicle: 'OM-4110', total: 'OMR 15.00', mode: 'Cash', type: 'Standard' }
-  ]);
+  useEffect(() => {
+    if (centres.length && !centreId) setCentreId(centres[0].id);
+    if (lines.length && !lineId) setLineId(lines[0].id);
+    if (adminPcs.length && !adminPcId) setAdminPcId(adminPcs[0].id);
+    if (cameras.length && !cameraId) setCameraId(cameras[0].id);
+    if (paymentModes.length && !paymentMode) setPaymentMode(paymentModes[0].name);
+  }, [centres, lines, adminPcs, cameras, paymentModes, centreId, lineId, adminPcId, cameraId, paymentMode]);
 
-  const handleCreatePayment = (e: React.FormEvent) => {
+  const handleCreatePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !totalAmount) return;
+    if (!intake.customerId || !intake.vehicleRecordId) {
+      toast.error('Complete appointment walk-in first (customer & vehicle IDs required)');
+      return;
+    }
 
-    const newId = `#240526-${String(payments.length + 1).padStart(2, '0')}`;
-    const newPayment: PaymentRecord = {
-      id: newId,
-      customer: customerName,
-      vehicle: vehicleNo,
-      total: `OMR ${parseFloat(totalAmount).toFixed(2)}`,
-      mode: paymentMode,
-      type: paymentType
-    };
+    const grandTotal = parseFloat(totalAmount) || 0;
+    const created = await paymentsApi.createPayment({
+      customer_id: intake.customerId,
+      vehicle_record_id: intake.vehicleRecordId,
+      appointment_id: intake.appointmentId,
+      anpr_capture_id: intake.anprCaptureId,
+      centre_id: centreId || undefined,
+      line_id: lineId || undefined,
+      admin_pc_id: adminPcId || undefined,
+      camera_id: cameraId || undefined,
+      payment_type: paymentMode,
+      status: 'Paid',
+      charges: parseFloat(charges) || grandTotal,
+      vat: parseFloat(vat) || 0,
+      grand_total: grandTotal,
+      pay_date: new Date().toISOString(),
+      auto_create_job: true,
+      job_source: 'Walk-In',
+    });
 
-    setPayments([newPayment, ...payments]);
-    setShowNewModal(false);
-    setCustomerName('');
-    setTotalAmount('');
-    setPaymentMode('Cash');
-    setPaymentType('FOC');
+    if (created) {
+      intake.setFromPayment(created);
+      toast.success(created.job_id ? `Payment recorded — job ${created.job_id}` : 'Payment recorded');
+      setShowNewModal(false);
+    } else if (paymentsApi.error) {
+      toast.error(paymentsApi.error);
+    }
   };
 
-  const filteredPayments = payments.filter(p => {
-    const matchesSearch = 
-      p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.mode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.type.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    if (!matchesSearch) return false;
-    
-    if (activeFilters.mode && activeFilters.mode.length > 0) {
-      if (!activeFilters.mode.includes(p.mode)) return false;
-    }
-    
-    if (activeFilters.type && activeFilters.type.length > 0) {
-      if (!activeFilters.type.includes(p.type)) return false;
-    }
-    
+  const filteredPayments = paymentsApi.items.filter((p) => {
+    const modeFilter = activeFilters.mode as string[] | undefined;
+    const typeFilter = activeFilters.type as string[] | undefined;
+    if (modeFilter?.length && !modeFilter.includes(p.mode)) return false;
+    if (typeFilter?.length && !typeFilter.includes(p.type)) return false;
     return true;
   });
 
-  const paginatedPayments = filteredPayments.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  const paginatedPayments = filteredPayments;
 
   return (
     <div className="flex flex-col min-h-full">
@@ -127,8 +118,8 @@ const PaymentsPage: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  value={paymentsApi.searchQuery}
+                  onChange={(e) => { paymentsApi.setSearchQuery(e.target.value); paymentsApi.setPage(1); }}
                   className="bg-white transition-all focus:outline-none focus:border-gray-400"
                   style={{ width: '320px', height: '38px', border: '1px solid #cbd5e1', borderRadius: '10px', paddingLeft: '40px', paddingRight: '16px', fontSize: '14px', color: '#1e293b', boxSizing: 'border-box' }}
                 />
@@ -164,7 +155,7 @@ const PaymentsPage: React.FC = () => {
                 ]}
                 onChange={(updated) => {
                   setActiveFilters(updated);
-                  setCurrentPage(1);
+                  paymentsApi.setPage(1);
                 }}
               />
             </div>
@@ -198,14 +189,18 @@ const PaymentsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedPayments.length > 0 ? (
+                  {paymentsApi.isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">Loading…</td>
+                    </tr>
+                  ) : paginatedPayments.length > 0 ? (
                     paginatedPayments.map((payment) => (
                       <tr
                         key={payment.id}
                         className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
                       >
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
-                          {payment.id}
+                          {payment.displayId}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
@@ -226,20 +221,20 @@ const PaymentsPage: React.FC = () => {
               {/* Pagination Footer */}
               <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
                 <span className="text-[13px] text-slate-500 font-medium">
-                  Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
+                  Page {paymentsApi.page} of {paymentsApi.totalPages} · {paymentsApi.total} Records
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                    onClick={() => paymentsApi.setPage((p) => Math.max(1, p - 1))}
+                    disabled={paymentsApi.page === 1}
+                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
                   >
                     Previous
                   </button>
                   <button
-                    onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
-                    disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
-                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                    onClick={() => paymentsApi.setPage((p) => Math.min(paymentsApi.totalPages, p + 1))}
+                    disabled={paymentsApi.page >= paymentsApi.totalPages}
+                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page >= paymentsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
                   >
                     Next
                   </button>
@@ -298,123 +293,35 @@ const PaymentsPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleCreatePayment} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                Customer: {intake.customerId ? '✓' : '—'} · Vehicle: {intake.vehicleRecordId ? '✓' : '—'} ·
+                Plate: {intake.plateNumber ?? '—'}
+              </p>
 
-              {/* Phone */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Phone *</label>
-                <input
-                  type="tel"
-                  placeholder="Enter"
-                  required
-                  style={{
-                    width: '100%',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    color: '#1f2937',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff'
-                  }}
-                />
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Payment mode</label>
+                <select
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value)}
+                >
+                  {paymentModes.map((m) => (
+                    <option key={m.id} value={m.name}>{m.name}</option>
+                  ))}
+                  {!paymentModes.length && <option value="Cash">Cash</option>}
+                </select>
               </div>
 
-              {/* Customer Name */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Customer Name *</label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter"
-                  required
-                  style={{
-                    width: '100%',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    color: '#1f2937',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff'
-                  }}
-                />
-              </div>
-
-              {/* Vehicle Number */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Vehicle Number *</label>
-                <input
-                  type="text"
-                  value={vehicleNo}
-                  onChange={(e) => setVehicleNo(e.target.value)}
-                  placeholder="Enter"
-                  required
-                  style={{
-                    width: '100%',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    color: '#1f2937',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff'
-                  }}
-                />
-              </div>
-
-              {/* Amount (OMR) */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Amount (OMR)</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Grand total (OMR)</label>
                 <input
                   type="number"
                   step="0.01"
                   value={totalAmount}
                   onChange={(e) => setTotalAmount(e.target.value)}
-                  placeholder="Enter"
                   required
-                  style={{
-                    width: '100%',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    color: '#1f2937',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#ffffff'
-                  }}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
-              </div>
-
-              {/* Type */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Type</label>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: '#374151', fontWeight: 500, userSelect: 'none' }}>
-                    <input
-                      type="radio"
-                      name="paymentType"
-                      checked={paymentType === 'Paid'}
-                      onChange={() => setPaymentType('Paid')}
-                      style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: '#4b5563' }}
-                    />
-                    Paid
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: '#374151', fontWeight: 500, userSelect: 'none' }}>
-                    <input
-                      type="radio"
-                      name="paymentType"
-                      checked={paymentType === 'FOC'}
-                      onChange={() => setPaymentType('FOC')}
-                      style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: '#4b5563' }}
-                    />
-                    FOC
-                  </label>
-                </div>
               </div>
 
               {/* Mode */}

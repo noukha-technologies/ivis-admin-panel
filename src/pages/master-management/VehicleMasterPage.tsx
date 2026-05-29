@@ -3,7 +3,7 @@ import { masterService } from '../../api/services/master.service';
 import type { ApiVehicle } from '../../interfaces/vehicle.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import type { PaginationMeta } from '../../types/api.types';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const VehicleMasterPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);

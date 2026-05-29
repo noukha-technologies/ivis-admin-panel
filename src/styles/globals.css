@@ -82,3 +82,13 @@
   border-radius: 12px !important;
   height: 38px !important;
 }
+
+/* ===========================
+   Toaster Text Alignment Overrides
+   =========================== */
+div[role="status"] {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+  flex: 1 1 auto !important;
+}

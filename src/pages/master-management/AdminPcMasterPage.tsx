@@ -4,7 +4,7 @@ import type { ApiAdminPc } from '../../interfaces/admin-pc.interface';
 import type { ApiLine } from '../../interfaces/line.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import type { PaginationMeta } from '../../types/api.types';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const AdminPcMasterPage: React.FC = () => {
   const [pcs, setPcs] = useState<ApiAdminPc[]>([]);
