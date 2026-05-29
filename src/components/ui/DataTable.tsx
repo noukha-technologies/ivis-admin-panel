@@ -14,6 +14,9 @@ export function DataTable<TData>({
   defaultPageSize = 10,
   filterElement,
   leftElement,
+  showControls = true,
+  showPagination = true,
+  onRowClick,
 }: DataTableProps<TData>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('All');
@@ -155,115 +158,117 @@ export function DataTable<TData>({
     <div className="w-full flex flex-col gap-4">
 
       {/* Top Filter and Controller Row */}
-      <div className="flex items-center justify-between flex-wrap gap-3 w-full">
-        {/* Left side content (e.g. switcher) or spacer */}
-        <div>{leftElement}</div>
+      {showControls && (
+        <div className="flex items-center justify-between flex-wrap gap-3 w-full">
+          {/* Left side content (e.g. switcher) or spacer */}
+          <div>{leftElement}</div>
 
-        {/* Right side controls: Search & Dropdowns */}
-        <div className="flex items-center gap-2">
-          {/* Search Input */}
-          <div className="relative w-full max-w-72">
-            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <input
-              type="text"
-              placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 text-[13.5px] bg-white border border-neutral-200 rounded-xl placeholder-[#667085] text-[#1f2937] focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-            />
-          </div>
-          {filterElement}
-
-          {!filterElement && filterColumnKey && filterOptions && (() => {
-            const activeFilterLabel = filterValue === 'All' ? filterPlaceholder : (filterOptions.find(opt => opt.value === filterValue)?.label || filterValue);
-            const filterDropdownSections: DropdownMenuSection[] = [
-              {
-                items: [
-                  {
-                    id: 'all',
-                    label: filterPlaceholder,
-                    selected: filterValue === 'All',
-                    onClick: () => {
-                      setFilterValue('All');
-                      setCurrentPage(1);
-                    }
-                  },
-                  ...filterOptions.map(opt => ({
-                    id: opt.value,
-                    label: opt.label,
-                    selected: filterValue === opt.value,
-                    onClick: () => {
-                      setFilterValue(opt.value);
-                      setCurrentPage(1);
-                    }
-                  }))
-                ]
-              }
-            ];
-
-            return (
-              <DropdownMenu
-                trigger={
-                  <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer">
-                    <span>{activeFilterLabel}</span>
-                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                }
-                sections={filterDropdownSections}
-                align="right"
-              />
-            );
-          })()}
-
-          {/* Column Controller Trigger Dropdown */}
-          {hidableColumns.length > 0 && (
-            <div className="relative" ref={columnDropdownRef}>
-              <button
-                onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer"
-              >
-                <span>Columns</span>
-                <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          {/* Right side controls: Search & Dropdowns */}
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            <div className="relative w-full max-w-72">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </button>
-
-              {showColumnDropdown && (
-                <div className="absolute right-0 mt-1.5 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-2.5 z-40 text-left animate-fadeInMenu max-h-60 overflow-y-auto">
-                  <p className="px-3.5 pb-1.5 text-[12px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 mb-1.5">Toggle Columns</p>
-                  {hidableColumns.map(col => {
-                    const colId = getColumnId(col);
-                    const isVisible = !hiddenColumns.includes(colId);
-                    return (
-                      <label
-                        key={colId}
-                        className="flex items-center gap-2.5 px-4 py-1.5 text-[13.5px] font-medium text-neutral-700 hover:bg-neutral-50 cursor-pointer select-none"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isVisible}
-                          onChange={() => toggleColumnVisibility(colId)}
-                          className="w-4 h-4 rounded border-gray-300 text-neutral-800 focus:ring-neutral-800 cursor-pointer"
-                        />
-                        <span>{getColumnLabel(col)}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              </span>
+              <input
+                type="text"
+                placeholder={searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2 text-[13.5px] bg-white border border-neutral-200 rounded-xl placeholder-[#667085] text-[#1f2937] focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
+              />
             </div>
-          )}
+            {filterElement}
+
+            {!filterElement && filterColumnKey && filterOptions && (() => {
+              const activeFilterLabel = filterValue === 'All' ? filterPlaceholder : (filterOptions.find(opt => opt.value === filterValue)?.label || filterValue);
+              const filterDropdownSections: DropdownMenuSection[] = [
+                {
+                  items: [
+                    {
+                      id: 'all',
+                      label: filterPlaceholder,
+                      selected: filterValue === 'All',
+                      onClick: () => {
+                        setFilterValue('All');
+                        setCurrentPage(1);
+                      }
+                    },
+                    ...filterOptions.map(opt => ({
+                      id: opt.value,
+                      label: opt.label,
+                      selected: filterValue === opt.value,
+                      onClick: () => {
+                        setFilterValue(opt.value);
+                        setCurrentPage(1);
+                      }
+                    }))
+                  ]
+                }
+              ];
+
+              return (
+                <DropdownMenu
+                  trigger={
+                    <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer">
+                      <span>{activeFilterLabel}</span>
+                      <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  }
+                  sections={filterDropdownSections}
+                  align="right"
+                />
+              );
+            })()}
+
+            {/* Column Controller Trigger Dropdown */}
+            {hidableColumns.length > 0 && (
+              <div className="relative" ref={columnDropdownRef}>
+                <button
+                  onClick={() => setShowColumnDropdown(!showColumnDropdown)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer"
+                >
+                  <span>Columns</span>
+                  <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showColumnDropdown && (
+                  <div className="absolute right-0 mt-1.5 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-2.5 z-40 text-left animate-fadeInMenu max-h-60 overflow-y-auto">
+                    <p className="px-3.5 pb-1.5 text-[12px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 mb-1.5">Toggle Columns</p>
+                    {hidableColumns.map(col => {
+                      const colId = getColumnId(col);
+                      const isVisible = !hiddenColumns.includes(colId);
+                      return (
+                        <label
+                          key={colId}
+                          className="flex items-center gap-2.5 px-4 py-1.5 text-[13.5px] font-medium text-neutral-700 hover:bg-neutral-50 cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isVisible}
+                            onChange={() => toggleColumnVisibility(colId)}
+                            className="w-4 h-4 rounded border-gray-300 text-neutral-800 focus:ring-neutral-800 cursor-pointer"
+                          />
+                          <span>{getColumnLabel(col)}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Table Bordered Card */}
       <div className="w-full bg-white border border-neutral-200/90 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
@@ -313,7 +318,11 @@ export function DataTable<TData>({
                 paginatedData.map((row, rowIdx) => (
                   <tr
                     key={rowIdx}
-                    className="border-b border-neutral-50 hover:bg-neutral-50/50 bg-white transition-colors duration-150"
+                    onClick={() => onRowClick && onRowClick(row)}
+                    className={cn(
+                      "border-b border-neutral-50 hover:bg-neutral-50/50 bg-white transition-colors duration-150",
+                      onRowClick ? "cursor-pointer" : ""
+                    )}
                   >
                     {visibleColumns.map((col, colIdx) => {
                       const colId = getColumnId(col);
@@ -339,7 +348,7 @@ export function DataTable<TData>({
         </div>
 
         {/* Centered Pagination Footer (Mockup layout) */}
-        {totalPages > 0 && (
+        {showPagination && totalPages > 0 && (
           <div className="flex items-center justify-center gap-1.5 px-6 py-4.5 border-t border-neutral-100 bg-white select-none">
             {/* Previous link button with chevron */}
             <button

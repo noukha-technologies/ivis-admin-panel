@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { masterService } from '../../api/services/master.service';
 import type { ApiVehicle } from '../../interfaces/vehicle.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
@@ -9,25 +9,6 @@ const VehicleMasterPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Search, Pagination and Sort States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<string>('created_at');
-  const [sortAsc, setSortAsc] = useState<boolean>(false); // default descending (newest first)
-  const [meta, setMeta] = useState<PaginationMeta>({
-    total: 0,
-    page: 1,
-    limit: 8,
-    totalPages: 1,
-    hasNextPage: false,
-    hasPreviousPage: false,
-  });
-
-  const ITEMS_PER_PAGE = 8;
-  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Modal States
   const [selectedItem, setSelectedItem] = useState<ApiVehicle | null>(null);
@@ -50,27 +31,14 @@ const VehicleMasterPage: React.FC = () => {
     vehicle_color: '',
   });
 
-  // Debounce search query to prevent backend spamming
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Fetch vehicles on filter/pagination changes
+  // Fetch vehicles on component mount / changes
   const fetchVehicles = async () => {
     setIsLoading(true);
     try {
       const result = await masterService.vehicles.getAll({
-        page: currentPage,
-        limit: ITEMS_PER_PAGE,
-        search: debouncedSearch || undefined,
-        sortBy: sortBy || undefined,
-        sortOrder: sortAsc ? 'ASC' : 'DESC',
+        nonPaginated: true,
       });
       setVehicles(result.data);
-      setMeta(result.meta);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Failed to retrieve vehicle records.'));
     } finally {
@@ -79,22 +47,7 @@ const VehicleMasterPage: React.FC = () => {
   };
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, sortBy, sortAsc]);
-
-  useEffect(() => {
     fetchVehicles();
-  }, [currentPage, debouncedSearch, sortBy, sortAsc]);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setActiveDropdownId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
   const resetForm = () => {
@@ -122,13 +75,11 @@ const VehicleMasterPage: React.FC = () => {
       vehicle_color: item.vehicle_color,
     });
     setShowEditModal(true);
-    setActiveDropdownId(null);
   };
 
   const handleOpenView = (item: ApiVehicle) => {
     setSelectedItem(item);
     setShowViewModal(true);
-    setActiveDropdownId(null);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -179,7 +130,6 @@ const VehicleMasterPage: React.FC = () => {
   const openDeleteModal = (id: string) => {
     setDeleteId(id);
     setShowDeleteModal(true);
-    setActiveDropdownId(null);
   };
 
   const confirmDelete = async () => {
@@ -196,300 +146,149 @@ const VehicleMasterPage: React.FC = () => {
     }
   };
 
-  const toggleSort = (column: string) => {
-    if (sortBy === column) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortBy(column);
-      setSortAsc(true);
-    }
-  };
+  const columns = useMemo<ColumnDef<ApiVehicle>[]>(() => [
+    {
+      id: 'vehicle_id',
+      header: 'ID',
+      accessorKey: 'vehicle_id',
+      cell: ({ value }) => (
+        <span className="font-semibold text-neutral-500">#{value}</span>
+      ),
+      enableSorting: true,
+      enableHiding: false,
+    },
+    {
+      id: 'plate_number',
+      header: 'Plate Number',
+      accessorKey: 'plate_number',
+      cell: ({ value }) => (
+        <span className="inline-flex items-center px-3 py-0.5 bg-[#f8fafc] border border-neutral-300 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded">
+          {value}
+        </span>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'vehicle_brand',
+      header: 'Brand',
+      accessorKey: 'vehicle_brand',
+      cell: ({ value }) => <span className="font-semibold text-gray-900">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'vehicle_type',
+      header: 'Type',
+      accessorKey: 'vehicle_type',
+      cell: ({ value }) => <span className="text-gray-600 font-semibold">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'vehicle_color',
+      header: 'Color',
+      accessorKey: 'vehicle_color',
+      cell: ({ value }) => (
+        <div className="flex items-center gap-2">
+          <span
+            className="w-3.5 h-3.5 rounded-full inline-block border border-neutral-300 shadow-sm"
+            style={{
+              backgroundColor: String(value).toLowerCase() === 'white' ? '#ffffff' :
+                String(value).toLowerCase() === 'black' ? '#171717' :
+                  String(value).toLowerCase() === 'silver' ? '#c0c0c0' :
+                    String(value).toLowerCase() === 'gray' ? '#808080' :
+                      String(value).toLowerCase() === 'red' ? '#ea4335' :
+                        String(value).toLowerCase() === 'blue' ? '#4285f4' :
+                          String(value).toLowerCase() === 'green' ? '#34a853' :
+                            String(value).toLowerCase() === 'yellow' ? '#fbbc05' :
+                              String(value).toLowerCase() === 'gold' ? '#ffd700' :
+                                String(value).toLowerCase(),
+            }}
+          ></span>
+          <span className="text-gray-600 font-medium">{value}</span>
+        </div>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row: item }) => (
+        <RowActions
+          actions={[
+            {
+              id: 'view',
+              label: 'View Details',
+              icon: <Eye className="w-4 h-4 text-slate-500" />,
+              onClick: () => handleOpenView(item),
+            },
+            {
+              id: 'edit',
+              label: 'Edit Record',
+              icon: <Pencil className="w-4 h-4 text-slate-500" />,
+              onClick: () => handleOpenEdit(item),
+            },
+            {
+              id: 'delete',
+              label: 'Delete',
+              icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+              onClick: () => openDeleteModal(item.id),
+              variant: 'danger' as const,
+            },
+          ]}
+        />
+      ),
+    },
+  ], []);
 
   return (
     <div className="w-full flex flex-col relative">
-      {/* Search bar & Action Button */}
-      <div className="mb-5 flex items-center justify-end flex-wrap gap-4">
-        <div className="relative w-full max-w-85">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search plate, type, brand or color"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-          />
-          {searchQuery && (
+      {isLoading ? (
+        <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-gray-100 bg-[#F9FAFB]">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Plate Number</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Brand</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Type</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '15%' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <tr key={index} className="border-b border-gray-55 bg-white animate-pulse">
+                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-10"></div></td>
+                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
+                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
+                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-24"></div></td>
+                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
+                  <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <DataTable
+          data={vehicles}
+          columns={columns}
+          searchPlaceholder="Search plate, type, brand or color"
+          defaultPageSize={8}
+          filterElement={
             <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+              onClick={handleOpenAddModal}
+              className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
               </svg>
+              <span>Add Vehicle</span>
             </button>
-          )}
-        </div>
-
-        <button
-          onClick={handleOpenAddModal}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white font-medium text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
-          </svg>
-          <span>Add Vehicle</span>
-        </button>
-      </div>
-
-      {/* Main card box containing the table */}
-      <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="w-full overflow-x-auto">
-          {isLoading ? (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '22%' }}>Plate Number</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Brand</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Type</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '15%' }}>Color</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '15%' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <tr key={index} className="border-b border-gray-50 bg-white animate-pulse">
-                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-10"></div></td>
-                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
-                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
-                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-24"></div></td>
-                    <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
-                    <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : vehicles.length === 0 ? (
-            <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 mb-3 border border-neutral-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Master Records Found</p>
-              <p className="text-[13px] text-[#64748b] max-w-70">No entries match your search query or database filter.</p>
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                  <th
-                    onClick={() => toggleSort('vehicle_id')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '12%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      ID
-                      {sortBy === 'vehicle_id' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('plate_number')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '22%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Plate Number
-                      {sortBy === 'plate_number' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('vehicle_brand')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '18%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Brand
-                      {sortBy === 'vehicle_brand' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('vehicle_type')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '18%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Type
-                      {sortBy === 'vehicle_type' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th
-                    onClick={() => toggleSort('vehicle_color')}
-                    className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    style={{ padding: '12px 20px', width: '15%' }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      Color
-                      {sortBy === 'vehicle_color' && (
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${sortAsc ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      )}
-                    </span>
-                  </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '15%' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vehicles.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white group">
-                    <td className="px-6 py-4.5 text-sm font-semibold text-neutral-500">#{item.vehicle_id}</td>
-                    <td className="px-6 py-4.5">
-                      <span className="inline-flex items-center px-3 py-0.5 bg-[#f8fafc] border border-neutral-300 text-neutral-800 text-[13px] font-bold font-mono tracking-wider rounded">
-                        {item.plate_number}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">{item.vehicle_brand}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-semibold">{item.vehicle_type}</td>
-                    <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-3.5 h-3.5 rounded-full inline-block border border-neutral-300 shadow-sm"
-                          style={{
-                            backgroundColor: item.vehicle_color.toLowerCase() === 'white' ? '#ffffff' :
-                              item.vehicle_color.toLowerCase() === 'black' ? '#171717' :
-                                item.vehicle_color.toLowerCase() === 'silver' ? '#c0c0c0' :
-                                  item.vehicle_color.toLowerCase() === 'gray' ? '#808080' :
-                                    item.vehicle_color.toLowerCase() === 'red' ? '#ea4335' :
-                                      item.vehicle_color.toLowerCase() === 'blue' ? '#4285f4' :
-                                        item.vehicle_color.toLowerCase() === 'green' ? '#34a853' :
-                                          item.vehicle_color.toLowerCase() === 'yellow' ? '#fbbc05' :
-                                            item.vehicle_color.toLowerCase() === 'gold' ? '#ffd700' :
-                                              item.vehicle_color.toLowerCase(),
-                          }}
-                        ></span>
-                        <span>{item.vehicle_color}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4.5 text-right relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveDropdownId(activeDropdownId === item.id ? null : item.id);
-                        }}
-                        className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-neutral-800 transition-colors inline-flex cursor-pointer"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                      </button>
-
-                      {activeDropdownId === item.id && (
-                        <div
-                          ref={dropdownRef}
-                          className="absolute right-6 mt-1 w-36 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-40 text-left"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => handleOpenView(item)}
-                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 cursor-pointer font-medium"
-                          >
-                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                            <span>View Details</span>
-                          </button>
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className="w-full px-4 py-2 text-[13px] text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 cursor-pointer font-medium"
-                          >
-                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                            </svg>
-                            <span>Edit Record</span>
-                          </button>
-                          <div className="border-t border-neutral-100 my-1"></div>
-                          <button
-                            onClick={() => openDeleteModal(item.id)}
-                            className="w-full px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 flex items-center gap-2.5 cursor-pointer font-semibold"
-                          >
-                            <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Pagination control */}
-        {!isLoading && vehicles.length > 0 && (
-          <div className="px-5 py-4 border-t border-neutral-100 flex items-center justify-between bg-white text-[13.5px]">
-            <span className="text-gray-500 font-medium">
-              Showing <span className="font-semibold text-neutral-800">{(meta.page - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
-              <span className="font-semibold text-neutral-800">
-                {Math.min(meta.page * ITEMS_PER_PAGE, meta.total)}
-              </span>{' '}
-              of <span className="font-semibold text-neutral-800">{meta.total}</span> results
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={!meta.hasPreviousPage}
-                className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
-              >
-                Previous
-              </button>
-              {Array.from({ length: meta.totalPages }, (_, idx) => idx + 1).map((pg) => (
-                <button
-                  key={pg}
-                  onClick={() => setCurrentPage(pg)}
-                  className={`w-8.5 h-8.5 rounded-lg font-semibold flex items-center justify-center transition-all cursor-pointer ${meta.page === pg
-                    ? 'bg-[#171717] text-white shadow-sm border border-[#171717]'
-                    : 'border border-neutral-200 text-gray-500 hover:bg-neutral-50'
-                    }`}
-                >
-                  {pg}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, meta.totalPages))}
-                disabled={!meta.hasNextPage}
-                className="px-3 py-1.5 border border-neutral-200 rounded-lg text-gray-500 hover:bg-neutral-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer font-medium"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          }
+        />
+      )}
 
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (
@@ -535,7 +334,7 @@ const VehicleMasterPage: React.FC = () => {
                 <span className="text-gray-400 font-medium">Color</span>
                 <span className="col-span-2 text-neutral-800 flex items-center gap-2">
                   <span
-                    className="w-3 h-3 rounded-full inline-block border border-neutral-200"
+                    className="w-3.5 h-3.5 rounded-full inline-block border border-neutral-200"
                     style={{ backgroundColor: selectedItem.vehicle_color.toLowerCase() }}
                   ></span>
                   <span>{selectedItem.vehicle_color}</span>

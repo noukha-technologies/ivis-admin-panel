@@ -13,6 +13,7 @@ import VehicleRecordsPage from '../pages/vehicle-records/VehicleRecordsPage';
 import CustomersPage from '../pages/customers/CustomersPage';
 import RopManagementPage from '../pages/rop-management/RopManagementPage';
 import JobManagementPage from '../pages/job-management/JobManagementPage';
+import ReportsPage from '../pages/reports/ReportsPage';
 import MasterManagementPage from '../pages/master-management/MasterManagementPage';
 import VehicleMasterPage from '../pages/master-management/VehicleMasterPage';
 import TestMasterPage from '../pages/master-management/TestMasterPage';
@@ -47,7 +48,8 @@ const AppRouter = () => {
           <Route path={ROUTES.CUSTOMERS} element={<CustomersPage />} />
           <Route path={ROUTES.ROP_MANAGEMENT} element={<RopManagementPage />} />
           <Route path={ROUTES.JOB_MANAGEMENT} element={<JobManagementPage />} />
-          
+          <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+
           <Route path={ROUTES.MASTER_MANAGEMENT} element={<MasterManagementPage />}>
             <Route index element={<Navigate to={ROUTES.MASTER_VEHICLES} replace />} />
             <Route path="vehicles" element={<VehicleMasterPage />} />

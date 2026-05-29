@@ -11,7 +11,7 @@ interface TopbarProps {
 const menuItems = [
   { name: 'User Management' },
   { name: 'Configuration' },
-  { name: 'Master Mangement' },
+  { name: 'Master Management' },
   { name: 'Transaction' },
 ];
 
@@ -19,7 +19,6 @@ const itemRouteMap: Record<string, string> = {
   'User Management': '/users',
   'Configuration': '/configuration',
   'Master Management': '/master-management',
-  'Master Mangement': '/master-management',
   'Transaction': '/payments',
 };
 
@@ -94,9 +93,9 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
               position: 'absolute',
               top: 'calc(100% + 8px)',
               right: '0',
-              minWidth: '280px',
+              minWidth: '220px',
               backgroundColor: '#ffffff',
-              borderRadius: '16px',
+              borderRadius: '12px',
               boxShadow: '0 12px 36px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03)',
               border: '1px solid rgba(0, 0, 0, 0.06)',
               padding: '0',
@@ -119,8 +118,8 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
                   display: 'block',
                   width: '100%',
                   textAlign: 'left',
-                  padding: '18px 24px',
-                  fontSize: '16.5px',
+                  padding: '11px 20px',
+                  fontSize: '14.5px',
                   fontWeight: 500,
                   color: '#1a1a2e',
                   backgroundColor: 'transparent',
@@ -130,10 +129,10 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
                   fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                   transition: 'background-color 0.15s ease',
                   letterSpacing: '-0.01em',
-                  borderTopLeftRadius: idx === 0 ? '16px' : '0',
-                  borderTopRightRadius: idx === 0 ? '16px' : '0',
-                  borderBottomLeftRadius: idx === menuItems.length - 1 ? '16px' : '0',
-                  borderBottomRightRadius: idx === menuItems.length - 1 ? '16px' : '0',
+                  borderTopLeftRadius: idx === 0 ? '12px' : '0',
+                  borderTopRightRadius: idx === 0 ? '12px' : '0',
+                  borderBottomLeftRadius: idx === menuItems.length - 1 ? '12px' : '0',
+                  borderBottomRightRadius: idx === menuItems.length - 1 ? '12px' : '0',
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f8fafc';

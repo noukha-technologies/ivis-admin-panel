@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useUsers } from '../../features/users/hooks/useUsers';
 import { FilterDropdown } from '../../components/ui/FilterDropdown';
 import { useRoles } from '../../features/users/hooks/useRoles';
@@ -7,6 +7,8 @@ import { userFormFromListItem } from '../../features/users/mappers';
 import type { UserFormData, UserListItem, RoleListItem, RoleFormData } from '../../features/users/types';
 import { emptyUserForm, emptyRoleForm } from '../../features/users/types';
 import { DataTable } from '../../components/ui/DataTable';
+import { RowActions } from '../../components/ui/RowActions';
+import { Pencil, Trash2 } from 'lucide-react';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
 import { masterService } from '../../api/services/master.service';
 
@@ -132,6 +134,69 @@ const UsersPage: React.FC = () => {
       }
     }
   ];
+
+  const roleColumns = useMemo<ColumnDef<RoleListItem>[]>(() => [
+    {
+      id: 'name',
+      header: 'Role',
+      accessorKey: 'name',
+      cell: ({ value }) => (
+        <span className="font-bold text-[#101828]">{value}</span>
+      ),
+      enableSorting: true,
+      enableHiding: false,
+    },
+    {
+      id: 'description',
+      header: 'Description',
+      accessorKey: 'description',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: false,
+    },
+    {
+      id: 'created',
+      header: 'Created',
+      accessorKey: 'created',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row: role }) => (
+        <RowActions
+          actions={[
+            ...(canEditUsers ? [
+              {
+                id: 'edit',
+                label: 'Edit Role',
+                icon: <Pencil className="w-4 h-4 text-slate-500" />,
+                onClick: () => {
+                  setRoleToEdit(role);
+                  setRoleFormData({ role_name: role.name, description: role.description === '—' ? '' : role.description });
+                  setFormError(null);
+                  setShowEditRoleModal(true);
+                }
+              },
+              {
+                id: 'delete',
+                label: 'Delete',
+                icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+                onClick: () => {
+                  setRoleToDelete(role.id);
+                  setShowDeleteRoleModal(true);
+                },
+                variant: 'danger' as const
+              }
+            ] : [])
+          ]}
+        />
+      )
+    }
+  ], [canEditUsers]);
+
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -449,200 +514,13 @@ const UsersPage: React.FC = () => {
           )}
         </div>
       ) : (
-        /* Roles Area */
-        <div className="w-full flex flex-col gap-4">
-          {/* Top Control Row */}
-          <div className="flex items-center justify-between flex-wrap gap-3 w-full">
-            <div>{tabSwitcher}</div>
-            <div className="relative w-full max-w-72">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </span>
-              <input
-                type="text"
-                placeholder="Search roles..."
-                value={rolesHook.searchQuery}
-                onChange={(e) => rolesHook.setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-[13.5px] bg-white border border-neutral-200 rounded-xl placeholder-[#667085] text-[#1f2937] focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-              />
-            </div>
-          </div>
-
-          {/* Roles Table Bordered Card */}
-          <div className="w-full bg-white border border-neutral-200/90 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
-            <div className="w-full overflow-x-auto">
-              {isLoading ? (
-                <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                  <p className="text-[15px] font-semibold text-[#1e293b]">Loading roles...</p>
-                </div>
-              ) : rolesHook.roles.length === 0 ? (
-                <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                  <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Roles Found</p>
-                  <p className="text-[13px] text-[#64748b]">Try adjusting your search filters.</p>
-                </div>
-              ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-neutral-100 bg-[#FCFCFD]">
-                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[25%]">Role</th>
-                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[45%]">Description</th>
-                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[20%]">Created</th>
-                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold text-right w-[10%]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rolesHook.roles.map((role) => (
-                      <tr key={role.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 bg-white transition-colors duration-150">
-                        <td className="px-6 py-4.5 text-[14px] font-bold text-[#101828]">{role.name}</td>
-                        <td className="px-6 py-4.5 text-[14px] text-[#475467] font-normal">{role.description}</td>
-                        <td className="px-6 py-4.5 text-[14px] text-[#475467] font-normal">{role.created}</td>
-                        <td className="px-6 py-4.5 text-right relative">
-                          <button
-                            onClick={() => setActiveDropdownId(activeDropdownId === `role-${role.id}` ? null : `role-${role.id}`)}
-                            className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-[#98a2b3] hover:text-[#475467] transition-all cursor-pointer ml-auto"
-                          >
-                            <svg className="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-                              <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-                              <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-                            </svg>
-                          </button>
-
-                          {activeDropdownId === `role-${role.id}` && (
-                            <div
-                              ref={dropdownRef}
-                              className="absolute right-6 top-10 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left"
-                            >
-                              {canEditUsers && (
-                                <button
-                                  onClick={() => {
-                                    setRoleToEdit(role);
-                                    setRoleFormData({ role_name: role.name, description: role.description === '—' ? '' : role.description });
-                                    setFormError(null);
-                                    setShowEditRoleModal(true);
-                                    setActiveDropdownId(null);
-                                  }}
-                                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                                >
-                                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                  </svg>
-                                  <span>Edit Role</span>
-                                </button>
-                              )}
-                              {canEditUsers && (
-                                <>
-                                  <div className="h-px bg-neutral-100 my-1"></div>
-                                  <button
-                                    onClick={() => {
-                                      setRoleToDelete(role.id);
-                                      setShowDeleteRoleModal(true);
-                                      setActiveDropdownId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                                  >
-                                    <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                    </svg>
-                                    <span>Delete</span>
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            {/* Redesigned Premium Pagination Footer Bar (Roles Tab) */}
-            <div className="flex items-center justify-between px-6 py-4.5 border-t border-neutral-100 bg-white">
-              {/* Left count text */}
-              <span className="text-[13.5px] text-[#475467] font-semibold">
-                Showing {rolesHook.roles.length} of {rolesHook.total} row(s).
-              </span>
-
-              {/* Right pagination controls */}
-              <div className="flex items-center gap-6">
-                {/* Rows per page */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[13.5px] text-[#475467] font-semibold">Rows per page</span>
-                  <div className="relative shrink-0">
-                    <select
-                      disabled
-                      value={50}
-                      className="appearance-none pl-3 pr-8 py-1.5 text-[13.5px] font-semibold border border-neutral-200 rounded-xl bg-white text-[#1f2937] shadow-sm outline-none cursor-not-allowed"
-                    >
-                      <option value={50}>50</option>
-                    </select>
-                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-
-                {/* Page indicator */}
-                <span className="text-[13.5px] text-[#475467] font-semibold shrink-0">
-                  Page {rolesHook.page} of {Math.ceil(rolesHook.total / 50) || 1}
-                </span>
-
-                {/* Arrow control buttons */}
-                <div className="flex items-center gap-1.5">
-                  {/* First Page << */}
-                  <button
-                    disabled={rolesHook.page <= 1}
-                    onClick={() => rolesHook.setPage(1)}
-                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
-                    </svg>
-                  </button>
-
-                  {/* Previous Page < */}
-                  <button
-                    disabled={rolesHook.page <= 1}
-                    onClick={() => rolesHook.setPage(rolesHook.page - 1)}
-                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                  </button>
-
-                  {/* Next Page > */}
-                  <button
-                    disabled={rolesHook.page >= Math.ceil(rolesHook.total / 50)}
-                    onClick={() => rolesHook.setPage(rolesHook.page + 1)}
-                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                  </button>
-
-                  {/* Last Page >> */}
-                  <button
-                    disabled={rolesHook.page >= Math.ceil(rolesHook.total / 50)}
-                    onClick={() => rolesHook.setPage(Math.ceil(rolesHook.total / 50) || 1)}
-                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.625L11.625 12 5.25 18.375m7.5-12.75L19.125 12 12.75 18.375" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DataTable
+          data={rolesHook.roles}
+          columns={roleColumns}
+          searchPlaceholder="Search roles..."
+          leftElement={tabSwitcher}
+          defaultPageSize={50}
+        />
       )}
 
       {/* New User Modal */}

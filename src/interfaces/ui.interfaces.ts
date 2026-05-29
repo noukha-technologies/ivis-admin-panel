@@ -55,6 +55,9 @@ export interface DataTableProps<TData> {
   defaultPageSize?: number;
   filterElement?: React.ReactNode;
   leftElement?: React.ReactNode;
+  showControls?: boolean;
+  showPagination?: boolean;
+  onRowClick?: (row: TData) => void;
 }
 
 // ==========================================

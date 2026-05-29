@@ -244,6 +244,8 @@ const AppointmentsPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-white transition-all focus:outline-none focus:border-gray-400"
               style={{
                 width: '320px',

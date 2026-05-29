@@ -72,7 +72,7 @@ const ReportsPage: React.FC = () => {
   const passCount = reports.filter((r) => r.result === 'Pass').length;
   const failCount = reports.filter((r) => r.result === 'Fail').length;
   const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
-  
+
   const totalRevenue = reports.reduce((acc, r) => {
     const feeNum = parseFloat(r.fee.replace('OMR ', ''));
     return acc + feeNum;
@@ -116,14 +116,14 @@ const ReportsPage: React.FC = () => {
 
   return (
     <div className="w-full text-gray-900" style={{ boxSizing: 'border-box' }}>
-      
+
       {/* Top Filter & Actions Panel */}
       <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 mb-5 shadow-sm transition-all duration-300">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          
+
           {/* Left: Filter Widgets */}
           <div className="flex flex-wrap items-center gap-3 flex-1">
-            
+
             {/* Search Input */}
             <div className="relative w-full sm:w-65">
               <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
@@ -252,7 +252,7 @@ const ReportsPage: React.FC = () => {
 
       {/* KPI Stats summary Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-        
+
         {/* Metric 1: Total Inspections */}
         <div className="bg-[#F8FAF8] rounded-2xl border border-neutral-200/80 p-5 flex flex-col justify-between shadow-sm min-h-27.5 group hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
           <div className="flex items-start justify-between">
@@ -313,7 +313,7 @@ const ReportsPage: React.FC = () => {
 
       {/* Analytics Visual Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5 mb-5">
-        
+
         {/* Left: SVG Bar Chart for Pass/Fail Volume */}
         <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-sm flex flex-col justify-between">
           <div>
@@ -359,7 +359,7 @@ const ReportsPage: React.FC = () => {
                       fill="#10b981"
                       className="transition-all duration-300 hover:opacity-90"
                     />
-                    
+
                     {/* Fail Bar */}
                     <rect
                       x={xCoord + 4}
@@ -436,7 +436,7 @@ const ReportsPage: React.FC = () => {
                   <span>{c.name}</span>
                   <span className="text-[12px] text-slate-500 font-semibold">{c.count} vehicles</span>
                 </div>
-                
+
                 {/* Horizontal comparative progress bar */}
                 <div className="w-full h-2.5 bg-neutral-100 rounded-full overflow-hidden">
                   <div
@@ -457,7 +457,7 @@ const ReportsPage: React.FC = () => {
 
       {/* Main Tabular Detailed reports Table */}
       <div className="w-full bg-white rounded-2xl border border-neutral-200/80 shadow-sm overflow-hidden flex flex-col">
-        
+
         {/* Table Header Section */}
         <div className="px-5 py-4 border-b border-neutral-100 flex justify-between items-center bg-[#F9FAFB]">
           <h3 className="text-[15px] font-bold text-slate-800">Vehicle Inspection Report Logs</h3>
@@ -471,7 +471,7 @@ const ReportsPage: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50/50 text-[13px] text-slate-500 font-bold uppercase select-none">
-                
+
                 <th
                   onClick={() => toggleSort('id')}
                   className="px-5 py-3 cursor-pointer hover:bg-neutral-100 transition-colors"
@@ -542,7 +542,7 @@ const ReportsPage: React.FC = () => {
 
               </tr>
             </thead>
-            
+
             <tbody className="divide-y divide-neutral-100 text-[13.5px] font-medium text-slate-700">
               {paginatedReports.length > 0 ? (
                 paginatedReports.map((report) => (
@@ -560,11 +560,10 @@ const ReportsPage: React.FC = () => {
                     <td className="px-5 py-4 font-semibold text-neutral-500" style={{ padding: '15px 20px' }}>{report.date}</td>
                     <td className="px-5 py-4" style={{ padding: '15px 20px' }}>
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-bold select-none border ${
-                          report.result === 'Pass'
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[12px] font-bold select-none border ${report.result === 'Pass'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : 'bg-rose-50 text-rose-700 border-rose-200'
-                        }`}
+                          }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${report.result === 'Pass' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                         {report.result}
@@ -601,18 +600,16 @@ const ReportsPage: React.FC = () => {
             <button
               onClick={() => setCurrentPage(Math.max(1, Number(currentPage) - 1))}
               disabled={Number(currentPage) === 1}
-              className={`px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold transition-all bg-white ${
-                Number(currentPage) === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'
-              }`}
+              className={`px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold transition-all bg-white ${Number(currentPage) === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'
+                }`}
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, Number(currentPage) + 1))}
               disabled={Number(currentPage) >= totalPages}
-              className={`px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold transition-all bg-white ${
-                Number(currentPage) >= totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'
-              }`}
+              className={`px-3.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold transition-all bg-white ${Number(currentPage) >= totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'
+                }`}
             >
               Next
             </button>
@@ -624,13 +621,13 @@ const ReportsPage: React.FC = () => {
       {/* Sliding Detail Modal: Vehicle Inspection Certificate */}
       {selectedReport && (
         <div className="fixed inset-0 flex items-center justify-end z-50 transition-all select-none" style={{ backgroundColor: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(3px)' }}>
-          
+
           {/* Modal Container */}
           <div
             className="w-full max-w-145 h-screen bg-white shadow-2xl flex flex-col justify-between overflow-hidden animate-slideLeft border-l border-neutral-200"
             style={{ animation: 'slideLeft 0.25s ease-out' }}
           >
-            
+
             {/* Header */}
             <div className="px-6 py-5 border-b border-neutral-100 flex justify-between items-center bg-[#F9FAFB]">
               <div>
@@ -649,20 +646,19 @@ const ReportsPage: React.FC = () => {
 
             {/* Scrollable details */}
             <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 select-text">
-              
+
               {/* Pass/Fail Stamp */}
               <div className="flex justify-between items-center border border-neutral-100 rounded-2xl p-4 bg-slate-50/50 shadow-sm relative overflow-hidden">
                 <div>
                   <p className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Overall Determination</p>
                   <p className="text-[13.5px] font-bold text-slate-800 mt-1">Inspected on {selectedReport.date}</p>
                 </div>
-                
+
                 <div
-                  className={`px-6 py-2.5 rounded-xl border-2 uppercase font-extrabold text-[18px] tracking-widest rotate-6 ${
-                    selectedReport.result === 'Pass'
+                  className={`px-6 py-2.5 rounded-xl border-2 uppercase font-extrabold text-[18px] tracking-widest rotate-6 ${selectedReport.result === 'Pass'
                       ? 'border-emerald-500 text-emerald-600 bg-emerald-50/40'
                       : 'border-rose-500 text-rose-600 bg-rose-50/40'
-                  }`}
+                    }`}
                 >
                   {selectedReport.result}
                 </div>
@@ -671,7 +667,7 @@ const ReportsPage: React.FC = () => {
               {/* Owner and Vehicle Details */}
               <div className="flex flex-col gap-3.5">
                 <h4 className="text-[13.5px] font-bold text-slate-800 uppercase tracking-wide border-b border-neutral-100 pb-1.5">Vehicle Information</h4>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-[13px]">
                   <div>
                     <span className="text-slate-400 font-semibold block">Owner Name</span>
@@ -711,15 +707,14 @@ const ReportsPage: React.FC = () => {
                         <p className="font-bold text-slate-800">{item.name}</p>
                         <p className="text-[11.5px] text-slate-400 font-semibold mt-0.5">{item.category} Category</p>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         <span className="text-slate-500 font-bold font-mono">{item.value}</span>
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
-                            item.status === 'Pass'
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${item.status === 'Pass'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                               : 'bg-rose-50 text-rose-700 border border-rose-100'
-                          }`}
+                            }`}
                         >
                           {item.status}
                         </span>
@@ -743,7 +738,7 @@ const ReportsPage: React.FC = () => {
                 <Printer className="w-4 h-4" />
                 <span>Print Document</span>
               </button>
-              
+
               <button
                 onClick={() => {
                   toast.success('Certificate download completed.');

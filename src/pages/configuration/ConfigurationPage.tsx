@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { DataTable } from '../../components/ui/DataTable';
+import { RowActions } from '../../components/ui/RowActions';
+import { Pencil, Trash2 } from 'lucide-react';
+import type { ColumnDef } from '../../interfaces/ui.interfaces';
 
 const centers = [
   { id: 1, name: 'Bausher Inspection Center', code: 'CEN-001', region: 'Muscat', operatingHours: '08:00 - 18:00', adminPc: 4, lines: 6, cameras: 12 },
@@ -11,80 +15,92 @@ const centers = [
 const ConfigurationPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'Configuration';
-  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
+  const columns = useMemo<ColumnDef<typeof centers[0]>[]>(() => [
+    {
+      id: 'name',
+      header: 'Center Name',
+      accessorKey: 'name',
+      cell: ({ value }) => <span className="font-semibold text-gray-900">{value}</span>,
+      enableSorting: true,
+      enableHiding: false,
+    },
+    {
+      id: 'code',
+      header: 'Center Code',
+      accessorKey: 'code',
+      cell: ({ value }) => <span className="text-gray-600 font-medium font-mono">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'region',
+      header: 'Region',
+      accessorKey: 'region',
+      cell: ({ value }) => <span className="text-gray-600 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'operatingHours',
+      header: 'Operating Hours',
+      accessorKey: 'operatingHours',
+      cell: ({ value }) => <span className="text-gray-600 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'adminPc',
+      header: 'No of Admin Pc',
+      accessorKey: 'adminPc',
+      cell: ({ value }) => <span className="text-gray-600 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'lines',
+      header: 'No of Line',
+      accessorKey: 'lines',
+      cell: ({ value }) => <span className="text-gray-600 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'cameras',
+      header: 'No of Camera',
+      accessorKey: 'cameras',
+      cell: ({ value }) => <span className="text-gray-600 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row: center }) => (
+        <RowActions
+          actions={[
+            {
+              id: 'edit',
+              label: 'Edit',
+              icon: <Pencil className="w-4 h-4 text-slate-500" />,
+              onClick: () => setSearchParams({ tab: 'Centre Setup' }),
+            },
+            {
+              id: 'delete',
+              label: 'Delete',
+              icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+              onClick: () => {},
+              variant: 'danger' as const,
+            },
+          ]}
+        />
+      ),
+    },
+  ], [setSearchParams]);
 
   const CentersTable = () => (
-    <div className="flex flex-col gap-4">
-      {/* Toolbar: search + add button above the table */}
-      <div className="flex items-center justify-between">
-        <div className="relative w-[300px]">
-          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search centers..."
-            className="w-full pl-9 pr-4 py-2 border border-neutral-200 rounded-lg text-[13px] focus:outline-none focus:border-neutral-400 bg-white"
-          />
-        </div>
-
-      </div>
-
-      {/* Table card */}
-      <div className="bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-neutral-50/50 border-b border-neutral-200 text-[#64748b] text-[12px] uppercase font-bold tracking-wider">
-              <th className="py-3.5 px-6 font-semibold">Center Name</th>
-              <th className="py-3.5 px-6 font-semibold">Center Code</th>
-              <th className="py-3.5 px-6 font-semibold">Region</th>
-              <th className="py-3.5 px-6 font-semibold">Operating Hours</th>
-              <th className="py-3.5 px-6 font-semibold whitespace-nowrap">No of Admin Pc</th>
-              <th className="py-3.5 px-6 font-semibold whitespace-nowrap">No of Line</th>
-              <th className="py-3.5 px-6 font-semibold whitespace-nowrap">No of Camera</th>
-              <th className="py-3.5 px-6 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {centers.map((center) => (
-              <tr key={center.id} className="hover:bg-neutral-50/50 transition-colors">
-                <td className="py-3.5 px-6 align-middle text-[14px] font-semibold text-gray-900">{center.name}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600 font-mono">{center.code}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600">{center.region}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600">{center.operatingHours}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600">{center.adminPc}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600">{center.lines}</td>
-                <td className="py-3.5 px-6 align-middle text-[13.5px] text-gray-600">{center.cameras}</td>
-                <td className="py-3.5 px-6 align-middle text-right relative">
-                  <button
-                    onClick={() => setOpenMenuId(openMenuId === center.id ? null : center.id)}
-                    className="text-gray-400 hover:text-gray-600 p-1.5 rounded-md hover:bg-neutral-100 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                    </svg>
-                  </button>
-                  {openMenuId === center.id && (
-                    <div className="absolute right-12 top-8 w-28 bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.08)] border border-neutral-100 py-1 z-10 overflow-hidden">
-                      <button
-                        onClick={() => setSearchParams({ tab: 'Centre Setup' })}
-                        className="w-full text-left px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-neutral-50 hover:text-gray-900 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button className="w-full text-left px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors">
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <DataTable
+      data={centers}
+      columns={columns}
+      searchPlaceholder="Search centers..."
+      defaultPageSize={8}
+    />
   );
 
   const CentreSetupForm = () => {
@@ -538,11 +554,23 @@ const ConfigurationPage: React.FC = () => {
     <div className="w-full flex flex-col pt-3 pb-8 h-full">
       {/* Title Header */}
       <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">{pageTitle}</h1>
-          <p className="text-[14px] text-[#64748b] font-normal">{pageSubtitle}</p>
+        <div className="flex items-center gap-3">
+          {activeTab !== 'Configuration' && (
+            <button
+              onClick={() => setSearchParams({ tab: 'Configuration' })}
+              className="p-2 mr-2 flex items-center justify-center rounded-xl bg-white border border-neutral-200 text-[#475467] hover:text-[#101828] hover:bg-neutral-50 active:bg-neutral-100 transition-all cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
+              title="Back to Centers List"
+            >
+              <svg className="w-5 h-5 stroke-[2.2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+            </button>
+          )}
+          <div>
+            <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">{pageTitle}</h1>
+            <p className="text-[14px] text-[#64748b] font-normal">{pageSubtitle}</p>
+          </div>
         </div>
-
       </div>
 
       <div className="flex-1 overflow-auto">
