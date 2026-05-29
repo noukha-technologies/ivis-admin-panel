@@ -1,16 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import VehicleRecordsPage from '../vehicle-records/VehicleRecordsPage';
 import { FilterDropdown } from '../../components/ui/FilterDropdown';
-import CustomersPage from '../customers/CustomersPage';
-import FileProcessingPage from '../file-processing/FileProcessingPage';
-import RopManagementPage from '../rop-management/RopManagementPage';
 import { usePaymentTransactions } from '../../features/payments/hooks/usePaymentTransactions';
 import { useIntake } from '../../features/intake/IntakeContext';
 import { useMasterLookups } from '../../hooks/useMasterLookups';
 
 const PaymentsPage: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'Payments' | 'Vehicle Records' | 'Customers' | 'File Processing' | 'ROP Management'>('Payments');
   const [showNewModal, setShowNewModal] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({
     mode: [],
@@ -86,170 +81,146 @@ const PaymentsPage: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="flex border-b border-gray-200 mb-6 bg-white px-5 pt-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)]" style={{ margin: '-2px 20px 20px 20px', padding: '12px 24px 0 24px' }}>
-        {(['Payments', 'Vehicle Records', 'Customers', 'File Processing', 'ROP Management'] as const).map((tab) => {
-          const isActive = activeSubTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveSubTab(tab)}
-              className={`px-5 pb-3.5 text-sm font-semibold transition-all cursor-pointer relative -mb-px ${isActive ? 'text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
-                }`}
-              style={{ borderBottom: isActive ? '3px solid #1c1c1e' : '3px solid transparent' }}
-            >
-              {tab}
-            </button>
-          );
-        })}
-      </div>
-
-      {activeSubTab === 'Payments' && (
-        <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
-          <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                  <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="7" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={paymentsApi.searchQuery}
-                  onChange={(e) => { paymentsApi.setSearchQuery(e.target.value); paymentsApi.setPage(1); }}
-                  className="bg-white transition-all focus:outline-none focus:border-gray-400"
-                  style={{ width: '320px', height: '38px', border: '1px solid #cbd5e1', borderRadius: '10px', paddingLeft: '40px', paddingRight: '16px', fontSize: '14px', color: '#1e293b', boxSizing: 'border-box' }}
-                />
-              </div>
-              <FilterDropdown
-                align="left"
-                fields={[
-                  {
-                    id: 'mode',
-                    label: 'Payment Mode',
-                    type: 'select',
-                    selectType: 'single',
-                    options: [
-                      { label: 'Cash', value: 'Cash' },
-                      { label: 'Card', value: 'Card' },
-                      { label: 'UPI', value: 'UPI' },
-                      { label: 'External API', value: 'External API' }
-                    ],
-                    value: activeFilters.mode
-                  },
-                  {
-                    id: 'type',
-                    label: 'Payment Type',
-                    type: 'select',
-                    selectType: 'multiple',
-                    options: [
-                      { label: 'Standard', value: 'Standard' },
-                      { label: 'Premium', value: 'Premium' },
-                      { label: 'FOC', value: 'FOC' }
-                    ],
-                    value: activeFilters.type
-                  }
-                ]}
-                onChange={(updated) => {
-                  setActiveFilters(updated);
-                  paymentsApi.setPage(1);
-                }}
+      <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
+        <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search"
+                value={paymentsApi.searchQuery}
+                onChange={(e) => { paymentsApi.setSearchQuery(e.target.value); paymentsApi.setPage(1); }}
+                className="bg-white transition-all focus:outline-none focus:border-gray-400"
+                style={{ width: '320px', height: '38px', border: '1px solid #cbd5e1', borderRadius: '10px', paddingLeft: '40px', paddingRight: '16px', fontSize: '14px', color: '#1e293b', boxSizing: 'border-box' }}
               />
             </div>
-            <button
-              onClick={() => setShowNewModal(true)}
-              className="transition-all cursor-pointer hover:bg-opacity-95"
-              style={{ backgroundColor: '#1c1c1e', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '8px 18px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: '0 1px 2px rgba(0,0,0,0.08)', height: '38px' }}
-            >
-              <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
-              <span>New Transaction</span>
-            </button>
+            <FilterDropdown
+              align="left"
+              fields={[
+                {
+                  id: 'mode',
+                  label: 'Payment Mode',
+                  type: 'select',
+                  selectType: 'single',
+                  options: [
+                    { label: 'Cash', value: 'Cash' },
+                    { label: 'Card', value: 'Card' },
+                    { label: 'UPI', value: 'UPI' },
+                    { label: 'External API', value: 'External API' }
+                  ],
+                  value: activeFilters.mode
+                },
+                {
+                  id: 'type',
+                  label: 'Payment Type',
+                  type: 'select',
+                  selectType: 'multiple',
+                  options: [
+                    { label: 'Standard', value: 'Standard' },
+                    { label: 'Premium', value: 'Premium' },
+                    { label: 'FOC', value: 'FOC' }
+                  ],
+                  value: activeFilters.type
+                }
+              ]}
+              onChange={(updated) => {
+                setActiveFilters(updated);
+                paymentsApi.setPage(1);
+              }}
+            />
           </div>
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="transition-all cursor-pointer hover:bg-opacity-95"
+            style={{ backgroundColor: '#1c1c1e', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '8px 18px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: '0 1px 2px rgba(0,0,0,0.08)', height: '38px' }}
+          >
+            <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
+            <span>New Transaction</span>
+          </button>
+        </div>
 
-          <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-            <table className="w-full text-left border-collapse min-w-200">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
-                    <div className="flex items-center gap-1">
-                      Transaction ID
-                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
-                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
+        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+          <table className="w-full text-left border-collapse min-w-200">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
+                  <div className="flex items-center gap-1">
+                    Transaction ID
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentsApi.isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">Loading…</td>
                 </tr>
-              </thead>
-              <tbody>
-                {paymentsApi.isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">Loading…</td>
-                  </tr>
-                ) : paginatedPayments.length > 0 ? (
-                  paginatedPayments.map((payment) => (
-                    <tr
-                      key={payment.id}
-                      className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                    >
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
-                        {payment.displayId}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                      No transactions found.
+              ) : paginatedPayments.length > 0 ? (
+                paginatedPayments.map((payment) => (
+                  <tr
+                    key={payment.id}
+                    className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
+                  >
+                    <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
+                      {payment.displayId}
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-            {/* Pagination Footer */}
-            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-              <span className="text-[13px] text-slate-500 font-medium">
-                Page {paymentsApi.page} of {paymentsApi.totalPages} · {paymentsApi.total} Records
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => paymentsApi.setPage((p) => Math.max(1, p - 1))}
-                  disabled={paymentsApi.page === 1}
-                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => paymentsApi.setPage((p) => Math.min(paymentsApi.totalPages, p + 1))}
-                  disabled={paymentsApi.page >= paymentsApi.totalPages}
-                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page >= paymentsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-                >
-                  Next
-                </button>
-              </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No transactions found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+            <span className="text-[13px] text-slate-500 font-medium">
+              Page {paymentsApi.page} of {paymentsApi.totalPages} · {paymentsApi.total} Records
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => paymentsApi.setPage((p) => Math.max(1, p - 1))}
+                disabled={paymentsApi.page === 1}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => paymentsApi.setPage((p) => Math.min(paymentsApi.totalPages, p + 1))}
+                disabled={paymentsApi.page >= paymentsApi.totalPages}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page >= paymentsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
-      )}
-
-      {activeSubTab === 'Vehicle Records' && <VehicleRecordsPage />}
-      {activeSubTab === 'Customers' && <CustomersPage />}
-      {activeSubTab === 'File Processing' && <FileProcessingPage />}
-      {activeSubTab === 'ROP Management' && <RopManagementPage />}
+      </div>
 
       {/* MODAL: New Transaction Entry Form */}
-      {showNewModal && activeSubTab === 'Payments' && (
+      {showNewModal && (
     <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
       <div
         style={{

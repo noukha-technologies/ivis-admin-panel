@@ -40,6 +40,7 @@ const AppRouter = () => {
 
         {/* Protected routes with layout */}
         <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+          <Route path="/transactions" element={<Navigate to={ROUTES.PAYMENTS} replace />} />
           <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
           <Route path={ROUTES.APPOINTMENTS} element={<AppointmentsPage />} />
           <Route path={ROUTES.PAYMENTS} element={<PaymentsPage />} />
@@ -60,7 +61,10 @@ const AppRouter = () => {
             <Route path="payments" element={<PaymentMasterPage />} />
           </Route>
 
-          <Route path={ROUTES.USERS} element={<UsersPage />} />
+          <Route path={ROUTES.USERS_MANAGEMENT} element={<UsersPage />} />
+          <Route path={ROUTES.USERS_ROLES} element={<UsersPage />} />
+          <Route path="/users" element={<Navigate to={ROUTES.USERS_MANAGEMENT} replace />} />
+          <Route path="/users/roles" element={<Navigate to={ROUTES.USERS_ROLES} replace />} />
           <Route path={ROUTES.CONFIGURATION} element={<ConfigurationPage />} />
           <Route path={ROUTES.FILE_PROCESSING} element={<FileProcessingPage />} />
         </Route>

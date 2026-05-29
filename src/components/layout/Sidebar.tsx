@@ -1,5 +1,6 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import opalLogo from '../../assets/images/opal_logo.svg';
 import { getUser, clearAuth } from '../../utils/storage';
 import { authService } from '../../api/services/auth.service';
@@ -31,11 +32,31 @@ interface SidebarProps {
   onMenuChange: (menuName: string) => void;
 }
 
+interface MenuItem {
+  name: string;
+  icon?: React.ReactNode;
+  isCollapsible?: boolean;
+  subItems?: { name: string; path: string }[];
+  path?: string;
+}
+
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useAppStore();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showPopup, setShowPopup] = React.useState(false);
   const profileRef = React.useRef<HTMLDivElement | null>(null);
+
+  const [expandedMenus, setExpandedMenus] = React.useState<Record<string, boolean>>({
+    Transactions: true, // expand by default
+  });
+
+  const toggleMenuExpanded = (menuName: string) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuName]: !prev[menuName],
+    }));
+  };
 
   React.useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -65,10 +86,113 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   };
 
   const isConfiguration = location.pathname.startsWith('/configuration');
+  const isTransactions = location.pathname.startsWith('/transactions');
+  const isMasterManagement = location.pathname.startsWith('/master-management');
+  const isUserManagement = location.pathname.startsWith(ROUTES.USERS_MANAGEMENT);
   const searchParams = new URLSearchParams(location.search);
   const activeTab = searchParams.get('tab') || 'Configuration';
 
-  const defaultMenuItems = [
+  const masterMenuItems: MenuItem[] = [
+    {
+      name: 'Vehicle',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
+      ),
+      path: '/master-management/vehicles'
+    },
+    {
+      name: 'Manual Test',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="m9 14 2 2 4-4" /></svg>
+      ),
+      path: '/master-management/tests'
+    },
+    {
+      name: 'Centre',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><rect x="4" y="2" width="16" height="20" rx="2" ry="2" /><line x1="9" y1="22" x2="9" y2="16" /><line x1="15" y1="22" x2="15" y2="16" /><line x1="9" y1="16" x2="15" y2="16" /><path d="M8 6h.01M16 6h.01M8 10h.01M16 10h.01M12 6h.01M12 10h.01" /></svg>
+      ),
+      path: '/master-management/centres'
+    },
+    {
+      name: 'Line',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-road-icon lucide-road"><path d="M12 17v4" /><path d="M12 5V3" /><path d="M12 9v3" /><path d="M2.077 18.449A2 2 0 0 0 4 21h16a2 2 0 0 0 1.924-2.55l-4-14A2 2 0 0 0 16 3H8a2 2 0 0 0-1.924 1.45z" /></svg>
+      ),
+      path: '/master-management/lines'
+    },
+    {
+      name: 'Admin PC',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>
+      ),
+      path: '/master-management/pcs'
+    },
+    {
+      name: 'Camera / ANPR',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" /><circle cx="12" cy="13" r="3" /></svg>
+      ),
+      path: '/master-management/cameras'
+    },
+    {
+      name: 'Payments',
+      icon: (
+        <svg className="w-5 h-5 flex-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3L2 8h20L12 3z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 8v10M12 8v10M18 8v10" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 18h18M4 21h16" />
+        </svg>
+      ),
+      path: '/master-management/payments'
+    }
+  ];
+
+  const transactionsMenuItems: MenuItem[] = [
+    {
+      name: 'Payments',
+      icon: (
+        <svg className="w-5 h-5 flex-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3L2 8h20L12 3z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 8v10M12 8v10M18 8v10" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 18h18M4 21h16" />
+        </svg>
+      ),
+      path: '/transactions/payments'
+    },
+    {
+      name: 'Vehicle Records',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
+      ),
+      path: '/transactions/vehicle-records'
+    },
+    {
+      name: 'Customers',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+      ),
+      path: '/transactions/customers'
+    },
+    {
+      name: 'File Processing',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none"><path d="M14.5 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v3.8" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M11.7 14.2 7 17l-4.7-2.8" /><path d="M3 13.1a2 2 0 0 0-.999 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z" /><path d="M7 17v5" /></svg>
+      ),
+      path: '/transactions/file-processing'
+    },
+    {
+      name: 'ROP Management',
+      icon: (
+        <svg className="w-5 h-5 flex-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.249-8.25-3.286z" />
+        </svg>
+      ),
+      path: '/transactions/rop-management'
+    }
+  ];
+
+  const defaultMenuItems: MenuItem[] = [
     {
       name: 'Dashboard',
       icon: (
@@ -85,7 +209,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
         </svg>
       )
     },
-
     {
       name: 'Job Management',
       icon: (
@@ -104,7 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
     }
   ];
 
-  const configurationMenuItems = [
+  const configurationMenuItems: MenuItem[] = [
     {
       name: 'Centre Setup',
       icon: (
@@ -114,14 +237,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
         </svg>
       )
     },
-    // {
-    //   name: 'Admin PC',
-    //   icon: (
-    //     <svg className="w-5 h-5 flex-none" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-    //       <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    //     </svg>
-    //   )
-    // },
     {
       name: 'Line',
       icon: (
@@ -157,7 +272,40 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
     }
   ];
 
-  const menuItems = isConfiguration ? configurationMenuItems : defaultMenuItems;
+  const userMenuItems: MenuItem[] = [
+    {
+      name: 'Users',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      path: ROUTES.USERS_MANAGEMENT
+    },
+    {
+      name: 'Roles',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-none">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      ),
+      path: ROUTES.USERS_ROLES
+    }
+  ];
+
+  const menuItems = isConfiguration
+    ? configurationMenuItems
+    : isTransactions
+      ? transactionsMenuItems
+      : isMasterManagement
+        ? masterMenuItems
+        : isUserManagement
+          ? userMenuItems
+          : defaultMenuItems;
 
   return (
     <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${sidebarCollapsed ? 'sidebar-collapsed' : 'w-65 px-4'}`}>
@@ -206,11 +354,107 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
       {/* Navigation Menu */}
       <nav className={`flex flex-col gap-y-3 mt-2 ${sidebarCollapsed ? 'px-0' : ''}`}>
         {menuItems.map((item) => {
-          const isActive = isConfiguration ? activeTab === item.name : activeMenu === item.name;
+          const isExpanded = expandedMenus[item.name];
+          const isSubItemActive = !!(item.subItems && item.subItems.some(sub => location.pathname === sub.path));
+
+          const isActive = isTransactions
+            ? location.pathname === item.path
+            : isMasterManagement
+              ? location.pathname === item.path
+              : isUserManagement
+                ? (item.path === ROUTES.USERS_ROLES
+                  ? location.pathname === ROUTES.USERS_ROLES
+                  : location.pathname.startsWith(ROUTES.USERS_MANAGEMENT) && location.pathname !== ROUTES.USERS_ROLES)
+                : isConfiguration
+                  ? activeTab === item.name
+                  : item.subItems
+                    ? isSubItemActive
+                    : activeMenu === item.name;
+
+          if (item.subItems && item.subItems.length > 0) {
+            return (
+              <div key={item.name} className="flex flex-col w-full">
+                {/* Parent Button */}
+                <button
+                  onClick={() => {
+                    if (sidebarCollapsed) {
+                      toggleSidebarCollapsed();
+                      setExpandedMenus(prev => ({ ...prev, [item.name]: true }));
+                    } else {
+                      toggleMenuExpanded(item.name);
+                    }
+                  }}
+                  className={`sidebar-btn flex items-center justify-between transition-all cursor-pointer ${isActive ? 'bg-neutral-200/50 text-[#111827]' : 'text-slate-700 hover:bg-neutral-200/30'}`}
+                  style={{
+                    paddingTop: '8px',
+                    paddingBottom: '8px',
+                    paddingLeft: sidebarCollapsed ? '0px' : '16px',
+                    paddingRight: sidebarCollapsed ? '0px' : '16px',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+                  }}
+                  title={sidebarCollapsed ? item.name : undefined}
+                >
+                  <div className="flex items-center gap-3" style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'flex-start', gap: sidebarCollapsed ? '0px' : '12px' }}>
+                    {item.icon && (
+                      <span className={`flex-none transition-colors ${isActive ? 'text-[#111827]' : 'text-slate-600'}`}>
+                        {item.icon}
+                      </span>
+                    )}
+                    {!sidebarCollapsed && <span className="font-semibold text-[14px]">{item.name}</span>}
+                  </div>
+
+                  {!sidebarCollapsed && (
+                    <svg
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Sub-items List (only rendered when not collapsed and is expanded) */}
+                {!sidebarCollapsed && isExpanded && (
+                  <div className="flex flex-col gap-y-1 mt-1 pl-4 border-l-2 border-neutral-200 ml-6 animate-fadeInSubmenu">
+                    {item.subItems.map((sub) => {
+                      const isSubActive = location.pathname === sub.path;
+                      return (
+                        <button
+                          key={sub.name}
+                          onClick={() => {
+                            navigate(sub.path);
+                          }}
+                          className={`w-full text-left py-2 px-3 text-[13px] font-medium rounded-lg transition-all duration-150 cursor-pointer ${isSubActive
+                            ? 'bg-neutral-900 text-white shadow-sm'
+                            : 'text-slate-600 hover:bg-neutral-200/40 hover:text-slate-900'
+                            }`}
+                        >
+                          {sub.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <button
               key={item.name}
-              onClick={() => onMenuChange(item.name)}
+              onClick={() => {
+                if (item.path) {
+                  navigate(item.path);
+                } else {
+                  onMenuChange(item.name);
+                }
+              }}
               className={`sidebar-btn ${isActive ? 'active' : ''}`}
               title={sidebarCollapsed ? item.name : undefined}
             >
@@ -278,6 +522,16 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes fadeInSubmenu {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeInSubmenu {
+          animation: fadeInSubmenu 0.15s ease-out forwards;
+        }
+      `}</style>
     </aside>
   );
 };

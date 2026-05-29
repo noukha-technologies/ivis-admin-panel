@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
 
 interface TopbarProps {
@@ -12,14 +13,14 @@ const menuItems = [
   { name: 'User Management' },
   { name: 'Configuration' },
   { name: 'Master Management' },
-  { name: 'Transaction' },
+  { name: 'Transactions' },
 ];
 
 const itemRouteMap: Record<string, string> = {
-  'User Management': '/users',
-  'Configuration': '/configuration',
-  'Master Management': '/master-management',
-  'Transaction': '/payments',
+  'User Management': ROUTES.USERS_MANAGEMENT,
+  'Configuration': ROUTES.CONFIGURATION,
+  'Master Management': ROUTES.MASTER_MANAGEMENT,
+  'Transactions': ROUTES.PAYMENTS,
 };
 
 const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
@@ -56,7 +57,7 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
       <div className="flex items-center gap-3" style={{ paddingLeft: '4px' }}>
         {isSidebarHidden && (
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(ROUTES.DASHBOARD)}
             className="p-2 mr-2 flex items-center justify-center rounded-xl bg-white border border-neutral-200 text-[#475467] hover:text-[#101828] hover:bg-neutral-50 active:bg-neutral-100 transition-all cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
             title="Back to Dashboard"
           >

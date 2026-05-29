@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ROUTES } from '../../router/routes';
 import { useUsers } from '../../features/users/hooks/useUsers';
 import { FilterDropdown } from '../../components/ui/FilterDropdown';
 import { useRoles } from '../../features/users/hooks/useRoles';
@@ -16,8 +18,9 @@ const UsersPage: React.FC = () => {
   const { canCreateUsers, canEditUsers } = usePermissions();
   const usersHook = useUsers();
   const rolesHook = useRoles();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  const activeTab = location.pathname === ROUTES.USERS_ROLES ? 'roles' : 'users';
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -393,38 +396,12 @@ const UsersPage: React.FC = () => {
   const isLoading = activeTab === 'users' ? usersHook.isLoading : rolesHook.isLoading;
   const isSubmitting = usersHook.isSubmitting || rolesHook.isSubmitting;
 
-  const tabSwitcher = (
-    <div className="inline-flex items-center border border-neutral-200 bg-[#f9fafb] p-1 rounded-xl shrink-0 gap-1 select-none">
-      <button
-        onClick={() => setActiveTab('users')}
-        className={`px-4 py-1.5 text-[13.5px] font-semibold transition-all cursor-pointer rounded-lg ${
-          activeTab === 'users'
-            ? 'bg-white text-neutral-800 border border-neutral-200/80 shadow-sm'
-            : 'text-neutral-500 hover:text-neutral-800'
-        }`}
-      >
-        Users
-      </button>
-      <button
-        onClick={() => setActiveTab('roles')}
-        className={`px-4 py-1.5 text-[13.5px] font-semibold transition-all cursor-pointer rounded-lg ${
-          activeTab === 'roles'
-            ? 'bg-white text-neutral-800 border border-neutral-200/80 shadow-sm'
-            : 'text-neutral-500 hover:text-neutral-800'
-        }`}
-      >
-        Roles
-      </button>
-    </div>
-  );
+  const tabSwitcher = null;
 
   return (
     <div className="w-full flex flex-col pt-3 pb-8">
       {/* Title Header Row */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-[26px] font-bold text-[#101828] leading-tight mb-1">Users & Roles</h1>
-        </div>
 
         {/* Primary Action Button aligned to the right corner */}
         {activeTab === 'users' ? (
