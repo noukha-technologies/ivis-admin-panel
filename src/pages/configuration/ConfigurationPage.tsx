@@ -72,7 +72,7 @@ const ConfigurationPage: React.FC = () => {
       header: 'Actions',
       enableSorting: false,
       enableHiding: false,
-      cell: ({ row: center }) => (
+      cell: () => (
         <RowActions
           actions={[
             {
@@ -136,14 +136,14 @@ const ConfigurationPage: React.FC = () => {
               <span className="text-[14.5px] font-medium text-gray-800">Manual Sync Mode</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
               </label>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[14.5px] font-medium text-gray-800">Redo Test</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" className="sr-only peer" defaultChecked />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
               </label>
             </div>
           </div>
@@ -304,7 +304,7 @@ const ConfigurationPage: React.FC = () => {
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" defaultChecked={line.active} />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
                 </label>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -332,13 +332,13 @@ const ConfigurationPage: React.FC = () => {
             <h3 className="text-[16px] font-semibold text-gray-800 mb-5">Cam {cam.id}</h3>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12.5px] font-semibold text-[#64748b]">Camera Endpoint</label>
-                <input type="text" defaultValue={cam.endpoint} className="w-full max-w-[400px] px-3 py-2 border border-[#e2e8f0] rounded-lg text-[14px] font-medium text-gray-900 focus:outline-none focus:border-neutral-400 bg-white" />
+                <label className="text-[12.5px] font-semibold text-slate-500">Camera Endpoint</label>
+                <input type="text" defaultValue={cam.endpoint} className="w-full max-w-sm px-3 py-2 border border-slate-200 rounded-lg text-[14px] font-medium text-gray-900 focus:outline-none focus:border-neutral-400 bg-white" />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[12.5px] font-semibold text-[#64748b]">Confidence Threshold</label>
-                <div className="relative w-full max-w-[400px]">
-                  <select defaultValue={cam.threshold} className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-[14px] font-medium text-gray-900 focus:outline-none focus:border-neutral-400 bg-white appearance-none cursor-pointer">
+                <label className="text-[12.5px] font-semibold text-slate-500">Confidence Threshold</label>
+                <div className="relative w-full max-w-sm">
+                  <select defaultValue={cam.threshold} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] font-medium text-gray-900 focus:outline-none focus:border-neutral-400 bg-white appearance-none cursor-pointer">
                     <option value="95">95</option>
                     <option value="90">90</option>
                     <option value="85">85</option>
@@ -351,7 +351,7 @@ const ConfigurationPage: React.FC = () => {
               <div className="flex items-center gap-3 mt-1">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" defaultChecked={cam.autoFill} />
-                  <div className="w-[42px] h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[18px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
                 </label>
                 <span className="text-[14.5px] font-medium text-gray-800">Auto-fill plate from ANPR</span>
               </div>
@@ -486,7 +486,7 @@ const ConfigurationPage: React.FC = () => {
                   checked={test.active}
                   onChange={() => toggleTest(test.id)} 
                 />
-                <div className="w-[42px] h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[18px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
               </label>
             </div>
           ))}

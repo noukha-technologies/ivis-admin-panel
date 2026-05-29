@@ -3,8 +3,11 @@ import { masterService } from '../../api/services/master.service';
 import type { ApiCamera } from '../../interfaces/camera.interface';
 import type { ApiLine } from '../../interfaces/line.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
-import type { PaginationMeta } from '../../types/api.types';
 import { toast } from 'sonner';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { DataTable } from '../../components/ui/DataTable';
+import { RowActions } from '../../components/ui/RowActions';
+import type { ColumnDef } from '../../interfaces/ui.interfaces';
 
 const CameraMasterPage: React.FC = () => {
   const [cameras, setCameras] = useState<ApiCamera[]>([]);
@@ -445,7 +448,7 @@ const CameraMasterPage: React.FC = () => {
                       disabled={isSubmitting}
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
                       <option value="ANPR">ANPR</option>
                       <option value="CCTV">CCTV</option>
@@ -458,7 +461,7 @@ const CameraMasterPage: React.FC = () => {
                       disabled={isSubmitting || lines.length === 0}
                       value={formData.line_id}
                       onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
                       {lines.length === 0 ? (
                         <option value="">No active lines available</option>
@@ -597,7 +600,7 @@ const CameraMasterPage: React.FC = () => {
                       disabled={isSubmitting}
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
                       <option value="ANPR">ANPR</option>
                       <option value="CCTV">CCTV</option>
@@ -610,7 +613,7 @@ const CameraMasterPage: React.FC = () => {
                       disabled={isSubmitting || lines.length === 0}
                       value={formData.line_id}
                       onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium text-neutral-800"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
                       {lines.length === 0 ? (
                         <option value="">No active lines available</option>

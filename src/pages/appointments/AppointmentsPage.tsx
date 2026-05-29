@@ -235,8 +235,8 @@ const AppointmentsPage: React.FC = () => {
         ) : (
           /* List View: Search Input on Left */
           <div className="relative">
-            <span className="absolute inset-y-0 left-[14px] flex items-center pointer-events-none">
-              <svg className="w-[18px] h-[18px]" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
+            <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+              <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -244,8 +244,8 @@ const AppointmentsPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={appointmentsApi.searchQuery}
+              onChange={(e) => appointmentsApi.setSearchQuery(e.target.value)}
               className="bg-white transition-all focus:outline-none focus:border-gray-400"
               style={{
                 width: '320px',
@@ -340,7 +340,7 @@ const AppointmentsPage: React.FC = () => {
       {/* Main Content Area */}
       {viewMode === 'calendar' ? (
         /* Calendar View Box */
-        <div className="bg-white border border-neutral-200 rounded-[16px] shadow-sm overflow-hidden">
+        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden">
           {/* Weekday Row */}
           <div className="grid grid-cols-7 border-b border-neutral-200 bg-white">
             {weekdays.map((day, idx) => (
@@ -406,7 +406,7 @@ const AppointmentsPage: React.FC = () => {
                           setSelectedAppointment(appt);
                           setShowDetailModal(true);
                         }}
-                        className="w-full text-center block rounded-[6px] px-2 py-1 text-[11px] font-bold border transition-all cursor-pointer"
+                        className="w-full text-center block rounded-md px-2 py-1 text-[11px] font-bold border transition-all cursor-pointer"
                         style={{
                           backgroundColor: appt.status === 'green' ? '#E6F4EA' : '#FCE8E6',
                           borderColor: appt.status === 'green' ? '#34A853' : '#EA4335',
@@ -428,7 +428,7 @@ const AppointmentsPage: React.FC = () => {
         /* List View Box */
         <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
 
-          <table className="w-full text-left border-collapse min-w-[800px]">
+          <table className="w-full text-left border-collapse min-w-200">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
@@ -963,9 +963,9 @@ const AppointmentsPage: React.FC = () => {
       {/* MODAL: Appointment Details */}
       {showDetailModal && selectedAppointment && (
         <div className="fixed inset-0 bg-[#000000]/30 backdrop-blur-sm flex items-center justify-center z-50 transition-all">
-          <div className="bg-white border border-neutral-100 rounded-[20px] shadow-2xl p-6 w-[400px]">
+          <div className="bg-white border border-neutral-100 rounded-[20px] shadow-2xl p-6 w-100">
             <div className="flex justify-between items-center mb-4 border-b border-neutral-100 pb-3">
-              <span className="text-[14px] font-bold text-[#111827] bg-[#F1F3F5] px-3 py-1 rounded-[6px]">
+              <span className="text-[14px] font-bold text-[#111827] bg-[#F1F3F5] px-3 py-1 rounded-md">
                 {selectedAppointment.plate}
               </span>
               <button

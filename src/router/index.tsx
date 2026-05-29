@@ -25,7 +25,6 @@ import PaymentMasterPage from '../pages/master-management/PaymentMasterPage';
 import UsersPage from '../pages/users/UsersPage';
 import ConfigurationPage from '../pages/configuration/ConfigurationPage';
 import FileProcessingPage from '../pages/file-processing/FileProcessingPage';
-import ReportsPage from '../pages/reports/ReportsPage';
 
 /**
  * Root router configuration.
@@ -64,7 +63,6 @@ const AppRouter = () => {
           <Route path={ROUTES.USERS} element={<UsersPage />} />
           <Route path={ROUTES.CONFIGURATION} element={<ConfigurationPage />} />
           <Route path={ROUTES.FILE_PROCESSING} element={<FileProcessingPage />} />
-          <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
         </Route>
 
         {/* Error routes */}

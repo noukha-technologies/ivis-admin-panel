@@ -2,8 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { masterService } from '../../api/services/master.service';
 import type { ApiVehicle } from '../../interfaces/vehicle.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
-import type { PaginationMeta } from '../../types/api.types';
 import { toast } from 'sonner';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
+import { DataTable } from '../../components/ui/DataTable';
+import { RowActions } from '../../components/ui/RowActions';
+import type { ColumnDef } from '../../interfaces/ui.interfaces';
 
 const VehicleMasterPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);

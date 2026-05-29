@@ -213,11 +213,6 @@ const PaymentsPage: React.FC = () => {
                     <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
                       No transactions found.
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
                   </tr>
                 )}
               </tbody>
@@ -246,18 +241,15 @@ const PaymentsPage: React.FC = () => {
             </div>
           </div>
         </div>
-        </div>
-  )
-}
+      )}
 
-{ activeSubTab === 'Vehicle Records' && <VehicleRecordsPage /> }
-{ activeSubTab === 'Customers' && <CustomersPage /> }
-{ activeSubTab === 'File Processing' && <FileProcessingPage /> }
-{ activeSubTab === 'ROP Management' && <RopManagementPage /> }
+      {activeSubTab === 'Vehicle Records' && <VehicleRecordsPage />}
+      {activeSubTab === 'Customers' && <CustomersPage />}
+      {activeSubTab === 'File Processing' && <FileProcessingPage />}
+      {activeSubTab === 'ROP Management' && <RopManagementPage />}
 
-{/* MODAL: New Transaction Entry Form */ }
-{
-  showNewModal && activeSubTab === 'Payments' && (
+      {/* MODAL: New Transaction Entry Form */}
+      {showNewModal && activeSubTab === 'Payments' && (
     <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
       <div
         style={{
