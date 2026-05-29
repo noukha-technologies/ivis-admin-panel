@@ -10,6 +10,7 @@ export const ROUTES = {
   APPOINTMENTS: '/appointments',
   PAYMENTS: '/payments',
   VEHICLE_RECORDS: '/vehicle-records',
+  REPORTS: '/reports',
   CUSTOMERS: '/customers',
   ROP_MANAGEMENT: '/rop-management',
   JOB_MANAGEMENT: '/job-management',

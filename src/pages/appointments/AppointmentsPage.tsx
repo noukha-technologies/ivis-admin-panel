@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import leftButten from '../../assets/images/left_butten.svg';
 import rightButten from '../../assets/images/right_butten.svg';
-import { AppointmentsListView } from './components/AppointmentsListView';
+import { useAppointments } from '../../features/appointments/hooks/useAppointments';
+import { useIntake } from '../../features/intake/IntakeContext';
+import { useMasterLookups } from '../../hooks/useMasterLookups';
+import { anprCaptureService } from '../../api/services/anpr-capture.service';
+import type { AppointmentCalendarItem } from '../../features/appointments/types';
 
 interface Appointment {
   id: string;
@@ -20,21 +24,22 @@ interface Appointment {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const AppointmentsPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [currentYear, setCurrentYear] = useState('2025');
-  const [currentMonth, setCurrentMonth] = useState('Mar');
-  const [searchQuery, setSearchQuery] = useState('');
+  const intake = useIntake();
+  const { centres, lines, cameras } = useMasterLookups();
+  const appointmentsApi = useAppointments();
+  const [centreId, setCentreId] = useState('');
+  const [lineId, setLineId] = useState('');
 
-  const viewMode = (searchParams.get('view') as 'calendar' | 'list') || 'calendar';
+  useEffect(() => {
+    if (centres.length && !centreId) setCentreId(centres[0].id);
+    if (lines.length && !lineId) setLineId(lines[0].id);
+  }, [centres, lines, centreId, lineId]);
 
-  const setViewMode = (mode: 'calendar' | 'list') => {
-    setSearchParams((prev) => {
-      prev.set('view', mode);
-      return prev;
-    });
-  };
-
-
+  const [currentYear, setCurrentYear] = useState(String(new Date().getFullYear()));
+  const [currentMonth, setCurrentMonth] = useState(MONTH_NAMES[new Date().getMonth()]);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [listPage, setListPage] = useState(1);
+  const LIST_PAGE_SIZE = 10;
 
   const handlePrevMonth = () => {
     const idx = MONTH_NAMES.indexOf(currentMonth);
@@ -70,6 +75,7 @@ const AppointmentsPage: React.FC = () => {
   const [newChassisNo, setNewChassisNo] = useState('9003 30039');
   const [newMulkiyaId, setNewMulkiyaId] = useState('OMN 0934');
   const [newPriority] = useState<'High' | 'Low'>('High');
+  void newPriority;
   const [newDay, setNewDay] = useState('8');
 
   // Payment states
@@ -78,75 +84,69 @@ const AppointmentsPage: React.FC = () => {
   const [paymentType, setPaymentType] = useState<'Paid' | 'FOC'>('Paid');
   const [paymentMode, setPaymentMode] = useState<'Cash' | 'UPI' | 'External API'>('Cash');
 
-  // Hardcoded initial appointments on Saturday March 8th
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      plate: 'OM-2000',
-      type: 'Sedan',
-      day: 8,
-      month: 'Mar',
-      year: '2025',
-      priority: 'Low',
-      status: 'green',
-      time: '10:30 AM',
-      stage: 'Emissions Testing'
-    },
-    {
-      id: '2',
-      plate: 'OM-2020',
-      type: 'SUV',
-      day: 8,
-      month: 'Mar',
-      year: '2025',
-      priority: 'High',
-      status: 'red',
-      time: '11:15 AM',
-      stage: 'ROP Verification'
-    }
-  ]);
-  const listVehicles = [
-    { seq: '01', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Line 1', created: '01 Jan 2026 09:10' },
-    { seq: '02', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '03', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '04', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '05', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '06', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '07', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '08', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '09', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' },
-    { seq: '10', customer: 'Ahmed Al-Said', vehicle: 'OM-1000', center: 'Muscat', line: 'Muscat', created: '01 Jan 2026 09:10' }
-  ];
-  const handleCreateWalkIn = (e: React.FormEvent) => {
+  const appointments: Appointment[] = appointmentsApi.calendarItems.map(
+    (a: AppointmentCalendarItem) => ({
+      id: a.id,
+      plate: a.plate,
+      type: a.type,
+      day: a.day,
+      month: a.month,
+      year: a.year,
+      priority: a.priority,
+      status: a.status,
+      time: a.time,
+      stage: a.stage,
+    }),
+  );
+  const listVehicles = appointmentsApi.listRows;
+
+  const handleCreateWalkIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlate.trim()) return;
+    if (!newPlate.trim() || !newCustomerName.trim() || !newPhoneNumber.trim()) {
+      toast.error('Plate, customer name, and phone are required');
+      return;
+    }
 
-    const newAppt: Appointment = {
-      id: Date.now().toString(),
-      plate: newPlate.toUpperCase(),
-      type: newType,
-      day: parseInt(newDay, 10),
-      month: currentMonth,
-      year: currentYear,
-      priority: newPriority,
-      status: newPriority === 'High' ? 'red' : 'green',
-      time: '12:00 PM',
-      stage: 'Emissions'
-    };
+    let anprId = intake.anprCaptureId;
+    if (!anprId && cameras[0]) {
+      const capture = await anprCaptureService.create({
+        plate_number: newPlate.trim(),
+        capture_time: new Date().toISOString(),
+        camera_id: cameras[0].id,
+        simulate_rop: true,
+      });
+      anprId = capture.id;
+      intake.setFromAnpr(capture);
+    }
 
-    setAppointments([...appointments, newAppt]);
-    setNewPlate('');
-    setNewCustomerName('');
-    setNewPhoneNumber('');
-    setNewType('OM 0082');
-    setNewVehicleNo('OM 0082');
-    setNewChassisNo('9003 30039');
-    setNewMulkiyaId('OMN 0934');
-    setPaymentPhone('');
-    setPaymentAmount('');
-    setPaymentType('Paid');
-    setPaymentMode('Cash');
-    setShowNewModal(false);
+    const appointmentAt = new Date(
+      parseInt(currentYear, 10),
+      MONTH_NAMES.indexOf(currentMonth),
+      parseInt(newDay, 10) || new Date().getDate(),
+      10,
+      0,
+    ).toISOString();
+
+    const created = await appointmentsApi.createAppointment({
+      anpr_capture_id: anprId,
+      centre_id: centreId || undefined,
+      line_id: lineId || undefined,
+      plate_number: newPlate.trim(),
+      customer_name: newCustomerName.trim(),
+      customer_phone: newPhoneNumber.trim(),
+      id_number: newMulkiyaId || undefined,
+      appointment_at: appointmentAt,
+      status: 'Scheduled',
+      sync_customer: true,
+    });
+
+    if (created) {
+      intake.setFromAppointment(created);
+      toast.success('Walk-in appointment created');
+      setShowNewModal(false);
+    } else if (appointmentsApi.error) {
+      toast.error(appointmentsApi.error);
+    }
   };
 
   // Calculate dynamic days in the month and leading empty days to start on Monday
@@ -425,7 +425,68 @@ const AppointmentsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        <AppointmentsListView vehicles={listVehicles} searchQuery={searchQuery} />
+        /* List View Box */
+        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
+                  <div className="flex items-center gap-1">
+                    Queue Sq
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Center</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Line</th>
+                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {listVehicles.map((item, idx) => (
+                <tr
+                  key={idx}
+                  className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
+                >
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
+                    {item.seq}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{item.customer}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{item.vehicle}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{item.center}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{item.line}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{item.created}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {/* Pagination Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+            <span className="text-[13px] text-slate-500 font-medium">
+              Page {listPage} of {Math.max(1, Math.ceil(listVehicles.length / LIST_PAGE_SIZE))} · {listVehicles.length} Records{appointmentsApi.isLoading ? ' (loading…)' : ''}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                disabled={listPage === 1}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setListPage((p) => Math.min(Math.ceil(listVehicles.length / LIST_PAGE_SIZE), p + 1))}
+                disabled={listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE)}
+                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* MODAL: New Walk-in Entry Form */}

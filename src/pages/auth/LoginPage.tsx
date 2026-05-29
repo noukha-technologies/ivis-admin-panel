@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { ROUTES } from '../../router/routes';
 import { authService } from '../../api/services/auth.service';
 import { getApiErrorMessage } from '../../api/apiResponse';

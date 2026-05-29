@@ -3,11 +3,8 @@ import { masterService } from '../../api/services/master.service';
 import type { ApiCamera } from '../../interfaces/camera.interface';
 import type { ApiLine } from '../../interfaces/line.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
-import { toast } from 'react-hot-toast';
-import { DataTable } from '../../components/ui/DataTable';
-import { RowActions } from '../../components/ui/RowActions';
-import { Pencil, Trash2, Eye } from 'lucide-react';
-import type { ColumnDef } from '../../interfaces/ui.interfaces';
+import type { PaginationMeta } from '../../types/api.types';
+import { toast } from 'sonner';
 
 const CameraMasterPage: React.FC = () => {
   const [cameras, setCameras] = useState<ApiCamera[]>([]);

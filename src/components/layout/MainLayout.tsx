@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { IntakeProvider } from '../../features/intake/IntakeContext';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
@@ -110,7 +111,9 @@ const MainLayout: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 bg-[#f8f9fc] pt-2 pb-6 px-6 overflow-y-auto" style={{ paddingLeft: '20px', paddingRight: '20px' }}>
           <div className="w-full">
-            <Outlet />
+            <IntakeProvider>
+              <Outlet />
+            </IntakeProvider>
           </div>
         </main>
       </div>

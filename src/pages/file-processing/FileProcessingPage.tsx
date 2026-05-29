@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface FileLog {
   id: string;
@@ -139,7 +140,7 @@ const FileProcessingPage: React.FC = () => {
               </svg>
             </div>
             <h3 className="text-[15px] font-bold text-gray-800 mb-1">Select files to upload and process</h3>
-            <p className="text-[12px] text-gray-400 mb-4 max-w-[360px]">Support CSV, XML, XLSX database backups, or compressed ANPR logs up to 50MB</p>
+            <p className="text-[12px] text-gray-400 mb-4 max-w-90">Support CSV, XML, XLSX database backups, or compressed ANPR logs up to 50MB</p>
             <button 
               onClick={triggerFileSelect}
               className="px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-[13px] rounded-xl transition-all cursor-pointer shadow-sm"
@@ -148,7 +149,7 @@ const FileProcessingPage: React.FC = () => {
             </button>
           </>
         ) : (
-          <div className="w-full max-w-[420px] flex flex-col items-center py-2">
+          <div className="w-full max-w-105 flex flex-col items-center py-2">
             <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center mb-3">
               {uploadState === 'uploading' && (
                 <svg className="w-5 h-5 animate-bounce text-neutral-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -198,7 +199,7 @@ const FileProcessingPage: React.FC = () => {
         <h2 className="text-[16px] font-bold text-gray-800">Processing Activity History</h2>
         
         {/* Search */}
-        <div className="relative w-full max-w-[280px]">
+        <div className="relative w-full max-w-70">
           <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -253,7 +254,7 @@ const FileProcessingPage: React.FC = () => {
                       {log.totalRecords > 0 ? log.totalRecords.toLocaleString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4.5 text-sm">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-[8px] text-[12.5px] font-semibold border select-none ${
+                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${
                         log.status === 'Processed'
                           ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
                           : log.status === 'Processing'
@@ -279,7 +280,7 @@ const FileProcessingPage: React.FC = () => {
                           className="absolute right-6 top-10 w-48 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu"
                         >
                           <button
-                            onClick={() => { alert('Downloading source file...'); setActiveDropdownId(null); }}
+                            onClick={() => { toast.success('Downloading source file...'); setActiveDropdownId(null); }}
                             className="w-full text-left px-4 py-2 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
                           >
                             <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -288,7 +289,7 @@ const FileProcessingPage: React.FC = () => {
                             <span>Download Source</span>
                           </button>
                           <button
-                            onClick={() => { alert('Displaying import summary stats...'); setActiveDropdownId(null); }}
+                            onClick={() => { toast('Displaying import summary stats...'); setActiveDropdownId(null); }}
                             className="w-full text-left px-4 py-2 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
                           >
                             <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -296,7 +297,7 @@ const FileProcessingPage: React.FC = () => {
                             </svg>
                             <span>View Summary Log</span>
                           </button>
-                          <div className="h-[1px] bg-neutral-100 my-1"></div>
+                          <div className="h-px bg-neutral-100 my-1"></div>
                           <button
                             onClick={() => handleDelete(log.id)}
                             className="w-full text-left px-4 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
