@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import leftButten from '../../assets/images/left_butten.svg';
 import rightButten from '../../assets/images/right_butten.svg';
+import { AppointmentsListView } from './components/AppointmentsListView';
 
 interface Appointment {
   id: string;
@@ -18,11 +20,21 @@ interface Appointment {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const AppointmentsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentYear, setCurrentYear] = useState('2025');
   const [currentMonth, setCurrentMonth] = useState('Mar');
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
-  const [listPage, setListPage] = useState(1);
-  const LIST_PAGE_SIZE = 10;
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const viewMode = (searchParams.get('view') as 'calendar' | 'list') || 'calendar';
+
+  const setViewMode = (mode: 'calendar' | 'list') => {
+    setSearchParams((prev) => {
+      prev.set('view', mode);
+      return prev;
+    });
+  };
+
+
 
   const handlePrevMonth = () => {
     const idx = MONTH_NAMES.indexOf(currentMonth);
@@ -232,6 +244,8 @@ const AppointmentsPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-white transition-all focus:outline-none focus:border-gray-400"
               style={{
                 width: '320px',
@@ -411,68 +425,7 @@ const AppointmentsPage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* List View Box */
-        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
-                  <div className="flex items-center gap-1">
-                    Queue Sq
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Center</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Line</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listVehicles.map((item, idx) => (
-                <tr
-                  key={idx}
-                  className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                >
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
-                    {item.seq}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{item.customer}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{item.vehicle}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{item.center}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{item.line}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{item.created}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-            <span className="text-[13px] text-slate-500 font-medium">
-              Page {listPage} of {Math.max(1, Math.ceil(listVehicles.length / LIST_PAGE_SIZE))} · {listVehicles.length} Records
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                disabled={listPage === 1}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setListPage((p) => Math.min(Math.ceil(listVehicles.length / LIST_PAGE_SIZE), p + 1))}
-                disabled={listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE)}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${listPage >= Math.ceil(listVehicles.length / LIST_PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
+        <AppointmentsListView vehicles={listVehicles} searchQuery={searchQuery} />
       )}
 
       {/* MODAL: New Walk-in Entry Form */}

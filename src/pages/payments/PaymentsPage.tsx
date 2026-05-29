@@ -68,23 +68,23 @@ const PaymentsPage: React.FC = () => {
   };
 
   const filteredPayments = payments.filter(p => {
-    const matchesSearch = 
+    const matchesSearch =
       p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.mode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.type.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
     if (!matchesSearch) return false;
-    
+
     if (activeFilters.mode && activeFilters.mode.length > 0) {
       if (!activeFilters.mode.includes(p.mode)) return false;
     }
-    
+
     if (activeFilters.type && activeFilters.type.length > 0) {
       if (!activeFilters.type.includes(p.type)) return false;
     }
-    
+
     return true;
   });
 
@@ -102,9 +102,8 @@ const PaymentsPage: React.FC = () => {
             <button
               key={tab}
               onClick={() => setActiveSubTab(tab)}
-              className={`px-5 pb-3.5 text-sm font-semibold transition-all cursor-pointer relative -mb-px ${
-                isActive ? 'text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
-              }`}
+              className={`px-5 pb-3.5 text-sm font-semibold transition-all cursor-pointer relative -mb-px ${isActive ? 'text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
+                }`}
               style={{ borderBottom: isActive ? '3px solid #1c1c1e' : '3px solid transparent' }}
             >
               {tab}
@@ -180,73 +179,73 @@ const PaymentsPage: React.FC = () => {
 
           <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
             <table className="w-full text-left border-collapse min-w-200">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
-                      <div className="flex items-center gap-1">
-                        Transaction ID
-                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedPayments.length > 0 ? (
-                    paginatedPayments.map((payment) => (
-                      <tr
-                        key={payment.id}
-                        className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                      >
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
-                          {payment.id}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                        No transactions found.
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
+                    <div className="flex items-center gap-1">
+                      Transaction ID
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
+                  <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedPayments.length > 0 ? (
+                  paginatedPayments.map((payment) => (
+                    <tr
+                      key={payment.id}
+                      className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
+                    >
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
+                        {payment.id}
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-              {/* Pagination Footer */}
-              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-                <span className="text-[13px] text-slate-500 font-medium">
-                  Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
-                    disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
-                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-                  >
-                    Next
-                  </button>
-                </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                      No transactions found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            {/* Pagination Footer */}
+            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+              <span className="text-[13px] text-slate-500 font-medium">
+                Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
+                  disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
+                  className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                >
+                  Next
+                </button>
               </div>
             </div>
           </div>
+        </div>
       )}
 
       {activeSubTab === 'Vehicle Records' && <VehicleRecordsPage />}

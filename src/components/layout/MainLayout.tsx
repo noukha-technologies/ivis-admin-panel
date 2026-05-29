@@ -43,6 +43,7 @@ const routeToTitle: Record<string, string> = {
   '/master-management/lines': 'Line Master',
   '/master-management/pcs': 'Admin PC Master',
   '/master-management/cameras': 'Camera & ANPR Master',
+  '/master-management/payments': 'Payments Master',
   '/users': 'User Management',
   '/configuration': 'Configuration',
   '/file-processing': 'File Processing',
@@ -64,6 +65,7 @@ const routeToSubtitle: Record<string, string> = {
   '/master-management/lines': 'Inspection lines, lanes, and configurations per center',
   '/master-management/pcs': 'Configured computer terminals and assigned receptionist users',
   '/master-management/cameras': 'Automatic Number Plate Recognition (ANPR) cameras and feed setups',
+  '/master-management/payments': 'Manage payment options, modes, and operational configurations',
   '/users': 'Manage system administrators, receptionists, and technical staff',
   '/configuration': 'Global application configurations, API keys, and settings',
   '/file-processing': 'Import, validate, and process external data files and ANPR logs',
@@ -90,8 +92,8 @@ const MainLayout: React.FC = () => {
     }
   };
 
-  // Hide the sidebar on management screens (except configuration which has its own sidebar menu)
-  const isSidebarHidden = location.pathname.startsWith('/master-management') || location.pathname === '/users' || location.pathname === '/file-processing';
+  // Hide the sidebar on certain screens
+  const isSidebarHidden = location.pathname === '/file-processing';
 
   return (
     <div className="flex h-screen w-full bg-[#f8f9fc] font-sans antialiased text-[#222] overflow-hidden">
