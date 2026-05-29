@@ -7,18 +7,42 @@ interface Appointment {
   plate: string;
   type: string;
   day: number;
+  month: string;
+  year: string;
   priority: 'High' | 'Low';
   status: 'green' | 'red';
   time: string;
   stage: string;
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const AppointmentsPage: React.FC = () => {
-  const [currentYear] = useState('2025');
-  const [currentMonth] = useState('Mar');
+  const [currentYear, setCurrentYear] = useState('2025');
+  const [currentMonth, setCurrentMonth] = useState('Mar');
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [listPage, setListPage] = useState(1);
   const LIST_PAGE_SIZE = 10;
+
+  const handlePrevMonth = () => {
+    const idx = MONTH_NAMES.indexOf(currentMonth);
+    if (idx === 0) {
+      setCurrentMonth('Dec');
+      setCurrentYear(prev => String(parseInt(prev, 10) - 1));
+    } else {
+      setCurrentMonth(MONTH_NAMES[idx - 1]);
+    }
+  };
+
+  const handleNextMonth = () => {
+    const idx = MONTH_NAMES.indexOf(currentMonth);
+    if (idx === 11) {
+      setCurrentMonth('Jan');
+      setCurrentYear(prev => String(parseInt(prev, 10) + 1));
+    } else {
+      setCurrentMonth(MONTH_NAMES[idx + 1]);
+    }
+  };
 
   // Modals state
   const [showNewModal, setShowNewModal] = useState(false);
@@ -34,7 +58,7 @@ const AppointmentsPage: React.FC = () => {
   const [newChassisNo, setNewChassisNo] = useState('9003 30039');
   const [newMulkiyaId, setNewMulkiyaId] = useState('OMN 0934');
   const [newPriority] = useState<'High' | 'Low'>('High');
-  const [newDay] = useState('8');
+  const [newDay, setNewDay] = useState('8');
 
   // Payment states
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -49,6 +73,8 @@ const AppointmentsPage: React.FC = () => {
       plate: 'OM-2000',
       type: 'Sedan',
       day: 8,
+      month: 'Mar',
+      year: '2025',
       priority: 'Low',
       status: 'green',
       time: '10:30 AM',
@@ -59,6 +85,8 @@ const AppointmentsPage: React.FC = () => {
       plate: 'OM-2020',
       type: 'SUV',
       day: 8,
+      month: 'Mar',
+      year: '2025',
       priority: 'High',
       status: 'red',
       time: '11:15 AM',
@@ -86,6 +114,8 @@ const AppointmentsPage: React.FC = () => {
       plate: newPlate.toUpperCase(),
       type: newType,
       day: parseInt(newDay, 10),
+      month: currentMonth,
+      year: currentYear,
       priority: newPriority,
       status: newPriority === 'High' ? 'red' : 'green',
       time: '12:00 PM',
@@ -107,31 +137,36 @@ const AppointmentsPage: React.FC = () => {
     setShowNewModal(false);
   };
 
-  // Days of March 2025 starting on Saturday
-  // Feb 24 - Feb 28 are leading empty days (5 days)
-  // March has 31 days.
-  const daysInMonth = 31;
-  const leadingEmptyDays = 5; // Monday to Friday before Sat March 1
+  // Calculate dynamic days in the month and leading empty days to start on Monday
+  const yearNum = parseInt(currentYear, 10);
+  const monthIndex = MONTH_NAMES.indexOf(currentMonth);
+  const firstDay = new Date(yearNum, monthIndex, 1);
+  const rawDay = firstDay.getDay(); // 0 is Sunday, 1 is Monday...
+  const leadingEmptyDays = rawDay === 0 ? 6 : rawDay - 1;
+  const daysInMonth = new Date(yearNum, monthIndex + 1, 0).getDate();
   const totalGridCells = 42; // 6 rows * 7 columns
 
   const gridCells = [];
-  for (let i = 1; i <= totalGridCells; i++) {
-    if (i <= leadingEmptyDays) {
-      gridCells.push({ isCurrentMonth: false, dayNum: null });
-    } else {
-      const dayNum = i - leadingEmptyDays;
-      if (dayNum <= daysInMonth) {
-        gridCells.push({ isCurrentMonth: true, dayNum });
-      } else {
-        gridCells.push({ isCurrentMonth: false, dayNum: null });
-      }
-    }
+  // Leading empty cells
+  for (let i = 0; i < leadingEmptyDays; i++) {
+    gridCells.push({ isCurrentMonth: false, dayNum: null });
+  }
+  // Days of the month
+  for (let d = 1; d <= daysInMonth; d++) {
+    gridCells.push({ isCurrentMonth: true, dayNum: d });
+  }
+  // Trailing empty cells
+  const remainingCells = totalGridCells - gridCells.length;
+  for (let i = 0; i < remainingCells; i++) {
+    gridCells.push({ isCurrentMonth: false, dayNum: null });
   }
 
   const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   const getAppointmentsForDay = (day: number) => {
-    return appointments.filter(appt => appt.day === day);
+    return appointments.filter(
+      (appt) => appt.day === day && appt.month === currentMonth && appt.year === currentYear
+    );
   };
   return (
     <div className="flex flex-col gap-4" style={{ marginLeft: '20px', marginRight: '20px', paddingBottom: '40px', marginTop: '6px' }}>
@@ -143,24 +178,45 @@ const AppointmentsPage: React.FC = () => {
           /* Calendar: Date Selector Navigation */
           <div>
             <div className="flex items-center gap-1">
-              <button className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-60" style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}>
+              <button
+                onClick={handlePrevMonth}
+                className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-60"
+                style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}
+              >
                 <img src={leftButten} alt="Previous" style={{ width: '32px', height: '32px' }} />
               </button>
 
-              <span className="font-bold text-[14px] mx-20 text-[#222]" style={{ margin: '0 8px', fontWeight: 700, fontSize: '14px', color: '#222' }}>
+              <span className="font-bold text-[14px] mx-20 text-[#222]" style={{ margin: '0 8px', fontWeight: 700, fontSize: '14px', color: '#222', minWidth: '32px', textAlign: 'center' }}>
                 {currentMonth}
               </span>
 
-              <button className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-60" style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}>
+              <button
+                onClick={handleNextMonth}
+                className="cursor-pointer transition-opacity hover:opacity-80 active:opacity-60"
+                style={{ background: 'none', border: 'none', padding: 0, lineHeight: 0 }}
+              >
                 <img src={rightButten} alt="Next" style={{ width: '32px', height: '32px' }} />
               </button>
 
-              {/* Year inline selection */}
-              <div className="flex items-center ml-2 cursor-pointer font-bold text-[14px] text-gray-700 hover:text-black transition-colors gap-1">
-                <span>{currentYear}</span>
-                <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5H7z" />
-                </svg>
+              {/* Year inline dropdown selector */}
+              <div className="flex items-center ml-2 relative font-bold text-[14px] text-gray-700 hover:text-black transition-colors gap-1">
+                <select
+                  value={currentYear}
+                  onChange={(e) => setCurrentYear(e.target.value)}
+                  className="bg-transparent font-bold text-[14px] text-gray-700 hover:text-black cursor-pointer appearance-none pr-4 focus:outline-none"
+                  style={{ border: 'none', padding: 0 }}
+                >
+                  <option value="2024">2024</option>
+                  <option value="2025">2025</option>
+                  <option value="2026">2026</option>
+                  <option value="2027">2027</option>
+                  <option value="2028">2028</option>
+                </select>
+                <span className="absolute right-0 pointer-events-none text-gray-500">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5H7z" />
+                  </svg>
+                </span>
               </div>
             </div>
           </div>
@@ -290,14 +346,14 @@ const AppointmentsPage: React.FC = () => {
               const dayAppts = cell.dayNum ? getAppointmentsForDay(cell.dayNum) : [];
               const isLastCol = (idx + 1) % 7 === 0;
               const isLastRow = idx >= 35;
-              const isSaturday8 = cell.dayNum === 8;
+              const isSaturday8 = cell.dayNum === 8 && currentMonth === 'Mar' && currentYear === '2025';
 
               return (
                 <div
                   key={idx}
                   style={{
                     minHeight: '110px',
-                    backgroundColor: isSaturday8 ? '#EAEAEC' : '#ffffff',
+                    backgroundColor: isSaturday8 ? '#EAEAEC' : dayAppts.length > 0 ? '#fafafa' : '#ffffff',
                     borderRight: isLastCol ? 'none' : '1px solid #e5e7eb',
                     borderBottom: isLastRow ? 'none' : '1px solid #e5e7eb',
                     display: 'flex',
@@ -306,22 +362,22 @@ const AppointmentsPage: React.FC = () => {
                     position: 'relative'
                   }}
                 >
-                  {/* Day header (Number + Indicator) */}
+                  {/* Day header (Number + Dynamic Indicator count) */}
                   {cell.dayNum && (
                     <div className="flex justify-between items-center w-full">
                       <span className="text-[13px] font-semibold text-gray-800">
                         {cell.dayNum}
                       </span>
-                      {isSaturday8 && (
+                      {dayAppts.length > 0 && (
                         <span
-                          className="w-5 h-5 rounded-full bg-[#1C2434] text-white text-[10px] font-bold flex items-center justify-center"
+                          className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
                           style={{
                             backgroundColor: '#1C2434',
                             color: '#ffffff',
                             fontWeight: 'bold'
                           }}
                         >
-                          7
+                          {dayAppts.length}
                         </span>
                       )}
                     </div>
@@ -489,6 +545,40 @@ const AppointmentsPage: React.FC = () => {
                       backgroundColor: '#ffffff'
                     }}
                   />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Appointment Day *</label>
+                  <div style={{ position: 'relative' }}>
+                    <select
+                      value={newDay}
+                      onChange={(e) => setNewDay(e.target.value)}
+                      style={{
+                        width: '100%',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '10px',
+                        padding: '8px 40px 8px 12px',
+                        fontSize: '14px',
+                        color: '#1f2937',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        backgroundColor: '#ffffff',
+                        appearance: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
+                        <option key={d} value={String(d)}>
+                          {d} ({currentMonth} {d}, {currentYear})
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{ position: 'absolute', top: '50%', right: '14px', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6b7280' }}>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

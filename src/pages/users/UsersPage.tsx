@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUsers } from '../../features/users/hooks/useUsers';
+import { FilterDropdown } from '../../components/ui/FilterDropdown';
 import { useRoles } from '../../features/users/hooks/useRoles';
 import { usePermissions } from '../../hooks/usePermissions';
 import { userFormFromListItem } from '../../features/users/mappers';
 import type { UserFormData, UserListItem, RoleListItem, RoleFormData } from '../../features/users/types';
 import { emptyUserForm, emptyRoleForm } from '../../features/users/types';
-
-const CENTRE_OPTIONS = ['Muscat Main Hub', 'Salalah Centre', 'Sohar Branch', 'Nizwa Station', 'Sohar Port Station'];
-const LINE_OPTIONS = ['Line 1', 'Line 2', 'Line 3', 'Line 4'];
+import { DataTable } from '../../components/ui/DataTable';
+import type { ColumnDef } from '../../interfaces/ui.interfaces';
+import { masterService } from '../../api/services/master.service';
 
 const UsersPage: React.FC = () => {
   const { canCreateUsers, canEditUsers } = usePermissions();
@@ -15,6 +16,122 @@ const UsersPage: React.FC = () => {
   const rolesHook = useRoles();
 
   const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  const userColumns: ColumnDef<UserListItem>[] = [
+    {
+      id: 'name',
+      header: 'Name',
+      accessorKey: 'name',
+      cell: ({ value }) => (
+        <span className="font-bold text-[#101828]">{value}</span>
+      ),
+      enableSorting: true,
+      enableHiding: false,
+    },
+    {
+      id: 'role',
+      header: 'Role',
+      accessorKey: 'role',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'centre',
+      header: 'Centre',
+      accessorKey: 'centre',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'line',
+      header: 'Line',
+      accessorKey: 'line',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorKey: 'status',
+      cell: ({ value }) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium border select-none ${value === 'Active'
+          ? 'bg-[#ecfdf5] text-[#027a48] border-[#abf0cd]'
+          : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
+          }`}>
+          {value}
+        </span>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }) => {
+        const isDropdownActive = activeDropdownId === row.id;
+        return (
+          <div className="relative text-right" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setActiveDropdownId(isDropdownActive ? null : row.id)}
+              className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-[#98a2b3] hover:text-[#475467] transition-all cursor-pointer ml-auto"
+            >
+              <svg className="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+                <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+                <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+              </svg>
+            </button>
+
+            {isDropdownActive && (
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 top-9 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left"
+              >
+                <button
+                  onClick={() => handleOpenView(row)}
+                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>View Details</span>
+                </button>
+                {canEditUsers && (
+                  <button
+                    onClick={() => handleOpenEdit(row)}
+                    className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                    <span>Edit User</span>
+                  </button>
+                )}
+                {canEditUsers && (
+                  <>
+                    <div className="h-px bg-neutral-100 my-1"></div>
+                    <button
+                      onClick={() => handleDelete(row.id)}
+                      className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+  ];
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -26,13 +143,41 @@ const UsersPage: React.FC = () => {
   const [roleToEdit, setRoleToEdit] = useState<RoleListItem | null>(null);
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserListItem | null>(null);
-  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [sortAsc, setSortAsc] = useState<boolean | null>(true);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [sortAsc] = useState<boolean | null>(true);
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({
+    status: [],
+    role: [],
+    centre: [],
+  });
 
   const [formData, setFormData] = useState<UserFormData>(emptyUserForm());
   const [roleFormData, setRoleFormData] = useState<RoleFormData>(emptyRoleForm());
   const [formError, setFormError] = useState<string | null>(null);
+
+  const [centreOptions, setCentreOptions] = useState<{ id: string; name: string }[]>([]);
+  const [lineOptions, setLineOptions] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const centresRes = await masterService.centres.getAll({ nonPaginated: true });
+        const linesRes = await masterService.lines.getAll({ nonPaginated: true });
+        setCentreOptions(
+          centresRes.data
+            .filter((c) => c.status === 'Active')
+            .map((c) => ({ id: c.id, name: c.name }))
+        );
+        setLineOptions(
+          linesRes.data
+            .filter((l) => l.status === 'Active')
+            .map((l) => ({ id: l.id, name: l.name }))
+        );
+      } catch (err) {
+        console.error('Failed to load center or line options:', err);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -128,6 +273,19 @@ const UsersPage: React.FC = () => {
     return 0;
   });
 
+  const filteredUsers = sortedUsers.filter((user) => {
+    if (activeFilters.status && activeFilters.status.length > 0) {
+      if (!activeFilters.status.includes(user.status)) return false;
+    }
+    if (activeFilters.role && activeFilters.role.length > 0) {
+      if (!activeFilters.role.includes(user.role)) return false;
+    }
+    if (activeFilters.centre && activeFilters.centre.length > 0) {
+      if (!activeFilters.centre.includes(user.centre)) return false;
+    }
+    return true;
+  });
+
   const handleOpenNewRole = () => {
     setRoleFormData(emptyRoleForm());
     setFormError(null);
@@ -170,75 +328,46 @@ const UsersPage: React.FC = () => {
   const isLoading = activeTab === 'users' ? usersHook.isLoading : rolesHook.isLoading;
   const isSubmitting = usersHook.isSubmitting || rolesHook.isSubmitting;
 
+  const tabSwitcher = (
+    <div className="inline-flex items-center border border-neutral-200 bg-[#f9fafb] p-1 rounded-xl shrink-0 gap-1 select-none">
+      <button
+        onClick={() => setActiveTab('users')}
+        className={`px-4 py-1.5 text-[13.5px] font-semibold transition-all cursor-pointer rounded-lg ${
+          activeTab === 'users'
+            ? 'bg-white text-neutral-800 border border-neutral-200/80 shadow-sm'
+            : 'text-neutral-500 hover:text-neutral-800'
+        }`}
+      >
+        Users
+      </button>
+      <button
+        onClick={() => setActiveTab('roles')}
+        className={`px-4 py-1.5 text-[13.5px] font-semibold transition-all cursor-pointer rounded-lg ${
+          activeTab === 'roles'
+            ? 'bg-white text-neutral-800 border border-neutral-200/80 shadow-sm'
+            : 'text-neutral-500 hover:text-neutral-800'
+        }`}
+      >
+        Roles
+      </button>
+    </div>
+  );
+
   return (
     <div className="w-full flex flex-col pt-3 pb-8">
-      {/* Title Header */}
-      <div className="mb-6">
-        <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">Users & Roles</h1>
-        <p className="text-[14px] text-[#64748b] font-normal">Manage system administrators, receptionists, and technical inspectors</p>
-      </div>
-
-      {displayError && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3.5 text-sm text-red-600 border border-red-200">
-          {displayError}
-        </div>
-      )}
-
-      {/* Top Actions */}
-      <div className="mb-5 flex items-center justify-between flex-wrap gap-4">
-        {/* Search & Tab Toggle Group */}
-        <div className="flex items-center gap-3">
-          {/* Search */}
-          <div className="relative w-full max-w-85">
-            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </span>
-            <input
-              type="text"
-              placeholder={activeTab === 'users' ? "Search users..." : "Search roles..."}
-              value={activeTab === 'users' ? usersHook.searchQuery : rolesHook.searchQuery}
-              onChange={(e) =>
-                activeTab === 'users'
-                  ? usersHook.setSearchQuery(e.target.value)
-                  : rolesHook.setSearchQuery(e.target.value)
-              }
-              className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-white border border-neutral-200 rounded-xl placeholder-gray-400 focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
-            />
-          </div>
-
-          {/* Segmented Control */}
-          <div className="inline-flex items-center border border-neutral-200 bg-white rounded-xl shadow-sm overflow-hidden shrink-0">
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`px-5 py-2 text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'users'
-                ? 'bg-neutral-50 text-neutral-800 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50/50'
-                } border-r border-neutral-200`}
-            >
-              Users
-            </button>
-            <button
-              onClick={() => setActiveTab('roles')}
-              className={`px-5 py-2 text-[13.5px] font-semibold transition-all cursor-pointer ${activeTab === 'roles'
-                ? 'bg-neutral-50 text-neutral-800 font-semibold'
-                : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50/50'
-                }`}
-            >
-              Roles
-            </button>
-          </div>
-
+      {/* Title Header Row */}
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#101828] leading-tight mb-1">Users & Roles</h1>
         </div>
 
-        {/* Action Button */}
+        {/* Primary Action Button aligned to the right corner */}
         {activeTab === 'users' ? (
           canCreateUsers && (
             <button
               onClick={handleOpenAdd}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white font-medium text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
@@ -251,7 +380,7 @@ const UsersPage: React.FC = () => {
             <button
               onClick={handleOpenNewRole}
               disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#171717] hover:bg-neutral-800 text-white font-medium text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
@@ -262,240 +391,256 @@ const UsersPage: React.FC = () => {
         )}
       </div>
 
-      {activeTab === 'users' ? (
-        /* Users Table Grid */
-        <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            {isLoading ? (
-              <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                <p className="text-[15px] font-semibold text-[#1e293b]">Loading users...</p>
-              </div>
-            ) : sortedUsers.length === 0 ? (
-              <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Users Found</p>
-                <p className="text-[13px] text-[#64748b]">Try adjusting your search filters.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                    <th
-                      onClick={() => setSortAsc(prev => prev === null ? true : !prev)}
-                      className="px-5 py-3 text-[14px] text-[#667085] font-semibold cursor-pointer select-none hover:text-neutral-900 transition-colors"
-                    >
-                      <span className="inline-flex items-center gap-1">
-                        Name
-                        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${!sortAsc ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </span>
-                    </th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">User Code</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">Email</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">Role</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">Centre</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">Line</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold">Status</th>
-                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-50 hover:bg-gray-50/80 bg-white transition-colors duration-150">
-                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">{user.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.userId}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.email}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className="px-2.5 py-0.5 rounded text-[12px] font-bold bg-gray-50 text-gray-700">
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.centre}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 font-medium">{user.line}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${user.status === 'Active'
-                          ? 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]'
-                          : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
-                          }`}>
-                          {user.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-right relative">
-                        <button
-                          onClick={() => setActiveDropdownId(activeDropdownId === user.id ? null : user.id)}
-                          className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-all cursor-pointer ml-auto"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                          </svg>
-                        </button>
+      {displayError && (
+        <div className="mb-4 rounded-lg bg-red-50 p-3.5 text-sm text-red-600 border border-red-200">
+          {displayError}
+        </div>
+      )}
 
-                        {activeDropdownId === user.id && (
-                          <div
-                            ref={dropdownRef}
-                            className="absolute right-6 top-10 w-40 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu"
-                          >
-                            <button
-                              onClick={() => handleOpenView(user)}
-                              className="w-full text-left px-4 py-2 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span>View Details</span>
-                            </button>
-                            {canEditUsers && (
-                              <button
-                                onClick={() => handleOpenEdit(user)}
-                                className="w-full text-left px-4 py-2 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                              >
-                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                </svg>
-                                <span>Edit User</span>
-                              </button>
-                            )}
-                            {canEditUsers && (
-                              <>
-                                <div className="h-px bg-neutral-100 my-1"></div>
-                                <button
-                                  onClick={() => handleDelete(user.id)}
-                                  className="w-full text-left px-4 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                                >
-                                  <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                  </svg>
-                                  <span>Delete</span>
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          {usersHook.totalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
-              <span className="text-[13px] text-slate-500">
-                Page {usersHook.page} of {usersHook.totalPages} ({usersHook.total} users)
-              </span>
-              <div className="flex gap-2">
-                <button
-                  disabled={usersHook.page <= 1}
-                  onClick={() => usersHook.setPage(usersHook.page - 1)}
-                  className="px-3 py-1.5 text-[13px] border border-slate-200 rounded-lg disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <button
-                  disabled={usersHook.page >= usersHook.totalPages}
-                  onClick={() => usersHook.setPage(usersHook.page + 1)}
-                  className="px-3 py-1.5 text-[13px] border border-slate-200 rounded-lg disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+      {activeTab === 'users' ? (
+        /* Users Table Grid using global generic DataTable */
+        <div className="w-full">
+          {isLoading ? (
+            <div className="w-full py-16 flex flex-col items-center justify-center text-center bg-white border border-neutral-200/90 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)]">
+              <p className="text-[15px] font-semibold text-[#1e293b]">Loading users...</p>
             </div>
+          ) : (
+            <DataTable
+              data={filteredUsers}
+              columns={userColumns}
+              searchPlaceholder="Search users..."
+              leftElement={tabSwitcher}
+              filterElement={
+                <FilterDropdown
+                  align="right"
+                  fields={[
+                    {
+                      id: 'status',
+                      label: 'Status',
+                      type: 'select',
+                      selectType: 'single',
+                      options: [
+                        { label: 'Active', value: 'Active' },
+                        { label: 'Inactive', value: 'Inactive' }
+                      ],
+                      value: activeFilters.status
+                    },
+                    {
+                      id: 'role',
+                      label: 'Role',
+                      type: 'select',
+                      selectType: 'multiple',
+                      options: rolesHook.roles.map(r => ({ label: r.name, value: r.name })),
+                      value: activeFilters.role
+                    },
+                    {
+                      id: 'centre',
+                      label: 'Centre',
+                      type: 'select',
+                      selectType: 'single',
+                      options: centreOptions.map(c => ({ label: c.name, value: c.name })),
+                      value: activeFilters.centre
+                    }
+                  ]}
+                  onChange={(updated) => setActiveFilters(updated)}
+                />
+              }
+            />
           )}
         </div>
       ) : (
-        /* Roles Table Grid */
-        <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="w-full overflow-x-auto">
-            {isLoading ? (
-              <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                <p className="text-[15px] font-semibold text-[#1e293b]">Loading roles...</p>
-              </div>
-            ) : rolesHook.roles.length === 0 ? (
-              <div className="w-full py-16 flex flex-col items-center justify-center text-center">
-                <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Roles Found</p>
-                <p className="text-[13px] text-[#64748b]">Try adjusting your search filters.</p>
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                    <th className="px-6 py-3 text-[13px] text-[#667085] font-semibold w-[25%]">Role</th>
-                    <th className="px-6 py-3 text-[13px] text-[#667085] font-semibold w-[45%]">Description</th>
-                    <th className="px-6 py-3 text-[13px] text-[#667085] font-semibold w-[20%]">Created</th>
-                    <th className="px-6 py-3 text-[13px] text-[#667085] font-semibold text-right w-[10%]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rolesHook.roles.map((role) => (
-                    <tr key={role.id} className="border-b border-gray-50 hover:bg-gray-50/80 bg-white transition-colors duration-150">
-                      <td className="px-6 py-4 text-[14px] font-semibold text-gray-900">
-                        {role.name}
-                      </td>
-                      <td className="px-6 py-4 text-[13px] text-slate-600">
-                        {role.description}
-                      </td>
-                      <td className="px-6 py-4 text-[13px] font-medium text-slate-500">
-                        {role.created}
-                      </td>
-                      <td className="px-6 py-4 text-right relative">
-                        <button
-                          onClick={() => setActiveDropdownId(activeDropdownId === `role-${role.id}` ? null : `role-${role.id}`)}
-                          className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-gray-500 hover:text-gray-900 transition-all cursor-pointer ml-auto"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-                          </svg>
-                        </button>
+        /* Roles Area */
+        <div className="w-full flex flex-col gap-4">
+          {/* Top Control Row */}
+          <div className="flex items-center justify-between flex-wrap gap-3 w-full">
+            <div>{tabSwitcher}</div>
+            <div className="relative w-full max-w-72">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search roles..."
+                value={rolesHook.searchQuery}
+                onChange={(e) => rolesHook.setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-[13.5px] bg-white border border-neutral-200 rounded-xl placeholder-[#667085] text-[#1f2937] focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
+              />
+            </div>
+          </div>
 
-                        {activeDropdownId === `role-${role.id}` && (
-                          <div
-                            ref={dropdownRef}
-                            className="absolute right-6 top-10 w-40 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu"
+          {/* Roles Table Bordered Card */}
+          <div className="w-full bg-white border border-neutral-200/90 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="w-full overflow-x-auto">
+              {isLoading ? (
+                <div className="w-full py-16 flex flex-col items-center justify-center text-center">
+                  <p className="text-[15px] font-semibold text-[#1e293b]">Loading roles...</p>
+                </div>
+              ) : rolesHook.roles.length === 0 ? (
+                <div className="w-full py-16 flex flex-col items-center justify-center text-center">
+                  <p className="text-[15px] font-semibold text-[#1e293b] mb-0.5">No Roles Found</p>
+                  <p className="text-[13px] text-[#64748b]">Try adjusting your search filters.</p>
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-[#FCFCFD]">
+                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[25%]">Role</th>
+                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[45%]">Description</th>
+                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold w-[20%]">Created</th>
+                      <th className="px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold text-right w-[10%]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rolesHook.roles.map((role) => (
+                      <tr key={role.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 bg-white transition-colors duration-150">
+                        <td className="px-6 py-4.5 text-[14px] font-bold text-[#101828]">{role.name}</td>
+                        <td className="px-6 py-4.5 text-[14px] text-[#475467] font-normal">{role.description}</td>
+                        <td className="px-6 py-4.5 text-[14px] text-[#475467] font-normal">{role.created}</td>
+                        <td className="px-6 py-4.5 text-right relative">
+                          <button
+                            onClick={() => setActiveDropdownId(activeDropdownId === `role-${role.id}` ? null : `role-${role.id}`)}
+                            className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-[#98a2b3] hover:text-[#475467] transition-all cursor-pointer ml-auto"
                           >
-                            {canEditUsers && (
-                              <button
-                                onClick={() => {
-                                  setRoleToEdit(role);
-                                  setRoleFormData({ role_name: role.name, description: role.description === '—' ? '' : role.description });
-                                  setFormError(null);
-                                  setShowEditRoleModal(true);
-                                  setActiveDropdownId(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                              >
-                                <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                </svg>
-                                <span>Edit Role</span>
-                              </button>
-                            )}
-                            {canEditUsers && (
-                              <>
-                                <div className="h-px bg-neutral-100 my-1"></div>
+                            <svg className="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+                              <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+                              <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
+                            </svg>
+                          </button>
+
+                          {activeDropdownId === `role-${role.id}` && (
+                            <div
+                              ref={dropdownRef}
+                              className="absolute right-6 top-10 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left"
+                            >
+                              {canEditUsers && (
                                 <button
                                   onClick={() => {
-                                    setRoleToDelete(role.id);
-                                    setShowDeleteRoleModal(true);
+                                    setRoleToEdit(role);
+                                    setRoleFormData({ role_name: role.name, description: role.description === '—' ? '' : role.description });
+                                    setFormError(null);
+                                    setShowEditRoleModal(true);
                                     setActiveDropdownId(null);
                                   }}
-                                  className="w-full text-left px-4 py-2 text-[13px] font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
                                 >
-                                  <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
                                   </svg>
-                                  <span>Delete</span>
+                                  <span>Edit Role</span>
                                 </button>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                              )}
+                              {canEditUsers && (
+                                <>
+                                  <div className="h-px bg-neutral-100 my-1"></div>
+                                  <button
+                                    onClick={() => {
+                                      setRoleToDelete(role.id);
+                                      setShowDeleteRoleModal(true);
+                                      setActiveDropdownId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
+                                    <span>Delete</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Redesigned Premium Pagination Footer Bar (Roles Tab) */}
+            <div className="flex items-center justify-between px-6 py-4.5 border-t border-neutral-100 bg-white">
+              {/* Left count text */}
+              <span className="text-[13.5px] text-[#475467] font-semibold">
+                Showing {rolesHook.roles.length} of {rolesHook.total} row(s).
+              </span>
+
+              {/* Right pagination controls */}
+              <div className="flex items-center gap-6">
+                {/* Rows per page */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[13.5px] text-[#475467] font-semibold">Rows per page</span>
+                  <div className="relative shrink-0">
+                    <select
+                      disabled
+                      value={50}
+                      className="appearance-none pl-3 pr-8 py-1.5 text-[13.5px] font-semibold border border-neutral-200 rounded-xl bg-white text-[#1f2937] shadow-sm outline-none cursor-not-allowed"
+                    >
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Page indicator */}
+                <span className="text-[13.5px] text-[#475467] font-semibold shrink-0">
+                  Page {rolesHook.page} of {Math.ceil(rolesHook.total / 50) || 1}
+                </span>
+
+                {/* Arrow control buttons */}
+                <div className="flex items-center gap-1.5">
+                  {/* First Page << */}
+                  <button
+                    disabled={rolesHook.page <= 1}
+                    onClick={() => rolesHook.setPage(1)}
+                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+
+                  {/* Previous Page < */}
+                  <button
+                    disabled={rolesHook.page <= 1}
+                    onClick={() => rolesHook.setPage(rolesHook.page - 1)}
+                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+
+                  {/* Next Page > */}
+                  <button
+                    disabled={rolesHook.page >= Math.ceil(rolesHook.total / 50)}
+                    onClick={() => rolesHook.setPage(rolesHook.page + 1)}
+                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+
+                  {/* Last Page >> */}
+                  <button
+                    disabled={rolesHook.page >= Math.ceil(rolesHook.total / 50)}
+                    onClick={() => rolesHook.setPage(Math.ceil(rolesHook.total / 50) || 1)}
+                    className="w-8 h-8 flex items-center justify-center border border-neutral-200 rounded-lg text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/80 transition-all cursor-pointer shadow-sm bg-white"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.625L11.625 12 5.25 18.375m7.5-12.75L19.125 12 12.75 18.375" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -605,8 +750,8 @@ const UsersPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
-                  {CENTRE_OPTIONS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {centreOptions.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
@@ -619,8 +764,8 @@ const UsersPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
-                  {LINE_OPTIONS.map((l) => (
-                    <option key={l} value={l}>{l}</option>
+                  {lineOptions.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
               </div>
@@ -717,8 +862,8 @@ const UsersPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
-                  {CENTRE_OPTIONS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                  {centreOptions.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
@@ -731,8 +876,8 @@ const UsersPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
                 >
                   <option value="">Select (optional)</option>
-                  {LINE_OPTIONS.map((l) => (
-                    <option key={l} value={l}>{l}</option>
+                  {lineOptions.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
               </div>

@@ -4,8 +4,10 @@ export interface ApiUser {
   user_name: string;
   email: string;
   role: string;
-  center?: string;
-  line?: string;
+  center_id?: string | null;
+  line_id?: string | null;
+  assignedCentre?: { id: string; name: string; code: string };
+  assignedLine?: { id: string; name: string; code: string };
   created_at: string;
   updated_at?: string;
   is_deleted?: boolean;
@@ -17,16 +19,16 @@ export interface CreateUserPayload {
   email: string;
   role_id: number;
   password?: string;
-  center?: string;
-  line?: string;
+  center_id?: string;
+  line_id?: string;
 }
 
 export interface UpdateUserPayload {
   user_name?: string;
   email?: string;
   role_id?: number;
-  center?: string;
-  line?: string;
+  center_id?: string | null;
+  line_id?: string | null;
 }
 
 export interface UserListParams {

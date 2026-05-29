@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import VehicleRecordsPage from '../vehicle-records/VehicleRecordsPage';
+import { FilterDropdown } from '../../components/ui/FilterDropdown';
+import CustomersPage from '../customers/CustomersPage';
+import FileProcessingPage from '../file-processing/FileProcessingPage';
+import RopManagementPage from '../rop-management/RopManagementPage';
 
 interface PaymentRecord {
   id: string;
@@ -10,12 +15,16 @@ interface PaymentRecord {
 }
 
 const PaymentsPage: React.FC = () => {
+  const [activeSubTab, setActiveSubTab] = useState<'Payments' | 'Vehicle Records' | 'Customers' | 'File Processing' | 'ROP Management'>('Payments');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({
+    mode: [],
+    type: [],
+  });
 
-  // Form states for New Payment modal
   const [customerName, setCustomerName] = useState('');
   const [vehicleNo, setVehicleNo] = useState('OM-1000');
   const [totalAmount, setTotalAmount] = useState('');
@@ -23,94 +32,17 @@ const PaymentsPage: React.FC = () => {
   const [paymentType, setPaymentType] = useState('FOC');
 
   const [payments, setPayments] = useState<PaymentRecord[]>([
-    {
-      id: '#240526-01',
-      customer: 'Ahmed',
-      vehicle: 'OM-1000',
-      total: 'OMR 26.25',
-      mode: 'Cash',
-      type: 'FOC'
-    },
-    {
-      id: '#240526-02',
-      customer: 'Salim Al-Harthy',
-      vehicle: 'OM-4930',
-      total: 'OMR 15.00',
-      mode: 'Card',
-      type: 'Standard'
-    },
-    {
-      id: '#240526-03',
-      customer: 'Fatima Al-Balushi',
-      vehicle: 'OM-8812',
-      total: 'OMR 30.00',
-      mode: 'Card',
-      type: 'Premium'
-    },
-    {
-      id: '#240526-04',
-      customer: 'John Doe',
-      vehicle: 'OM-2033',
-      total: 'OMR 26.25',
-      mode: 'Cash',
-      type: 'FOC'
-    },
-    {
-      id: '#240526-05',
-      customer: 'Khalid Al-Riyami',
-      vehicle: 'OM-7721',
-      total: 'OMR 15.00',
-      mode: 'Cash',
-      type: 'Standard'
-    },
-    {
-      id: '#240526-06',
-      customer: 'Mazin Al-Sadi',
-      vehicle: 'OM-1928',
-      total: 'OMR 30.00',
-      mode: 'Card',
-      type: 'Premium'
-    },
-    {
-      id: '#240526-07',
-      customer: 'Said Al-Habsi',
-      vehicle: 'OM-3044',
-      total: 'OMR 26.25',
-      mode: 'Cash',
-      type: 'FOC'
-    },
-    {
-      id: '#240526-08',
-      customer: 'Amna Al-Jahwari',
-      vehicle: 'OM-9081',
-      total: 'OMR 15.00',
-      mode: 'Card',
-      type: 'Standard'
-    },
-    {
-      id: '#240526-09',
-      customer: 'Yahya Al-Kharusi',
-      vehicle: 'OM-6677',
-      total: 'OMR 30.00',
-      mode: 'Cash',
-      type: 'Premium'
-    },
-    {
-      id: '#240526-10',
-      customer: 'Mona Al-Farsi',
-      vehicle: 'OM-5522',
-      total: 'OMR 26.25',
-      mode: 'Card',
-      type: 'FOC'
-    },
-    {
-      id: '#240526-11',
-      customer: 'Hamed Al-Rawahi',
-      vehicle: 'OM-4110',
-      total: 'OMR 15.00',
-      mode: 'Cash',
-      type: 'Standard'
-    }
+    { id: '#240526-01', customer: 'Ahmed', vehicle: 'OM-1000', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
+    { id: '#240526-02', customer: 'Salim Al-Harthy', vehicle: 'OM-4930', total: 'OMR 15.00', mode: 'Card', type: 'Standard' },
+    { id: '#240526-03', customer: 'Fatima Al-Balushi', vehicle: 'OM-8812', total: 'OMR 30.00', mode: 'Card', type: 'Premium' },
+    { id: '#240526-04', customer: 'John Doe', vehicle: 'OM-2033', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
+    { id: '#240526-05', customer: 'Khalid Al-Riyami', vehicle: 'OM-7721', total: 'OMR 15.00', mode: 'Cash', type: 'Standard' },
+    { id: '#240526-06', customer: 'Mazin Al-Sadi', vehicle: 'OM-1928', total: 'OMR 30.00', mode: 'Card', type: 'Premium' },
+    { id: '#240526-07', customer: 'Said Al-Habsi', vehicle: 'OM-3044', total: 'OMR 26.25', mode: 'Cash', type: 'FOC' },
+    { id: '#240526-08', customer: 'Amna Al-Jahwari', vehicle: 'OM-9081', total: 'OMR 15.00', mode: 'Card', type: 'Standard' },
+    { id: '#240526-09', customer: 'Yahya Al-Kharusi', vehicle: 'OM-6677', total: 'OMR 30.00', mode: 'Cash', type: 'Premium' },
+    { id: '#240526-10', customer: 'Mona Al-Farsi', vehicle: 'OM-5522', total: 'OMR 26.25', mode: 'Card', type: 'FOC' },
+    { id: '#240526-11', customer: 'Hamed Al-Rawahi', vehicle: 'OM-4110', total: 'OMR 15.00', mode: 'Cash', type: 'Standard' }
   ]);
 
   const handleCreatePayment = (e: React.FormEvent) => {
@@ -129,21 +61,32 @@ const PaymentsPage: React.FC = () => {
 
     setPayments([newPayment, ...payments]);
     setShowNewModal(false);
-
-    // Reset fields
     setCustomerName('');
     setTotalAmount('');
     setPaymentMode('Cash');
     setPaymentType('FOC');
   };
 
-  const filteredPayments = payments.filter(p => 
-    p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.mode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPayments = payments.filter(p => {
+    const matchesSearch = 
+      p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.mode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.type.toLowerCase().includes(searchQuery.toLowerCase());
+      
+    if (!matchesSearch) return false;
+    
+    if (activeFilters.mode && activeFilters.mode.length > 0) {
+      if (!activeFilters.mode.includes(p.mode)) return false;
+    }
+    
+    if (activeFilters.type && activeFilters.type.length > 0) {
+      if (!activeFilters.type.includes(p.type)) return false;
+    }
+    
+    return true;
+  });
 
   const paginatedPayments = filteredPayments.slice(
     (currentPage - 1) * PAGE_SIZE,
@@ -151,137 +94,168 @@ const PaymentsPage: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
-      {/* Top Controls Bar */}
-      <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
-        {/* Left Side: Search Bar */}
-        <div className="relative">
-          <span className="absolute inset-y-0 left-[14px] flex items-center pointer-events-none">
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-white transition-all focus:outline-none focus:border-gray-400"
-            style={{
-              width: '320px',
-              height: '38px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '10px',
-              paddingLeft: '40px',
-              paddingRight: '16px',
-              fontSize: '14px',
-              color: '#1e293b',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        {/* Right Side: + New Payment Button */}
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="transition-all cursor-pointer hover:bg-opacity-95"
-          style={{
-            backgroundColor: '#1c1c1e',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '8px 18px',
-            fontSize: '13px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-            height: '38px'
-          }}
-        >
-          <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
-          <span>New Payment</span>
-        </button>
+    <div className="flex flex-col min-h-full">
+      <div className="flex border-b border-gray-200 mb-6 bg-white px-5 pt-3 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)]" style={{ margin: '-2px 20px 20px 20px', padding: '12px 24px 0 24px' }}>
+        {(['Payments', 'Vehicle Records', 'Customers', 'File Processing', 'ROP Management'] as const).map((tab) => {
+          const isActive = activeSubTab === tab;
+          return (
+            <button
+              key={tab}
+              onClick={() => setActiveSubTab(tab)}
+              className={`px-5 pb-3.5 text-sm font-semibold transition-all cursor-pointer relative -mb-px ${
+                isActive ? 'text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'
+              }`}
+              style={{ borderBottom: isActive ? '3px solid #1c1c1e' : '3px solid transparent' }}
+            >
+              {tab}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Main Container */}
-      <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-        <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
-                  <div className="flex items-center gap-1">
-                    Payment ID
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedPayments.length > 0 ? (
-                paginatedPayments.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
-                      {payment.id}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
+      {activeSubTab === 'Payments' && (
+        <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
+          <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="bg-white transition-all focus:outline-none focus:border-gray-400"
+                  style={{ width: '320px', height: '38px', border: '1px solid #cbd5e1', borderRadius: '10px', paddingLeft: '40px', paddingRight: '16px', fontSize: '14px', color: '#1e293b', boxSizing: 'border-box' }}
+                />
+              </div>
+              <FilterDropdown
+                align="left"
+                fields={[
+                  {
+                    id: 'mode',
+                    label: 'Payment Mode',
+                    type: 'select',
+                    selectType: 'single',
+                    options: [
+                      { label: 'Cash', value: 'Cash' },
+                      { label: 'Card', value: 'Card' },
+                      { label: 'UPI', value: 'UPI' },
+                      { label: 'External API', value: 'External API' }
+                    ],
+                    value: activeFilters.mode
+                  },
+                  {
+                    id: 'type',
+                    label: 'Payment Type',
+                    type: 'select',
+                    selectType: 'multiple',
+                    options: [
+                      { label: 'Standard', value: 'Standard' },
+                      { label: 'Premium', value: 'Premium' },
+                      { label: 'FOC', value: 'FOC' }
+                    ],
+                    value: activeFilters.type
+                  }
+                ]}
+                onChange={(updated) => {
+                  setActiveFilters(updated);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+            <button
+              onClick={() => setShowNewModal(true)}
+              className="transition-all cursor-pointer hover:bg-opacity-95"
+              style={{ backgroundColor: '#1c1c1e', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '8px 18px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: '0 1px 2px rgba(0,0,0,0.08)', height: '38px' }}
+            >
+              <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
+              <span>New Transaction</span>
+            </button>
+          </div>
+
+          <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+            <table className="w-full text-left border-collapse min-w-200">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
+                      <div className="flex items-center gap-1">
+                        Transaction ID
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Total</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Mode</th>
+                    <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Type</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No payments found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-            <span className="text-[13px] text-slate-500 font-medium">
-              Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
-                disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Next
-              </button>
+                </thead>
+                <tbody>
+                  {paginatedPayments.length > 0 ? (
+                    paginatedPayments.map((payment) => (
+                      <tr
+                        key={payment.id}
+                        className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
+                      >
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">
+                          {payment.id}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                        No transactions found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {/* Pagination Footer */}
+              <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
+                <span className="text-[13px] text-slate-500 font-medium">
+                  Page {currentPage} of {Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE))} · {filteredPayments.length} Records
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredPayments.length / PAGE_SIZE), p + 1))}
+                    disabled={currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE)}
+                    className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredPayments.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+      )}
 
-      {/* MODAL: New Payment Entry Form */}
-      {showNewModal && (
+      {activeSubTab === 'Vehicle Records' && <VehicleRecordsPage />}
+      {activeSubTab === 'Customers' && <CustomersPage />}
+      {activeSubTab === 'File Processing' && <FileProcessingPage />}
+      {activeSubTab === 'ROP Management' && <RopManagementPage />}
+
+      {/* MODAL: New Transaction Entry Form */}
+      {showNewModal && activeSubTab === 'Payments' && (
         <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
           <div
             style={{
@@ -299,7 +273,7 @@ const PaymentsPage: React.FC = () => {
           >
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>New Payment</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>New Transaction</h3>
               <button
                 type="button"
                 onClick={() => setShowNewModal(false)}
@@ -447,7 +421,7 @@ const PaymentsPage: React.FC = () => {
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '6px' }}>Mode</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                  
+
                   {/* Cash */}
                   <button
                     type="button"
@@ -566,7 +540,7 @@ const PaymentsPage: React.FC = () => {
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  Confirm Payment
+                  Confirm Transaction
                 </button>
               </div>
             </form>

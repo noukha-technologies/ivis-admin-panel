@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { DataTable } from '../../components/ui/DataTable';
+import type { ColumnDef } from '../../interfaces/ui.interfaces';
 
 interface CustomerRecord {
   id: string;
@@ -8,13 +10,10 @@ interface CustomerRecord {
   plate: string;
   chassis: string;
   vehicle: string;
+  avatarUrl?: string; // Optional mockup avatar image
 }
 
 const CustomersPage: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10;
-
   const [customers, setCustomers] = useState<CustomerRecord[]>([
     {
       id: '1',
@@ -127,187 +126,189 @@ const CustomersPage: React.FC = () => {
   ]);
 
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const handleOutsideClick = () => {
-      setActiveDropdownId(null);
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setActiveDropdownId(null);
+      }
     };
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.idNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.chassis.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.vehicle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Preset list of gorgeous background colors for customer initial avatars
+  const avatarColors: { [key: string]: string } = {
+    'A': 'bg-[#eff6ff] text-[#1d4ed8] border-[#bfdbfe]',
+    'S': 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]',
+    'F': 'bg-[#fdf2f8] text-[#be185d] border-[#fbcfe8]',
+    'M': 'bg-[#fff7ed] text-[#c2410c] border-[#ffedd5]',
+    'Y': 'bg-[#faf5ff] text-[#6b21a8] border-[#e9d5ff]',
+    'H': 'bg-[#f0fdf4] text-[#15803d] border-[#bbf7d0]',
+    'K': 'bg-[#fff1f2] text-[#be123c] border-[#fecdd3]',
+    'J': 'bg-[#f5f5f4] text-[#44403c] border-[#e7e5e4]',
+  };
 
-  const paginatedCustomers = filteredCustomers.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+  const getAvatarColor = (name: string): string => {
+    const char = name.charAt(0).toUpperCase();
+    return avatarColors[char] || 'bg-neutral-100 text-neutral-600 border-neutral-200';
+  };
+
+  // Define Columns Definition for reusable DataTable
+  const columns: ColumnDef<CustomerRecord>[] = [
+    {
+      id: 'customer',
+      header: 'Customer',
+      accessorKey: 'name',
+      cell: ({ row }) => {
+        const initials = row.name.charAt(0).toUpperCase();
+        const colorClasses = getAvatarColor(row.name);
+        return (
+          <div className="flex items-center gap-3">
+            {row.avatarUrl ? (
+              <img
+                src={row.avatarUrl}
+                alt={row.name}
+                className="w-8 h-8 rounded-full border border-neutral-200 object-cover"
+              />
+            ) : (
+              <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-[12.5px] shadow-sm shrink-0 select-none ${colorClasses}`}>
+                {initials}
+              </div>
+            )}
+            <span className="font-bold text-[#101828]">{row.name}</span>
+          </div>
+        );
+      },
+      enableSorting: true,
+      enableHiding: false, // Core field, cannot be hidden
+    },
+    {
+      id: 'phone',
+      header: 'Phone',
+      accessorKey: 'phone',
+      cell: ({ value }) => <span className="text-[#475467] font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'idNumber',
+      header: 'ID Number',
+      accessorKey: 'idNumber',
+      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'plate',
+      header: 'Plate',
+      accessorKey: 'plate',
+      cell: ({ value }) => <span className="text-[#101828] font-bold">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'chassis',
+      header: 'Chassis',
+      accessorKey: 'chassis',
+      cell: ({ value }) => <span className="text-[#475467] font-mono text-[13px] tracking-tight">{value}</span>,
+      enableSorting: false,
+    },
+    {
+      id: 'vehicle',
+      header: 'Vehicle',
+      accessorKey: 'vehicle',
+      cell: ({ value }) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[12px] font-bold bg-neutral-50 border border-neutral-100 text-neutral-700">
+          {value}
+        </span>
+      ),
+      enableSorting: true,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }) => {
+        const isDropdownActive = activeDropdownId === row.id;
+        return (
+          <div className="relative text-right" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setActiveDropdownId(isDropdownActive ? null : row.id)}
+              className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-[#98a2b3] hover:text-[#475467] transition-all cursor-pointer ml-auto"
+            >
+              <svg className="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="currentColor"/>
+                <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="currentColor"/>
+                <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="currentColor"/>
+              </svg>
+            </button>
+
+            {isDropdownActive && (
+              <div
+                ref={dropdownRef}
+                className="absolute right-0 top-9 w-32 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left"
+              >
+                <button
+                  onClick={() => {
+                    alert(`Viewing customer: ${row.name}`);
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={() => {
+                    alert(`Editing customer: ${row.name}`);
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
+                >
+                  Edit details
+                </button>
+                <div className="h-px bg-neutral-100 my-1"></div>
+                <button
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete customer ${row.name}?`)) {
+                      setCustomers(customers.filter(c => c.id !== row.id));
+                    }
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+  ];
 
   return (
-    <div className="flex flex-col gap-4 min-h-full" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
-      {/* Top Controls Bar */}
-      <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
-        {/* Left Side: Search Bar */}
-        <div className="relative">
-          <span className="absolute inset-y-0 left-[14px] flex items-center pointer-events-none">
-            <svg className="w-[18px] h-[18px]" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-white transition-all focus:outline-none focus:border-gray-400"
-            style={{
-              width: '320px',
-              height: '38px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '10px',
-              paddingLeft: '40px',
-              paddingRight: '16px',
-              fontSize: '14px',
-              color: '#1e293b',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-        <div></div>
+    <div className="flex flex-col gap-4 min-h-full px-5 pt-3">
+      {/* Title Header */}
+      <div className="mb-2">
+        <h1 className="text-[26px] font-bold text-[#101828] leading-tight mb-1">Customers</h1>
+        <p className="text-[14px] text-[#475467] font-normal">Manage customer accounts, assigned plates and vehicles records</p>
       </div>
 
-      {/* Main Container */}
-      <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-        <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  <div className="flex items-center gap-1">
-                    Customer
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Phone</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>ID Number</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Plate</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Chassis</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap w-12" style={{ padding: '12px 20px' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedCustomers.length > 0 ? (
-                paginatedCustomers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">{customer.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{customer.phone}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{customer.idNumber}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-medium">{customer.plate}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">{customer.chassis}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{customer.vehicle}</td>
-                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative inline-block text-left">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveDropdownId(activeDropdownId === customer.id ? null : customer.id);
-                          }}
-                          className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                          </svg>
-                        </button>
-
-                        {activeDropdownId === customer.id && (
-                          <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 font-semibold text-[13px] text-gray-700 text-left">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                alert(`Viewing customer: ${customer.name}`);
-                                setActiveDropdownId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
-                            >
-                              View
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                alert(`Editing customer: ${customer.name}`);
-                                setActiveDropdownId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (confirm(`Are you sure you want to delete customer ${customer.name}?`)) {
-                                  setCustomers(customers.filter(c => c.id !== customer.id));
-                                }
-                                setActiveDropdownId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-1.5 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No customers found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {/* Pagination Footer */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-            <span className="text-[13px] text-slate-500 font-medium">
-              Page {currentPage} of {Math.max(1, Math.ceil(filteredCustomers.length / PAGE_SIZE))} · {filteredCustomers.length} Records
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(Math.ceil(filteredCustomers.length / PAGE_SIZE), p + 1))}
-                disabled={currentPage >= Math.ceil(filteredCustomers.length / PAGE_SIZE)}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${currentPage >= Math.ceil(filteredCustomers.length / PAGE_SIZE) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Global generic Reusable DataTable */}
+      <DataTable
+        data={customers}
+        columns={columns}
+        searchPlaceholder="Search customers..."
+        filterColumnKey="vehicle"
+        filterPlaceholder="All Vehicles"
+        filterOptions={[
+          { label: 'Sedan', value: 'Sedan' },
+          { label: 'SUV', value: 'SUV' },
+          { label: 'Hatchback', value: 'Hatchback' },
+          { label: 'Coupe', value: 'Coupe' },
+        ]}
+      />
+    </div>
   );
 };
 

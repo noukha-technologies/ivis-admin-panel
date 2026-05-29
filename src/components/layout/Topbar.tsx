@@ -1,9 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../../api/services/auth.service';
-import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
-import { toast } from 'react-hot-toast';
 
 interface TopbarProps {
   title?: string;
@@ -12,36 +9,24 @@ interface TopbarProps {
 }
 
 const menuItems = [
-  { name: 'Dashboard', hasDivider: true },
-  { name: 'User Management', hasDivider: true },
-  { name: 'Configuration', hasDivider: false },
-  { name: 'Master Management', hasDivider: false },
-  { name: 'File processing', hasDivider: false },
+  { name: 'User Management' },
+  { name: 'Configuration' },
+  { name: 'Master Mangement' },
+  { name: 'Transaction' },
 ];
 
 const itemRouteMap: Record<string, string> = {
-  'Dashboard': '/dashboard',
   'User Management': '/users',
   'Configuration': '/configuration',
   'Master Management': '/master-management',
-  'File processing': '/file-processing',
+  'Master Mangement': '/master-management',
+  'Transaction': '/payments',
 };
 
-const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = false }) => {
+const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    setIsMenuOpen(false);
-    try {
-      await authService.logout();
-      toast.success('Successfully signed out.');
-    } catch {
-      // clearAuth runs in authService.finally
-    }
-    navigate(ROUTES.LOGIN);
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -109,93 +94,57 @@ const Topbar: React.FC<TopbarProps> = ({ title, subtitle, isSidebarHidden = fals
               position: 'absolute',
               top: 'calc(100% + 8px)',
               right: '0',
-              minWidth: '240px',
+              minWidth: '280px',
               backgroundColor: '#ffffff',
               borderRadius: '16px',
-              boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
-              border: '1px solid #f0f0f0',
-              padding: '8px 0',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03)',
+              border: '1px solid rgba(0, 0, 0, 0.06)',
+              padding: '0',
               zIndex: 100,
+              overflow: 'hidden',
               animation: 'fadeInMenu 0.15s ease-out',
             }}
           >
             {menuItems.map((item, idx) => (
-              <React.Fragment key={idx}>
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    const dest = itemRouteMap[item.name];
-                    if (dest) {
-                      window.open(dest, '_blank');
-                    }
-                  }}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 24px',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    color: '#1a1a2e',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                    transition: 'background-color 0.15s ease',
-                    letterSpacing: '-0.01em',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f5f6f8';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                  }}
-                >
-                  {item.name}
-                </button>
-                {item.hasDivider && (
-                  <div
-                    style={{
-                      height: '1px',
-                      backgroundColor: '#e5e7eb',
-                      margin: '2px 16px',
-                    }}
-                  />
-                )}
-              </React.Fragment>
+              <button
+                key={idx}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  const dest = itemRouteMap[item.name];
+                  if (dest) {
+                    window.open(dest, '_blank');
+                  }
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '18px 24px',
+                  fontSize: '16.5px',
+                  fontWeight: 500,
+                  color: '#1a1a2e',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: idx < menuItems.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  cursor: 'pointer',
+                  fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                  transition: 'background-color 0.15s ease',
+                  letterSpacing: '-0.01em',
+                  borderTopLeftRadius: idx === 0 ? '16px' : '0',
+                  borderTopRightRadius: idx === 0 ? '16px' : '0',
+                  borderBottomLeftRadius: idx === menuItems.length - 1 ? '16px' : '0',
+                  borderBottomRightRadius: idx === menuItems.length - 1 ? '16px' : '0',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f8fafc';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                }}
+              >
+                {item.name}
+              </button>
             ))}
-            <div
-              style={{
-                height: '1px',
-                backgroundColor: '#e5e7eb',
-                margin: '2px 16px',
-              }}
-            />
-            <button
-              onClick={handleLogout}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '10px 24px',
-                fontSize: '15px',
-                fontWeight: 500,
-                color: '#b42318',
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                transition: 'background-color 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#fef3f2';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-              }}
-            >
-              Sign out
-            </button>
           </div>
         )}
       </div>

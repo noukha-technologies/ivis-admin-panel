@@ -5,7 +5,9 @@ export interface UserListItem {
   email: string;
   role: string;
   centre: string;
+  centreId: string;
   line: string;
+  lineId: string;
   status: 'Active';
   created: string;
 }

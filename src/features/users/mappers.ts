@@ -16,8 +16,10 @@ export function toUserListItem(user: ApiUser): UserListItem {
     name: user.user_name,
     email: user.email,
     role: roleName,
-    centre: user.center ?? '—',
-    line: user.line ?? '—',
+    centre: user.assignedCentre?.name ?? '—',
+    centreId: user.assignedCentre?.id ?? '',
+    line: user.assignedLine?.name ?? '—',
+    lineId: user.assignedLine?.id ?? '',
     status: 'Active',
     created,
   };
@@ -43,8 +45,8 @@ export function toCreatePayload(form: UserFormData, roleId?: number): CreateUser
     email: form.email.trim().toLowerCase(),
     role_id: roleId || 0,
     password: form.password,
-    center: form.centre || undefined,
-    line: form.line || undefined,
+    center_id: form.centre || undefined,
+    line_id: form.line || undefined,
   };
 }
 
@@ -53,8 +55,8 @@ export function toUpdatePayload(form: UserFormData, roleId?: number): UpdateUser
     user_name: form.name.trim(),
     email: form.email.trim().toLowerCase(),
     role_id: roleId,
-    center: form.centre || undefined,
-    line: form.line || undefined,
+    center_id: form.centre || null,
+    line_id: form.line || null,
   };
 }
 
@@ -64,8 +66,8 @@ export function userFormFromListItem(user: UserListItem): UserFormData {
     name: user.name,
     email: user.email,
     role: user.role,
-    centre: user.centre === '—' ? '' : user.centre,
-    line: user.line === '—' ? '' : user.line,
+    centre: user.centreId || '',
+    line: user.lineId || '',
     password: '',
     confirmPassword: '',
   };
