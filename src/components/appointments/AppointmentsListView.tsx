@@ -1,27 +1,20 @@
 import React, { useMemo } from 'react';
-import { DataTable } from '../../../components/ui/DataTable';
-import type { ColumnDef } from '../../../interfaces/ui.interfaces';
-
-export interface VehicleListItem {
-  seq: string;
-  customer: string;
-  vehicle: string;
-  center: string;
-  line: string;
-  created: string;
-}
+import { DataTable } from '@/components/ui/DataTable';
+import type { AppointmentListRow } from '@/features/appointments/types';
+import type { ColumnDef } from '@/interfaces/ui.interfaces';
 
 interface AppointmentsListViewProps {
-  vehicles: VehicleListItem[];
+  rows: AppointmentListRow[];
   searchQuery: string;
+  isLoading?: boolean;
 }
 
 export const AppointmentsListView: React.FC<AppointmentsListViewProps> = ({
-  vehicles,
+  rows,
   searchQuery,
+  isLoading = false,
 }) => {
-  // Define columns matching the user's mockup design and exact table cell UI
-  const columns = useMemo<ColumnDef<VehicleListItem>[]>(() => [
+  const columns = useMemo<ColumnDef<AppointmentListRow>[]>(() => [
     {
       header: 'Queue Sq',
       accessorKey: 'seq',
@@ -64,26 +57,33 @@ export const AppointmentsListView: React.FC<AppointmentsListViewProps> = ({
   ], []);
 
   // Filter vehicles based on search query
-  const filteredVehicles = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return vehicles;
+    if (!query) return rows;
 
-    return vehicles.filter(
+    return rows.filter(
       (item) =>
         item.seq.toLowerCase().includes(query) ||
         item.customer.toLowerCase().includes(query) ||
         item.vehicle.toLowerCase().includes(query) ||
         item.center.toLowerCase().includes(query) ||
         item.line.toLowerCase().includes(query) ||
-        item.created.toLowerCase().includes(query)
+        item.created.toLowerCase().includes(query),
     );
-  }, [vehicles, searchQuery]);
+  }, [rows, searchQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full py-16 flex flex-col items-center justify-center text-center bg-white border border-neutral-200/90 rounded-2xl shadow-sm">
+        <p className="text-[15px] font-semibold text-[#1e293b]">Loading appointments...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col">
-      {/* Table rendered using the generic reusable DataTable with its built-in pagination */}
       <DataTable
-        data={filteredVehicles}
+        data={filteredRows}
         columns={columns}
         showControls={false}
         showPagination={true}

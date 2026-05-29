@@ -41,3 +41,36 @@ export interface CreateAppointmentPayload {
 export type UpdateAppointmentPayload = Partial<CreateAppointmentPayload>;
 
 export type AppointmentListParams = TransactionListParams;
+
+
+export interface WalkInFormState {
+  plate: string;
+  customerName: string;
+  phoneNumber: string;
+  type: string;
+  vehicleNo: string;
+  chassisNo: string;
+  mulkiyaId: string;
+  day: string;
+}
+
+export interface WalkInPaymentState {
+  phone: string;
+  amount: string;
+  type: 'Paid' | 'FOC';
+  mode: 'Cash' | 'UPI' | 'External API';
+}
+
+export interface WalkInEntryDrawerProps {
+  open: boolean;
+  currentMonth: string;
+  currentYear: string;
+  daysInMonth: number;
+  form: WalkInFormState;
+  payment: WalkInPaymentState;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onConvertToJob: () => void;
+  onFormChange: <K extends keyof WalkInFormState>(key: K, value: WalkInFormState[K]) => void;
+  onPaymentChange: <K extends keyof WalkInPaymentState>(key: K, value: WalkInPaymentState[K]) => void;
+}

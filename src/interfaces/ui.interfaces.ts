@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import * as React from 'react';
 import type { DayPicker } from 'react-day-picker';
 
@@ -86,3 +87,13 @@ export interface FilterDropdownProps {
   className?: string;
 }
 
+export interface SideDrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}
