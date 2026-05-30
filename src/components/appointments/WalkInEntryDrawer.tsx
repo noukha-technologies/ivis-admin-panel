@@ -23,6 +23,7 @@ export const WalkInEntryDrawer: React.FC<WalkInEntryDrawerProps> = ({
   <SideDrawer
     open={open}
     onOpenChange={onOpenChange}
+    size="lg"
     title="New Walk-in Entry"
     description="Register a walk-in appointment and optional payment."
     footer={

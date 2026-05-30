@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ApiAnprCapture } from '../../interfaces/anpr-capture.interface';
 import type { ApiAppointment } from '../../interfaces/appointment.interface';
 import type { ApiPaymentTransaction } from '../../interfaces/payment-transaction.interface';
+import { clearIntakeSession, loadIntakeSession, saveIntakeSession } from '../../utils/intakeStorage';
 
 export interface IntakeState {
   anprCaptureId?: string;
@@ -11,6 +12,8 @@ export interface IntakeState {
   paymentId?: string;
   jobId?: string;
   plateNumber?: string;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 interface IntakeContextValue extends IntakeState {
@@ -24,7 +27,11 @@ interface IntakeContextValue extends IntakeState {
 const IntakeContext = createContext<IntakeContextValue | null>(null);
 
 export function IntakeProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<IntakeState>({});
+  const [state, setState] = useState<IntakeState>(() => loadIntakeSession());
+
+  useEffect(() => {
+    saveIntakeSession(state);
+  }, [state]);
 
   const setFromAnpr = useCallback((capture: ApiAnprCapture) => {
     setState((prev) => ({
@@ -42,6 +49,8 @@ export function IntakeProvider({ children }: { children: React.ReactNode }) {
       customerId: appointment.customer_id ?? prev.customerId,
       vehicleRecordId: appointment.vehicle_record_id ?? prev.vehicleRecordId,
       plateNumber: appointment.plate_number ?? prev.plateNumber,
+      customerName: appointment.customer_name ?? prev.customerName,
+      customerPhone: appointment.customer_phone ?? prev.customerPhone,
     }));
   }, []);
 
@@ -61,7 +70,10 @@ export function IntakeProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const clear = useCallback(() => setState({}), []);
+  const clear = useCallback(() => {
+    clearIntakeSession();
+    setState({});
+  }, []);
 
   const value = useMemo(
     () => ({

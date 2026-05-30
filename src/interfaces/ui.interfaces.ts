@@ -87,6 +87,8 @@ export interface FilterDropdownProps {
   className?: string;
 }
 
+export type SideDrawerSize = 'sm' | 'md' | 'lg';
+
 export interface SideDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -94,6 +96,8 @@ export interface SideDrawerProps {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** sm ≈ 480px, md ≈ 640px, lg ≈ 920px (default lg) */
+  size?: SideDrawerSize;
   className?: string;
   bodyClassName?: string;
 }

@@ -1,83 +1,89 @@
-import { useCallback, useEffect, useState } from 'react';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { anprCaptureService } from '../../../api/services/anpr-capture.service';
+import { queryKeys } from '../../../api/queryKeys';
 import { getApiErrorMessage } from '../../../api/apiResponse';
 import { useDebounce } from '../../../hooks/useDebounce';
 import type { CreateAnprCapturePayload } from '../../../interfaces/anpr-capture.interface';
 import { toAnprCaptureListItem } from '../mappers';
 import type { AnprCaptureListItem } from '../types';
+import { useEffect, useState } from 'react';
 
 const PAGE_SIZE = 10;
 
-export function useAnprCaptures() {
-  const [items, setItems] = useState<AnprCaptureListItem[]>([]);
+interface UseAnprCapturesOptions {
+  enabled?: boolean;
+}
+
+export function useAnprCaptures(options: UseAnprCapturesOptions = {}) {
+  const { enabled = true } = options;
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const debouncedSearch = useDebounce(searchQuery, 300);
-
-  const fetchList = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await anprCaptureService.getAll({
-        page,
-        limit: PAGE_SIZE,
-        search: debouncedSearch.trim() || undefined,
-        sortBy: 'capture_time',
-        sortOrder: 'DESC',
-      });
-      setItems(result.data.map(toAnprCaptureListItem));
-      setTotal(result.meta.total);
-      setTotalPages(Math.max(1, result.meta.totalPages));
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load ANPR captures'));
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, debouncedSearch]);
-
-  useEffect(() => {
-    fetchList();
-  }, [fetchList]);
 
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
 
+  const listQuery = useQuery({
+    queryKey: queryKeys.anprCaptures.list(page, debouncedSearch),
+    queryFn: () =>
+      anprCaptureService.getAll({
+        page,
+        limit: PAGE_SIZE,
+        search: debouncedSearch.trim() || undefined,
+        sortBy: 'capture_time',
+        sortOrder: 'DESC',
+      }),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateAnprCapturePayload) => anprCaptureService.create(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.anprCaptures.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ropVerifications.all });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => anprCaptureService.delete(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.anprCaptures.all });
+    },
+  });
+
+  const items: AnprCaptureListItem[] =
+    listQuery.data?.data.map(toAnprCaptureListItem) ?? [];
+
   const createCapture = async (payload: CreateAnprCapturePayload) => {
-    setIsSubmitting(true);
-    setError(null);
     try {
-      const created = await anprCaptureService.create(payload);
-      await fetchList();
-      return created;
+      return await createMutation.mutateAsync(payload);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to create ANPR capture'));
       return null;
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const removeCapture = async (id: string) => {
-    setIsSubmitting(true);
     try {
-      await anprCaptureService.delete(id);
-      await fetchList();
+      await deleteMutation.mutateAsync(id);
       return true;
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to delete capture'));
+    } catch {
       return false;
-    } finally {
-      setIsSubmitting(false);
     }
   };
+
+  const error =
+    listQuery.error != null
+      ? getApiErrorMessage(listQuery.error, 'Failed to load ANPR captures')
+      : createMutation.error != null
+        ? getApiErrorMessage(createMutation.error, 'Failed to create ANPR capture')
+        : deleteMutation.error != null
+          ? getApiErrorMessage(deleteMutation.error, 'Failed to delete capture')
+          : null;
 
   return {
     items,
@@ -85,13 +91,14 @@ export function useAnprCaptures() {
     setSearchQuery,
     page,
     setPage,
-    total,
-    totalPages,
+    total: listQuery.data?.meta.total ?? 0,
+    totalPages: Math.max(1, listQuery.data?.meta.totalPages ?? 1),
     pageSize: PAGE_SIZE,
-    isLoading,
+    isLoading: listQuery.isLoading,
+    isFetching: listQuery.isFetching,
     error,
-    isSubmitting,
-    fetchList,
+    isSubmitting: createMutation.isPending || deleteMutation.isPending,
+    refetch: listQuery.refetch,
     createCapture,
     removeCapture,
   };

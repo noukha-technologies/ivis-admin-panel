@@ -1,6 +1,13 @@
 import type { ApiPaymentTransaction } from '../../interfaces/payment-transaction.interface';
 import type { PaymentTransactionListItem } from './types';
 
+function resolveDisplayType(row: ApiPaymentTransaction): string {
+  if (row.status === 'Paid' && Number(row.grand_total) === 0) {
+    return 'FOC';
+  }
+  return row.status;
+}
+
 export function toPaymentTransactionListItem(
   row: ApiPaymentTransaction,
 ): PaymentTransactionListItem {
@@ -11,7 +18,7 @@ export function toPaymentTransactionListItem(
     vehicle: row.vehicleRecord?.plate_number ?? '—',
     total: `OMR ${Number(row.grand_total).toFixed(2)}`,
     mode: row.payment_type,
-    type: row.status,
+    type: resolveDisplayType(row),
     raw: row,
   };
 }

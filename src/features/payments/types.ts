@@ -10,3 +10,23 @@ export interface PaymentTransactionListItem {
   type: string;
   raw: ApiPaymentTransaction;
 }
+
+export type PaymentFormType = 'Paid' | 'FOC';
+
+export interface PaymentFormState {
+  phone: string;
+  customerName: string;
+  vehicleNumber: string;
+  amount: string;
+  paymentType: PaymentFormType;
+  paymentMode: string;
+}
+
+export const emptyPaymentForm = (): PaymentFormState => ({
+  phone: '',
+  customerName: '',
+  vehicleNumber: '',
+  amount: '',
+  paymentType: 'Paid',
+  paymentMode: 'Cash',
+});

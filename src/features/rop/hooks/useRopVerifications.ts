@@ -1,52 +1,51 @@
-import { useCallback, useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ropVerificationService } from '../../../api/services/rop-verification.service';
+import { queryKeys } from '../../../api/queryKeys';
 import { getApiErrorMessage } from '../../../api/apiResponse';
 import { useDebounce } from '../../../hooks/useDebounce';
 import { toRopVerificationListItem } from '../mappers';
 import type { RopVerificationListItem } from '../types';
+import { useEffect, useState } from 'react';
 
 const PAGE_SIZE = 10;
 
-export function useRopVerifications() {
-  const [items, setItems] = useState<RopVerificationListItem[]>([]);
+interface UseRopVerificationsOptions {
+  enabled?: boolean;
+}
+
+export function useRopVerifications(options: UseRopVerificationsOptions = {}) {
+  const { enabled = true } = options;
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const fetchList = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await ropVerificationService.getAll({
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const listQuery = useQuery({
+    queryKey: queryKeys.ropVerifications.list(page, debouncedSearch),
+    queryFn: () =>
+      ropVerificationService.getAll({
         page,
         limit: PAGE_SIZE,
         search: debouncedSearch.trim() || undefined,
         sortBy: 'created_at',
         sortOrder: 'DESC',
-      });
-      setItems(result.data.map(toRopVerificationListItem));
-      setTotal(result.meta.total);
-      setTotalPages(Math.max(1, result.meta.totalPages));
-    } catch (err) {
-      setError(getApiErrorMessage(err, 'Failed to load ROP verifications'));
-      setItems([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [page, debouncedSearch]);
+      }),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
 
-  useEffect(() => {
-    fetchList();
-  }, [fetchList]);
+  const items: RopVerificationListItem[] =
+    listQuery.data?.data.map(toRopVerificationListItem) ?? [];
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
+  const error =
+    listQuery.error != null
+      ? getApiErrorMessage(listQuery.error, 'Failed to load ROP verifications')
+      : null;
 
   return {
     items,
@@ -54,11 +53,12 @@ export function useRopVerifications() {
     setSearchQuery,
     page,
     setPage,
-    total,
-    totalPages,
+    total: listQuery.data?.meta.total ?? 0,
+    totalPages: Math.max(1, listQuery.data?.meta.totalPages ?? 1),
     pageSize: PAGE_SIZE,
-    isLoading,
+    isLoading: listQuery.isLoading,
+    isFetching: listQuery.isFetching,
     error,
-    fetchList,
+    refetch: listQuery.refetch,
   };
 }

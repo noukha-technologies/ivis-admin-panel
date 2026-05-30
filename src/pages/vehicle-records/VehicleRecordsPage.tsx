@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { buildAnprCapturePayload } from '@/features/anpr/buildAnprCapturePayload';
 import { useAnprCaptures } from '../../features/anpr/hooks/useAnprCaptures';
 import { useRopVerifications } from '../../features/rop/hooks/useRopVerifications';
 import { useIntake } from '../../features/intake/IntakeContext';
@@ -8,14 +9,14 @@ import { useMasterLookups } from '../../hooks/useMasterLookups';
 const VehicleRecordsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ANPR capture' | 'ROP verification'>('ANPR capture');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [plateNumber, setPlateNumber] = useState('OM-1000');
+  const [plateNumber, setPlateNumber] = useState('');
   const [cameraId, setCameraId] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
   const intake = useIntake();
   const { cameras } = useMasterLookups();
-  const anpr = useAnprCaptures();
-  const rop = useRopVerifications();
+  const anpr = useAnprCaptures({ enabled: activeTab === 'ANPR capture' });
+  const rop = useRopVerifications({ enabled: activeTab === 'ROP verification' });
 
   React.useEffect(() => {
     if (cameras.length && !cameraId) {
@@ -35,16 +36,10 @@ const VehicleRecordsPage: React.FC = () => {
       toast.error('Plate number and camera are required');
       return;
     }
-    const created = await anpr.createCapture({
-      plate_number: plateNumber.trim(),
-      capture_time: new Date().toISOString(),
-      camera_id: cameraId,
-      simulate_rop: true,
-      verification_status: 'Pending',
-    });
+    const created = await anpr.createCapture(buildAnprCapturePayload(plateNumber.trim(), cameraId));
     if (created) {
       intake.setFromAnpr(created);
-      toast.success('ANPR capture created with simulated ROP');
+      toast.success('ANPR capture created — ROP processed automatically');
       setShowCreateModal(false);
     } else if (anpr.error) {
       toast.error(anpr.error);

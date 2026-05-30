@@ -9,9 +9,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer';
-import type { SideDrawerProps } from '@/interfaces/ui.interfaces';
+import type { SideDrawerProps, SideDrawerSize } from '@/interfaces/ui.interfaces';
 
-
+const sizeClassName: Record<SideDrawerSize, string> = {
+  sm: 'sm:max-w-[min(480px,95vw)]',
+  md: 'sm:max-w-[min(640px,95vw)]',
+  lg: 'sm:max-w-[min(920px,95vw)]',
+};
 
 export function SideDrawer({
   open,
@@ -20,12 +24,13 @@ export function SideDrawer({
   description,
   children,
   footer,
+  size = 'lg',
   className,
   bodyClassName,
 }: SideDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className={cn('flex h-full flex-col sm:max-w-[min(920px,95vw)]', className)}>
+      <DrawerContent className={cn('flex h-full flex-col', sizeClassName[size], className)}>
         <DrawerHeader className="flex flex-row items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <DrawerTitle>{title}</DrawerTitle>

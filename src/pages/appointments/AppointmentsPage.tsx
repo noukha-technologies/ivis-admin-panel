@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
+import { buildAnprCapturePayload } from '@/features/anpr/buildAnprCapturePayload';
 import { useAppointments } from '../../features/appointments/hooks/useAppointments';
 import { useIntake } from '../../features/intake/IntakeContext';
 import { useMasterLookups } from '../../hooks/useMasterLookups';
@@ -13,6 +14,17 @@ import { AppointmentsListView } from '@/components/appointments/AppointmentsList
 import { WalkInEntryDrawer } from '@/components/appointments/WalkInEntryDrawer';
 import { AppointmentDetailModal } from '@/components/appointments/AppointmentDetailModal';
 import type { WalkInFormState, WalkInPaymentState } from '@/interfaces/appointment.interface';
+
+const emptyWalkInForm = (plate = ''): WalkInFormState => ({
+  plate,
+  customerName: '',
+  phoneNumber: '',
+  type: 'OM 0082',
+  vehicleNo: plate,
+  chassisNo: '',
+  mulkiyaId: '',
+  day: String(new Date().getDate()),
+});
 
 const AppointmentsPage: React.FC = () => {
   const intake = useIntake();
@@ -55,17 +67,7 @@ const AppointmentsPage: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentCalendarItem | null>(null);
 
-  const [walkInForm, setWalkInForm] = useState<WalkInFormState>({
-    plate: '',
-    customerName: '',
-    phoneNumber: '',
-    type: 'OM 0082',
-    vehicleNo: 'OM 0082',
-    chassisNo: '9003 30039',
-    mulkiyaId: 'OMN 0934',
-    day: '8',
-  });
-
+  const [walkInForm, setWalkInForm] = useState<WalkInFormState>(emptyWalkInForm());
   const [walkInPayment, setWalkInPayment] = useState<WalkInPaymentState>({
     phone: '',
     amount: '',
@@ -90,12 +92,9 @@ const AppointmentsPage: React.FC = () => {
 
     let anprId = intake.anprCaptureId;
     if (!anprId && cameras[0]) {
-      const capture = await anprCaptureService.create({
-        plate_number: walkInForm.plate.trim(),
-        capture_time: new Date().toISOString(),
-        camera_id: cameras[0].id,
-        simulate_rop: true,
-      });
+      const capture = await anprCaptureService.create(
+        buildAnprCapturePayload(walkInForm.plate.trim(), cameras[0].id),
+      );
       anprId = capture.id;
       intake.setFromAnpr(capture);
     }
@@ -123,7 +122,7 @@ const AppointmentsPage: React.FC = () => {
 
     if (created) {
       intake.setFromAppointment(created);
-      toast.success('Walk-in appointment created');
+      toast.success('Appointment created');
       setShowNewModal(false);
     } else if (appointmentsApi.error) {
       toast.error(appointmentsApi.error);
@@ -152,7 +151,11 @@ const AppointmentsPage: React.FC = () => {
         onYearChange={setCurrentYear}
         searchQuery={appointmentsApi.searchQuery}
         onSearchChange={appointmentsApi.setSearchQuery}
-        onNewWalkIn={() => setShowNewModal(true)}
+        onNewWalkIn={() => {
+          const plate = intake.plateNumber ?? '';
+          setWalkInForm(emptyWalkInForm(plate));
+          setShowNewModal(true);
+        }}
       />
 
       {viewMode === 'calendar' ? (
