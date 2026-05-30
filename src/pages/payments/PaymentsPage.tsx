@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
@@ -8,6 +9,7 @@ import { emptyPaymentForm, type PaymentFormState } from '@/features/payments/typ
 import { useIntake } from '@/features/intake/IntakeContext';
 import { useMasterLookups } from '@/hooks/useMasterLookups';
 import { computePaymentAmounts } from '@/features/payments/paymentAmounts';
+
 
 const PaymentsPage: React.FC = () => {
   const [showNewDrawer, setShowNewDrawer] = useState(false);
@@ -143,6 +145,7 @@ const PaymentsPage: React.FC = () => {
     return true;
   });
 
+
   return (
     <div className="flex flex-col min-h-full">
       <div
@@ -180,6 +183,7 @@ const PaymentsPage: React.FC = () => {
                 }}
               />
             </div>
+
             <FilterDropdown
               align="left"
               fields={[
@@ -336,6 +340,7 @@ const PaymentsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
       </div>
 
       <PaymentTransactionDrawer

@@ -1,0 +1,17 @@
+/* ==========================================
+   Centralized Table Font Weights (CSS Overrides)
+   ========================================== */
+table thead th,
+table thead th span,
+table thead th div {
+  font-weight: 800 !important;
+  /* Configures table header weight */
+}
+
+table tbody td,
+table tbody td span,
+table tbody td div,
+table tbody td a {
+  font-weight: 400 !important;
+  /* Configures table data values weight */
+}

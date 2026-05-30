@@ -85,7 +85,7 @@ const ConfigurationPage: React.FC = () => {
               id: 'delete',
               label: 'Delete',
               icon: <Trash2 className="w-4 h-4 text-rose-500" />,
-              onClick: () => {},
+              onClick: () => { },
               variant: 'danger' as const,
             },
           ]}
@@ -393,7 +393,7 @@ const ConfigurationPage: React.FC = () => {
             <span className="text-[14px] font-bold text-gray-800">Valid Date</span>
             <span></span>
           </div>
-          <button 
+          <button
             onClick={handleAdd}
             className="px-6 py-2 bg-[#1a1a1a] text-white rounded-lg text-[13px] font-medium hover:bg-black transition-colors"
           >
@@ -405,32 +405,32 @@ const ConfigurationPage: React.FC = () => {
           {charges.map((charge) => (
             <div key={charge.id} className="grid grid-cols-[1fr_120px_150px_40px] gap-4 items-center">
               <div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={charge.name}
                   onChange={(e) => updateCharge(charge.id, 'name', e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white" 
+                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white"
                 />
               </div>
               <div>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   value={charge.no}
                   onChange={(e) => updateCharge(charge.id, 'no', e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white" 
+                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white"
                 />
               </div>
               <div>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={charge.date}
                   onChange={(e) => updateCharge(charge.id, 'date', e.target.value)}
                   placeholder="DD/MM/YY"
-                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white" 
+                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white"
                 />
               </div>
               <div className="flex justify-end">
-                <button 
+                <button
                   onClick={() => handleDelete(charge.id)}
                   disabled={charges.length === 1}
                   className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-gray-400"
@@ -468,23 +468,23 @@ const ConfigurationPage: React.FC = () => {
       <div className="bg-white p-7 rounded-2xl w-full max-w-lg shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-neutral-100 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5 mb-1">
           <label className="text-[14px] font-medium text-gray-800">Valid Date</label>
-          <input 
-            type="text" 
-            defaultValue="23/06/26" 
-            className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white shadow-sm" 
+          <input
+            type="text"
+            defaultValue="23/06/26"
+            className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-lg text-[14px] focus:outline-none focus:border-neutral-400 bg-white shadow-sm"
           />
         </div>
-        
+
         <div className="flex flex-col gap-3 mt-2">
           {tests.map(test => (
             <div key={test.id} className="bg-white px-4 py-3.5 rounded-xl flex justify-between items-center border border-neutral-100 shadow-sm">
               <span className="text-[15px] font-bold text-gray-900">{test.name}</span>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={test.active}
-                  onChange={() => toggleTest(test.id)} 
+                  onChange={() => toggleTest(test.id)}
                 />
                 <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a1a1a]"></div>
               </label>
@@ -553,9 +553,9 @@ const ConfigurationPage: React.FC = () => {
   return (
     <div className="w-full flex flex-col pt-3 pb-8 h-full">
       {/* Title Header */}
-      <div className="mb-6 flex justify-between items-start">
-        <div className="flex items-center gap-3">
-          {activeTab !== 'Configuration' && (
+      {activeTab !== 'Configuration' && (
+        <div className="mb-1 flex justify-between items-start">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setSearchParams({ tab: 'Configuration' })}
               className="p-2 mr-2 flex items-center justify-center rounded-xl bg-white border border-neutral-200 text-[#475467] hover:text-[#101828] hover:bg-neutral-50 active:bg-neutral-100 transition-all cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
@@ -565,13 +565,13 @@ const ConfigurationPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
               </svg>
             </button>
-          )}
-          <div>
-            <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">{pageTitle}</h1>
-            <p className="text-[14px] text-[#64748b] font-normal">{pageSubtitle}</p>
+            <div>
+              <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">{pageTitle}</h1>
+              <p className="text-[14px] text-[#64748b] font-normal">{pageSubtitle}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 overflow-auto">
 

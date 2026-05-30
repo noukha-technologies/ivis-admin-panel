@@ -4,6 +4,7 @@ import carImage from '../../assets/images/Png/car.png';
 import tickImg from '../../assets/icons/tick_img.svg';
 import { useJobs } from '../../features/jobs/hooks/useJobs';
 import type { JobDetailView, JobListItem, JobTabFilter } from '../../features/jobs/types';
+import { DataTable } from '../../components/ui/DataTable';
 
 const JobManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<JobTabFilter>('Pending');
@@ -42,7 +43,106 @@ const JobManagementPage: React.FC = () => {
     }
   };
 
-  const paginatedJobs = jobsApi.items;
+
+
+  const columns = [
+    {
+      header: 'Job ID',
+      accessorKey: 'displayId',
+      cell: ({ row }: any) => (
+        <span className="underline text-gray-900 hover:text-gray-600 transition-colors font-semibold">
+          {row.displayId}
+        </span>
+      ),
+    },
+    {
+      header: 'Vehicle',
+      accessorKey: 'vehicle',
+    },
+    {
+      header: 'Customer',
+      accessorKey: 'customer',
+    },
+    {
+      header: 'Center',
+      accessorKey: 'center',
+    },
+    {
+      header: 'Line',
+      accessorKey: 'line',
+    },
+    {
+      header: 'Created',
+      accessorKey: 'created',
+    },
+    {
+      header: 'Action',
+      id: 'action',
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }: any) => (
+        <div className="text-right relative" onClick={(e) => e.stopPropagation()}>
+          <div className="relative inline-block text-left">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdownId(activeDropdownId === row.id ? null : row.id);
+              }}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center ml-auto"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              </svg>
+            </button>
+
+            {activeDropdownId === row.id && (
+              <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 font-semibold text-[13px] text-gray-700 text-left">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedJob(row);
+                    if (row.status === 'Pending') {
+                      setCurrentStep(1);
+                    } else if (row.status === 'Completed') {
+                      setCurrentStep(3);
+                    } else {
+                      setCurrentStep(2);
+                    }
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
+                >
+                  View Details
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast(`Editing inspection job: ${row.id}`);
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure you want to delete inspection job ${row.displayId}?`)) {
+                      void jobsApi.removeJob(row.id);
+                    }
+                    setActiveDropdownId(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-1.5 transition-colors font-semibold"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+  ];
 
   // If a job is selected, show the detail view
   if (selectedJob && displayJob) {
@@ -566,227 +666,48 @@ const JobManagementPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
-
-      {/* Top Controls Bar */}
-      <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
-        {/* Left Side: Search Box */}
-        <div className="relative" style={{ width: '320px' }}>
-          <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-            <svg className="w-4.5 h-4.5" fill="none" stroke="#64748b" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search"
-            value={jobsApi.searchQuery}
-            onChange={(e) => jobsApi.setSearchQuery(e.target.value)}
-            className="bg-white transition-all focus:outline-none focus:border-[#98A2B3]"
-            style={{
-              width: '100%',
-              height: '38px',
-              border: '1px solid #D0D5DD',
-              borderRadius: '10px',
-              paddingLeft: '40px',
-              paddingRight: '16px',
-              fontSize: '14px',
-              color: '#1D2939',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        {/* Right Side: Switcher Tabs & New Job Button */}
-        <div className="flex items-center gap-3">
-          {/* Switcher Tab Buttons */}
-          <div className="flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white">
-            {(['Pending', 'In progress', 'Redo Test', 'Completed'] as const).map((tab) => {
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-2 text-sm font-medium transition-all cursor-pointer border-r border-[#D0D5DD] last:border-r-0 ${activeTab === tab
-                    ? 'bg-[#F8F9FC] text-[#1D2939]'
-                    : 'bg-white text-[#344054] hover:bg-[#F9FAFB]'
-                    }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* New Job Button */}
-          <button
-            onClick={() => setShowNewJobModal(true)}
-            className="transition-all cursor-pointer hover:bg-opacity-95"
-            style={{
-              backgroundColor: '#1c1c1e',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '8px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-              height: '38px'
-            }}
-          >
-            <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
-            <span>New Job</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Table Container */}
-      <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none" style={{ padding: '12px 20px' }}>
-                <div className="flex items-center gap-1">
-                  Job ID
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Vehicle</th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Customer</th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Center</th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Line</th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>Created</th>
-              <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap w-12 text-right" style={{ padding: '12px 20px' }}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobsApi.isLoading ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">Loading…</td>
-              </tr>
-            ) : paginatedJobs.length > 0 ? (
-              paginatedJobs.map((job) => (
-                <tr
-                  key={job.id}
-                  onClick={async () => {
-                    setSelectedJob(job);
-                    await jobsApi.loadDetail(job.id);
-                    if (job.status === 'Pending') setCurrentStep(1);
-                    else if (job.status === 'Completed') setCurrentStep(3);
-                    else setCurrentStep(2);
-                  }}
-                  className="border-b border-gray-50 transition-colors duration-150 hover:bg-gray-50/80 bg-white cursor-pointer"
-                >
-                  <td className="px-6 py-4.5 text-sm font-semibold text-gray-900">
-                    <span className="underline text-gray-900 hover:text-gray-600 transition-colors font-semibold">
-                      {job.displayId}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.vehicle}</td>
-                  <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.customer}</td>
-                  <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.center}</td>
-                  <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.line}</td>
-                  <td className="px-6 py-4.5 text-sm text-gray-600 font-medium">{job.created}</td>
-                  <td className="px-6 py-4.5 text-right relative" onClick={(e) => e.stopPropagation()}>
-                    <div className="relative inline-block text-left">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveDropdownId(activeDropdownId === job.id ? null : job.id);
-                        }}
-                        className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-100 transition-colors flex items-center justify-center ml-auto"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                      </button>
-
-                      {activeDropdownId === job.id && (
-                        <div className="absolute right-0 mt-1 w-28 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 font-semibold text-[13px] text-gray-700 text-left">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedJob(job);
-                              if (job.status === 'Pending') {
-                                setCurrentStep(1);
-                              } else if (job.status === 'Completed') {
-                                setCurrentStep(3);
-                              } else {
-                                setCurrentStep(2);
-                              }
-                              setActiveDropdownId(null);
-                            }}
-                            className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
-                          >
-                            View Details
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast(`Editing inspection job: ${job.id}`);
-                              setActiveDropdownId(null);
-                            }}
-                            className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center gap-1.5 transition-colors text-slate-700"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (confirm(`Are you sure you want to delete inspection job ${job.displayId}?`)) {
-                                void jobsApi.removeJob(job.id);
-                              }
-                              setActiveDropdownId(null);
-                            }}
-                            className="w-full text-left px-3 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-1.5 transition-colors font-semibold"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500 font-medium">
-                  No jobs found matching your criteria.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {/* Table Footer / Pagination */}
-        <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-[#ffffff]">
-          <span className="text-xs font-semibold text-gray-500">
-            Page {jobsApi.page} of {jobsApi.totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => jobsApi.setPage(p => Math.max(1, p - 1))}
-              disabled={jobsApi.page === 1}
-              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${jobsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => jobsApi.setPage(p => Math.min(jobsApi.totalPages, p + 1))}
-              disabled={jobsApi.page >= jobsApi.totalPages}
-              className={`px-3.5 py-2 border border-slate-300 rounded-lg text-xs font-bold transition-all duration-150 bg-white ${jobsApi.page >= jobsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-
-      </div>
+      <DataTable
+          data={jobsApi.items || []}
+          columns={columns}
+          loading={jobsApi.isLoading}
+          searchPlaceholder="Search..."
+          onRowClick={async (job: any) => {
+            setSelectedJob(job);
+            await jobsApi.loadDetail(job.id);
+            if (job.status === 'Pending') setCurrentStep(1);
+            else if (job.status === 'Completed') setCurrentStep(3);
+            else setCurrentStep(2);
+          }}
+          leftElement={
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white">
+                {(['Pending', 'In progress', 'Redo Test', 'Completed'] as const).map((tab) => {
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-5 py-2 text-sm font-medium transition-all cursor-pointer border-r border-[#D0D5DD] last:border-r-0 ${activeTab === tab
+                          ? 'bg-[#F8F9FC] text-[#1D2939]'
+                          : 'bg-white text-[#344054] hover:bg-[#F9FAFB]'
+                        }`}
+                    >
+                      {tab}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setShowNewJobModal(true)}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
+                </svg>
+                <span>New Job</span>
+              </button>
+            </div>
+          }
+        />
 
       {/* MODAL: New Job Entry Form */}
       {showNewJobModal && (

@@ -27,6 +27,7 @@ export function SideDrawer({
   size = 'lg',
   className,
   bodyClassName,
+  showCloseButton = true,
 }: SideDrawerProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
@@ -36,13 +37,15 @@ export function SideDrawer({
             <DrawerTitle>{title}</DrawerTitle>
             {description ? <DrawerDescription>{description}</DrawerDescription> : null}
           </div>
-          <DrawerClose
-            type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-            aria-label="Close panel"
-          >
-            <X className="h-5 w-5" strokeWidth={2} />
-          </DrawerClose>
+          {showCloseButton && (
+            <DrawerClose
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
+              aria-label="Close panel"
+            >
+              <X className="h-5 w-5" strokeWidth={2} />
+            </DrawerClose>
+          )}
         </DrawerHeader>
 
         <div className={cn('flex-1 overflow-y-auto px-6 pb-6', bodyClassName)}>{children}</div>

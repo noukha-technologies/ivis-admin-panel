@@ -145,17 +145,17 @@ const CustomersPage: React.FC = () => {
     }
   ];
 
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
   return (
-    <div className="flex flex-col gap-4 min-h-full px-5 pt-3">
-      {/* Title Header */}
-      <div className="mb-2">
-        <h1 className="text-[26px] font-bold text-[#101828] leading-tight mb-1">Customers</h1>
-        <p className="text-[14px] text-[#475467] font-normal">Manage customer accounts, assigned plates and vehicles records</p>
-        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
-        {isLoading && <p className="text-sm text-gray-500 mt-2">Loading customers…</p>}
-      </div>
+    <div className="flex flex-col gap-2 min-h-full px-5 pt-0">
 
       <DataTable
+        loading={isLoading}
         data={customers}
         columns={columns}
         searchPlaceholder="Search customers..."

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
 
@@ -17,6 +17,7 @@ const menuItems = [
 ];
 
 const itemRouteMap: Record<string, string> = {
+  'Dashboard': ROUTES.DASHBOARD,
   'User Management': ROUTES.USERS_MANAGEMENT,
   'Configuration': ROUTES.CONFIGURATION,
   'Master Management': ROUTES.MASTER_MANAGEMENT,
@@ -27,6 +28,22 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const showDashboard =
+    location.pathname.startsWith('/users-management') ||
+    location.pathname.startsWith('/roles') ||
+    location.pathname.startsWith('/configuration') ||
+    location.pathname.startsWith('/master-management') ||
+    location.pathname.startsWith('/payments') ||
+    location.pathname.startsWith('/vehicle-records') ||
+    location.pathname.startsWith('/rop-management') ||
+    location.pathname.startsWith('/customers') ||
+    location.pathname.startsWith('/transactions');
+
+  const currentMenuItems = showDashboard
+    ? [{ name: 'Dashboard' }, ...menuItems]
+    : menuItems;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -86,7 +103,7 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
         >
           <img src={topNavIcon} alt="Apps Menu" className="w-8.5 h-8.5" />
         </button>
-
+ 
         {/* Dropdown Menu */}
         {isMenuOpen && (
           <div
@@ -105,14 +122,18 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
               animation: 'fadeInMenu 0.15s ease-out',
             }}
           >
-            {menuItems.map((item, idx) => (
+            {currentMenuItems.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => {
                   setIsMenuOpen(false);
                   const dest = itemRouteMap[item.name];
                   if (dest) {
-                    window.open(dest, '_blank');
+                    if (item.name === 'Dashboard') {
+                      navigate(dest);
+                    } else {
+                      window.open(dest, '_blank');
+                    }
                   }
                 }}
                 style={{
@@ -125,15 +146,15 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
                   color: '#1a1a2e',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  borderBottom: idx < menuItems.length - 1 ? '1px solid #f1f5f9' : 'none',
+                  borderBottom: idx < currentMenuItems.length - 1 ? '1px solid #f1f5f9' : 'none',
                   cursor: 'pointer',
                   fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                   transition: 'background-color 0.15s ease',
                   letterSpacing: '-0.01em',
                   borderTopLeftRadius: idx === 0 ? '12px' : '0',
                   borderTopRightRadius: idx === 0 ? '12px' : '0',
-                  borderBottomLeftRadius: idx === menuItems.length - 1 ? '12px' : '0',
-                  borderBottomRightRadius: idx === menuItems.length - 1 ? '12px' : '0',
+                  borderBottomLeftRadius: idx === currentMenuItems.length - 1 ? '12px' : '0',
+                  borderBottomRightRadius: idx === currentMenuItems.length - 1 ? '12px' : '0',
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f8fafc';
