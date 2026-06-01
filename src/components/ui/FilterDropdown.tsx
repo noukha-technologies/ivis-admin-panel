@@ -94,9 +94,9 @@ export function FilterDropdown({
           isOpen ? "border-neutral-800 bg-neutral-50" : ""
         )}
       >
-        {/* Sliders Icon */}
-        <svg className="w-3.5 h-3.5 text-slate-700 mr-2" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100 4m0-4a2 2 0 110 4m0-4v-2m0 6v2m6-6V10m6 2a2 2 0 100 4m0-4a2 2 0 110 4m0-4v-2m0 6v2M4 6h6m4 0h6m-14 8h2m6 0h12" />
+        {/* Funnel Icon */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 text-slate-700 mr-2">
+          <path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />
         </svg>
         <span>Filter</span>
         {hasActiveFilters && (
@@ -108,7 +108,7 @@ export function FilterDropdown({
       {isOpen && (
         <div
           className={cn(
-            "absolute mt-2 w-[280px] bg-white border border-neutral-200 rounded-[24px] shadow-[0_16px_48px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.03)] p-6 z-50 overflow-hidden font-sans select-none animate-fadeInMenu",
+            "absolute mt-2 w-70 bg-white border border-neutral-200 rounded-3xl shadow-[0_16px_48px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.03)] p-6 z-50 overflow-hidden font-sans select-none animate-fadeInMenu",
             align === 'left' ? 'left-0' : 'right-0',
             className
           )}
@@ -142,11 +142,11 @@ export function FilterDropdown({
                             className="sr-only"
                           />
                           <div className={cn(
-                            "w-[18px] h-[18px] rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
+                            "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
                             selectedOpts.length === 0 ? "border-[#101828] border-[1.5px]" : ""
                           )}>
                             {selectedOpts.length === 0 && (
-                              <div className="w-[8px] h-[8px] rounded-full bg-[#101828]"></div>
+                              <div className="w-2 h-2 rounded-full bg-[#101828]"></div>
                             )}
                           </div>
                           <span className="text-[13.5px] font-semibold text-[#1e293b] group-hover:text-[#101828] transition-colors">
@@ -166,11 +166,11 @@ export function FilterDropdown({
                                 className="sr-only"
                               />
                               <div className={cn(
-                                "w-[18px] h-[18px] rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
+                                "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
                                 isSelected ? "border-[#101828] border-[1.5px]" : ""
                               )}>
                                 {isSelected && (
-                                  <div className="w-[8px] h-[8px] rounded-full bg-[#101828]"></div>
+                                  <div className="w-2 h-2 rounded-full bg-[#101828]"></div>
                                 )}
                               </div>
                               <span className="text-[13.5px] font-semibold text-[#1e293b] group-hover:text-[#101828] transition-colors">
@@ -193,7 +193,7 @@ export function FilterDropdown({
                               className="sr-only"
                             />
                             <div className={cn(
-                              "w-[18px] h-[18px] rounded-[5px] border border-neutral-300 flex items-center justify-center transition-all group-hover:border-[#101828] bg-white",
+                              "w-4.5 h-4.5 rounded-[5px] border border-neutral-300 flex items-center justify-center transition-all group-hover:border-[#101828] bg-white",
                               isSelected ? "border-[#101828] bg-[#101828]" : ""
                             )}>
                               {isSelected && (

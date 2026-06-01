@@ -49,6 +49,7 @@ export interface DataTableProps<TData> {
   data: TData[];
   columns: ColumnDef<TData>[];
   searchPlaceholder?: string;
+  animatedSearchHints?: string[];
   searchKey?: keyof TData | string;
   filterColumnKey?: keyof TData | string;
   filterPlaceholder?: string;
@@ -56,6 +57,7 @@ export interface DataTableProps<TData> {
   defaultPageSize?: number;
   filterElement?: React.ReactNode;
   leftElement?: React.ReactNode;
+  rightElement?: React.ReactNode;
   showControls?: boolean;
   showPagination?: boolean;
   loading?: boolean;

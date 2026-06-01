@@ -11,9 +11,10 @@ import type { UserFormData, UserListItem, RoleListItem, RoleFormData } from '../
 import { emptyUserForm, emptyRoleForm } from '../../features/users/types';
 import { DataTable } from '../../components/ui/DataTable';
 import { RowActions } from '../../components/ui/RowActions';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Eye } from 'lucide-react';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
 import { masterService } from '../../api/services/master.service';
+import { SideDrawer } from '../../components/ui/SideDrawer';
 
 const UsersPage: React.FC = () => {
   const { canCreateUsers, canEditUsers } = usePermissions();
@@ -28,7 +29,7 @@ const UsersPage: React.FC = () => {
   const userColumns: ColumnDef<UserListItem>[] = [
     {
       id: 'name',
-      header: 'Name',
+      header: 'User Name',
       accessorKey: 'name',
       cell: ({ value }) => (
         <span className="font-bold text-[#101828]">{value}</span>
@@ -76,66 +77,33 @@ const UsersPage: React.FC = () => {
       header: 'Actions',
       enableSorting: false,
       enableHiding: false,
-      cell: ({ row }) => {
-        const isDropdownActive = activeDropdownId === row.id;
-        return (
-          <div className="relative text-right" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setActiveDropdownId(isDropdownActive ? null : row.id)}
-              className="w-8 h-8 rounded-lg hover:bg-neutral-100 flex items-center justify-center text-[#98a2b3] hover:text-[#475467] transition-all cursor-pointer ml-auto"
-            >
-              <svg className="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-                <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-                <circle cx="18" cy="12" r="1.5" fill="currentColor" stroke="currentColor" />
-              </svg>
-            </button>
-
-            {isDropdownActive && (
-              <div
-                ref={dropdownRef}
-                className="absolute right-0 top-9 w-44 bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left"
-              >
-                <button
-                  onClick={() => handleOpenView(row)}
-                  className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>View Details</span>
-                </button>
-                {canEditUsers && (
-                  <button
-                    onClick={() => handleOpenEdit(row)}
-                    className="w-full text-left px-4 py-2 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center gap-2 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                    </svg>
-                    <span>Edit User</span>
-                  </button>
-                )}
-                {canEditUsers && (
-                  <>
-                    <div className="h-px bg-neutral-100 my-1"></div>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                    >
-                      <svg className="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                      <span>Delete</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      }
+      cell: ({ row }) => (
+        <RowActions
+          actions={[
+            {
+              id: 'view',
+              label: 'View Details',
+              icon: <Eye className="w-4 h-4 text-slate-500" />,
+              onClick: () => handleOpenView(row),
+            },
+            ...(canEditUsers ? [
+              {
+                id: 'edit',
+                label: 'Edit User',
+                icon: <Pencil className="w-4 h-4 text-slate-500" />,
+                onClick: () => handleOpenEdit(row),
+              },
+              {
+                id: 'delete',
+                label: 'Delete',
+                icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+                onClick: () => handleDelete(row.id),
+                variant: 'danger' as const,
+              }
+            ] : [])
+          ]}
+        />
+      )
     }
   ];
 
@@ -405,48 +373,48 @@ const UsersPage: React.FC = () => {
 
   const tabSwitcher = null;
 
-  return (
-    <div className="w-full flex flex-col pt-3 pb-8">
-      {/* Title Header Row */}
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+  const primaryActionButton = activeTab === 'users' ? (
+    canCreateUsers && (
+      <button
+        onClick={handleOpenAdd}
+        disabled={isSubmitting}
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60 whitespace-nowrap shrink-0"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
+        </svg>
+        <span>Create User</span>
+      </button>
+    )
+  ) : (
+    canCreateUsers && (
+      <button
+        onClick={handleOpenNewRole}
+        disabled={isSubmitting}
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60 whitespace-nowrap shrink-0"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
+        </svg>
+        <span>Create Role</span>
+      </button>
+    )
+  );
 
-        {/* Primary Action Button aligned to the right corner */}
-        {activeTab === 'users' ? (
-          canCreateUsers && (
-            <button
-              onClick={handleOpenAdd}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
-              </svg>
-              <span>New User</span>
-            </button>
-          )
-        ) : (
-          canCreateUsers && (
-            <button
-              onClick={handleOpenNewRole}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm disabled:opacity-60"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
-              </svg>
-              <span>New Role</span>
-            </button>
-          )
-        )}
-      </div>
+
+  return (
+    <div className="w-full flex flex-col pt-0 pb-8">
+      {/* Title Header Row */}
+
 
       {activeTab === 'users' ? (
         <DataTable
           data={filteredUsers}
           columns={userColumns}
           loading={isLoading}
-          searchPlaceholder="Search users..."
-          leftElement={tabSwitcher}
+          searchPlaceholder="Search by"
+          animatedSearchHints={['Name', 'Role', 'Centre', 'line', 'Email', 'Status']}
+          rightElement={primaryActionButton}
           filterElement={
             <FilterDropdown
               align="right"
@@ -495,264 +463,266 @@ const UsersPage: React.FC = () => {
       )}
 
       {/* New User Modal */}
-      {showNewModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl w-105 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[17px] font-bold text-slate-800">New User</h3>
-              <button onClick={() => setShowNewModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
 
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">User Code *</label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  value={formData.user_id}
-                  onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-                  placeholder="e.g. 1001"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="user@ivis.gov.om"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Password *</label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Min 8 characters"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Confirm Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role *</label>
-                {rolesHook.roleOptions.length > 0 ? (
-                  <select
-                    required
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                  >
-                    <option value="" disabled>Select role</option>
-                    {rolesHook.roleOptions.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    placeholder="e.g. admin"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Centre</label>
-                <select
-                  value={formData.centre}
-                  onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                >
-                  <option value="">Select (optional)</option>
-                  {centreOptions.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Line</label>
-                <select
-                  value={formData.line}
-                  onChange={(e) => setFormData({ ...formData, line: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                >
-                  <option value="">Select (optional)</option>
-                  {lineOptions.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
-
-              <div className="flex items-center justify-end gap-3 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Saving...' : 'Confirm'}
-                </button>
-              </div>
-            </form>
+      <SideDrawer
+        open={showNewModal}
+        onOpenChange={setShowNewModal}
+        title="Create New User"
+        size="sm"
+        showCloseButton={false}
+        bodyClassName="pt-6"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setShowNewModal(false)}
+              className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-50 font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="new-user-form"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+            >
+              {isSubmitting ? 'Saving...' : 'Confirm'}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form onSubmit={handleCreate} className="space-y-4" id="new-user-form">
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">User Code <span className="text-red-500">*</span></label>
+            <input
+              type="number"
+              required
+              min={1}
+              value={formData.user_id}
+              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+              placeholder="e.g. 1001"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Email <span className="text-red-500">*</span></label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="user@ivis.gov.om"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Password <span className="text-red-500">*</span></label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Min 8 characters"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Confirm Password <span className="text-red-500">*</span></label>
+            <input
+              type="password"
+              required
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role <span className="text-red-500">*</span></label>
+            {rolesHook.roleOptions.length > 0 ? (
+              <select
+                required
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+              >
+                <option value="" disabled>Select role</option>
+                {rolesHook.roleOptions.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                required
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                placeholder="e.g. admin"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Centre</label>
+            <select
+              value={formData.centre}
+              onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+            >
+              <option value="">Select (optional)</option>
+              {centreOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Line</label>
+            <select
+              value={formData.line}
+              onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+            >
+              <option value="">Select (optional)</option>
+              {lineOptions.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
+
+
+        </form>
+      </SideDrawer>
 
       {/* Edit User Modal */}
-      {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl w-105 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[17px] font-bold text-slate-800">Edit User</h3>
-              <button onClick={() => setShowEditModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
+
+      <SideDrawer
+        open={showEditModal && !!selectedUser}
+        onOpenChange={setShowEditModal}
+        title="Edit User"
+        size="sm"
+        showCloseButton={false}
+        bodyClassName="pt-6"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setShowEditModal(false)}
+              className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-50 font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-user-form"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+            >
+              {isSubmitting ? 'Saving...' : 'Confirm'}
+            </button>
+          </div>
+        }
+      >
+        {selectedUser && (
+          <form onSubmit={handleEditSave} className="space-y-4" id="edit-user-form">
+
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Enter"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+              />
+            </div>
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Email <span className="text-red-500">*</span></label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+              />
             </div>
 
-            <form onSubmit={handleEditSave} className="space-y-4">
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name *</label>
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role <span className="text-red-500">*</span></label>
+              {rolesHook.roleOptions.length > 0 ? (
+                <select
+                  required
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+                >
+                  <option value="" disabled>Select role</option>
+                  {rolesHook.roleOptions.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              ) : (
                 <input
                   type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
                 />
-              </div>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role *</label>
-                {rolesHook.roleOptions.length > 0 ? (
-                  <select
-                    required
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                  >
-                    <option value="" disabled>Select role</option>
-                    {rolesHook.roleOptions.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                  />
-                )}
-              </div>
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Centre</label>
+              <select
+                value={formData.centre}
+                onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+              >
+                <option value="">Select (optional)</option>
+                {centreOptions.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Centre</label>
-                <select
-                  value={formData.centre}
-                  onChange={(e) => setFormData({ ...formData, centre: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                >
-                  <option value="">Select (optional)</option>
-                  {centreOptions.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Line</label>
+              <select
+                value={formData.line}
+                onChange={(e) => setFormData({ ...formData, line: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
+              >
+                <option value="">Select (optional)</option>
+                {lineOptions.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Line</label>
-                <select
-                  value={formData.line}
-                  onChange={(e) => setFormData({ ...formData, line: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] bg-white focus:outline-none focus:border-slate-400 text-slate-800"
-                >
-                  <option value="">Select (optional)</option>
-                  {lineOptions.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name}</option>
-                  ))}
-                </select>
-              </div>
+            {formError && <p className="text-sm text-red-600">{formError}</p>}
 
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
 
-              <div className="flex items-center justify-end gap-3 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Saving...' : 'Confirm'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+          </form>
+        )}
+      </SideDrawer>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
@@ -792,116 +762,120 @@ const UsersPage: React.FC = () => {
       )}
 
       {/* New Role Modal */}
-      {showNewRoleModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl w-125 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[17px] font-bold text-slate-800">New Role</h3>
-              <button onClick={() => setShowNewRoleModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
 
-            <form onSubmit={handleCreateRole} className="space-y-4">
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={roleFormData.role_name}
-                  onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
-                  placeholder="e.g. admin"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
-                <textarea
-                  value={roleFormData.description}
-                  onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
-                  placeholder="Optional description"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                />
-              </div>
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
-              <div className="flex items-center justify-end gap-3 pt-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewRoleModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Saving...' : 'Confirm'}
-                </button>
-              </div>
-            </form>
+      <SideDrawer
+        open={showNewRoleModal}
+        onOpenChange={setShowNewRoleModal}
+        title="New Role"
+        size="sm"
+        showCloseButton={false}
+        bodyClassName="pt-6"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setShowNewRoleModal(false)}
+              className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-50 font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="new-role-form"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+            >
+              {isSubmitting ? 'Saving...' : 'Confirm'}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+
+        <form onSubmit={handleCreateRole} className="space-y-4" id="new-role-form">
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              required
+              value={roleFormData.role_name}
+              onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
+              placeholder="e.g. admin"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
+            <textarea
+              value={roleFormData.description}
+              onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
+              placeholder="Optional description"
+              rows={3}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            />
+          </div>
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
+
+        </form>
+
+      </SideDrawer>
 
       {/* Edit Role Modal */}
-      {showEditRoleModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-xl w-125 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-[17px] font-bold text-slate-800">Edit Role</h3>
-              <button onClick={() => setShowEditRoleModal(false)} className="rounded-full hover:bg-slate-100 p-1 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-            </div>
 
-            <form onSubmit={handleEditRoleSave} className="space-y-4">
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={roleFormData.role_name}
-                  onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                />
-              </div>
-              <div>
-                <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
-                <textarea
-                  value={roleFormData.description}
-                  onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
-                />
-              </div>
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
-              <div className="flex items-center justify-end gap-3 pt-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditRoleModal(false)}
-                  className="px-6 py-2 border border-slate-200 hover:bg-slate-50 font-semibold text-[13.5px] text-slate-700 rounded-lg transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+      <SideDrawer
+        open={showEditRoleModal}
+        onOpenChange={setShowEditRoleModal}
+        title="Edit Role"
+        size="sm"
+        showCloseButton={false}
+        bodyClassName="pt-6"
+        footer={
+          <div className="flex items-center justify-end gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => setShowEditRoleModal(false)}
+              className="px-6 py-2 border border-red-500 text-red-500 hover:bg-red-50 font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="edit-role-form"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+
+        <form onSubmit={handleEditRoleSave} className="space-y-4" id="edit-role-form">
+
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              required
+              value={roleFormData.role_name}
+              onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            />
+          </div>
+          <div>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
+            <textarea
+              value={roleFormData.description}
+              onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            />
+          </div>
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
+
+        </form>
+
+      </SideDrawer>
 
       {/* Delete Role Modal */}
       {showDeleteRoleModal && (
