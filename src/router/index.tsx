@@ -95,6 +95,14 @@ const AppRouter = () => {
             }
           />
           <Route
+            path={ROUTES.JOB_DETAIL}
+            element={
+              <PermissionRoute required={PERMISSIONS.JOBS_VIEW}>
+                <JobDetailPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
             path={ROUTES.REPORTS}
             element={
               <PermissionRoute required={PERMISSIONS.REPORTS_VIEW}>
