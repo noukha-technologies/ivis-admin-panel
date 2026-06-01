@@ -30,16 +30,20 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const showDashboard =
-    location.pathname.startsWith('/users-management') ||
-    location.pathname.startsWith('/roles') ||
-    location.pathname.startsWith('/configuration') ||
-    location.pathname.startsWith('/master-management') ||
-    location.pathname.startsWith('/payments') ||
-    location.pathname.startsWith('/vehicle-records') ||
-    location.pathname.startsWith('/rop-management') ||
-    location.pathname.startsWith('/customers') ||
-    location.pathname.startsWith('/transactions');
+  const dashboardRoutes = [
+    '/users-management',
+    '/roles',
+    '/configuration',
+    '/master-management',
+    '/payments',
+    '/vehicle-records',
+    '/rop-management',
+    '/customers',
+    '/transactions',
+  ];
+
+  const firstSegment = '/' + location.pathname.split('/')[1];
+  const showDashboard = dashboardRoutes.includes(firstSegment);
 
   const currentMenuItems = showDashboard
     ? [{ name: 'Dashboard' }, ...menuItems]
