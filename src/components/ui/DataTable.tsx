@@ -324,21 +324,6 @@ export function DataTable<TData>({
                     >
                       <span className="inline-flex items-center gap-1">
                         {col.header}
-                        {isSortable && (
-                          <svg
-                            className={cn(
-                              "w-3.5 h-3.5 text-gray-400 transition-transform",
-                              currentSort && sortConfig?.direction === 'desc' ? "rotate-180 text-neutral-800" : "",
-                              currentSort && sortConfig?.direction === 'asc' ? "text-neutral-800" : ""
-                            )}
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        )}
                       </span>
                     </th>
                   );

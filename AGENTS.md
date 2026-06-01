@@ -22,8 +22,6 @@
 ---
 
 ## Project Structure
-
-```
 src/
 ├── main.tsx                         # React root, global CSS imports
 ├── App.tsx                          # QueryClientProvider, cross-tab auth sync
@@ -64,7 +62,6 @@ src/
 ├── types/                           # api.types, common.types, env.d.ts
 ├── styles/                          # globals.css, tailwind.css
 └── assets/                          # images, icons (import as modules in Vite)
-```
 
 ---
 
@@ -81,13 +78,6 @@ src/
 | **Components** | Reusable layout and presentational pieces |
 
 ### Data Flow (users example)
-
-```
-Page → useUsers() → userService → axiosInstance → Backend API
-              ↓
-         mappers (toUserListItem, toCreatePayload)
-```
-
 - Do **not** call `axios` directly from pages — go through `api/services/*`.
 - Do **not** put API types in pages — keep API interfaces in services, UI types in `features/*/types.ts`.
 
@@ -220,6 +210,27 @@ Backend returns:
 
 ---
 
+## Safety Guardrails
+
+### Anti-Hallucination
+- Never assume file contents, component signatures, or API shapes — `view` first, code second
+- Never assume a component, hook, or util exists — verify with `ls` or `view` before importing
+- Never invent endpoint names, field names, or response shapes — read `api/endpoints.ts` and service files first
+- Never assume hook/util signatures — check source before using
+- If you cannot view a file, stop and ask — do not guess
+- State uncertainty explicitly; prefix with `"Assuming..."` and flag it
+
+### Rogue File Prevention
+- Never create `.js` / `.cjs` / `.mjs` patch, migration, or fix scripts at project root
+- Never use `fs.readFileSync` + `fs.writeFileSync` to mutate source files via `node`
+- Never `git checkout` files without user confirmation
+- Never create files outside `src/` unless explicitly instructed
+- All edits via `str_replace` on the target file directly
+- Never chain edits across multiple files silently — list all intended changes and confirm first
+- Never self-execute scripts that modify the working tree
+
+---
+
 ## Git Conventions
 
 - Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
@@ -235,10 +246,10 @@ Backend returns:
 1. Inspect existing feature (`features/users` is the reference implementation).
 2. Reuse `api/services`, `mappers`, hook, and page patterns.
 3. Confirm backend endpoint exists and envelope shape matches `api.types.ts`.
+4. **Never assume file contents, component signatures, or API shapes — `view` first, code second.**
+5. **If uncertain about any file or pattern, stop and ask — never guess or invent.**
 
 ### New Feature Template
-
-```
 src/api/endpoints.ts                    # add ENDPOINTS.<FEATURE>
 src/api/services/<feature>.service.ts   # CRUD + unwrap helpers
 src/features/<feature>/types.ts
@@ -247,7 +258,7 @@ src/features/<feature>/hooks/use<Feature>.ts
 src/pages/<feature>/<Feature>Page.tsx
 src/router/routes.ts                    # ROUTES.<FEATURE>
 src/router/index.tsx                    # Route + PrivateRoute
-```
+
 
 ### Scripts
 
@@ -280,4 +291,4 @@ npm run preview  # Preview production build
 
 ---
 
-**Summary:** Build production-ready, type-safe React UI for IVIS. Pages compose feature hooks; hooks call API services; services use the shared Axios client and backend envelope helpers. Keep routing, endpoints, and permissions centralized. Match existing Tailwind and folder conventions.
+**Summary:** Build production-ready, type-safe React UI for IVIS. Pages compose feature hooks; hooks call API services; services use the shared Axios client and backend envelope helpers. Keep routing, endpoints, and permissions centralized. Match existing Tailwind and folder conventions. Never assume — always verify before coding.

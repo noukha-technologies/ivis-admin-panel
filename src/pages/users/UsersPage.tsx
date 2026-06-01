@@ -63,12 +63,22 @@ const UsersPage: React.FC = () => {
       header: 'Status',
       accessorKey: 'status',
       cell: ({ value }) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium border select-none ${value === 'Active'
-          ? 'bg-[#ecfdf5] text-[#027a48] border-[#abf0cd]'
-          : 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]'
-          }`}>
-          {value}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="relative flex h-2 w-2 items-center justify-center">
+            {value === 'Active' ? (
+              <>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </>
+            ) : (
+              <>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </>
+            )}
+          </div>
+          <span className="text-[13.5px] font-medium text-neutral-700">{value}</span>
+        </div>
       ),
       enableSorting: true,
     },
