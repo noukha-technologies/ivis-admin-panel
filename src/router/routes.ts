@@ -14,6 +14,7 @@ export const ROUTES = {
   CUSTOMERS: '/transactions/customers',
   ROP_MANAGEMENT: '/transactions/rop-management',
   JOB_MANAGEMENT: '/job-management',
+  JOB_DETAIL: '/job-management/:id',
   MASTER_MANAGEMENT: '/master-management',
   MASTER_VEHICLES: '/master-management/vehicles',
   MASTER_TESTS: '/master-management/tests',
