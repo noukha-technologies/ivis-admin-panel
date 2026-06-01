@@ -1,3 +1,5 @@
+import type { RoleAccessMatrix } from '../../constants/roleAccessMatrix';
+
 export interface UserListItem {
   id: string;
   userId: number;
@@ -8,16 +10,17 @@ export interface UserListItem {
   centreId: string;
   line: string;
   lineId: string;
+  lineIds: string[];
   status: 'Active';
   created: string;
 }
 
 export interface RoleListItem {
   id: string;
-  role_id: number;
   name: string;
-  description: string;
   created: string;
+  permissions: string[];
+  access: RoleAccessMatrix;
 }
 
 export interface UserFormData {
@@ -33,7 +36,7 @@ export interface UserFormData {
 
 export interface RoleFormData {
   role_name: string;
-  description: string;
+  permissions: string[];
 }
 
 export const emptyUserForm = (): UserFormData => ({
@@ -49,5 +52,5 @@ export const emptyUserForm = (): UserFormData => ({
 
 export const emptyRoleForm = (): RoleFormData => ({
   role_name: '',
-  description: '',
+  permissions: [],
 });

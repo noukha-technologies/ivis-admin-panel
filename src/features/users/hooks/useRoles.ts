@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { roleService } from '../../../api/services/role.service';
 import { getApiErrorMessage } from '../../../api/apiResponse';
 import { useDebounce } from '../../../hooks/useDebounce';
-import { toRoleListItem } from '../mappers';
+import { toRoleListItem, toCreateRolePayload, toUpdateRolePayload } from '../mappers';
 import type { RoleFormData, RoleListItem } from '../types';
 
 const PAGE_SIZE = 50;
@@ -53,10 +53,7 @@ export function useRoles() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await roleService.create({
-        role_name: form.role_name.trim(),
-        description: form.description.trim() || undefined,
-      });
+      await roleService.create(toCreateRolePayload(form));
       await fetchRoles();
       return true;
     } catch (err) {
@@ -71,10 +68,7 @@ export function useRoles() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await roleService.update(id, {
-        role_name: form.role_name.trim(),
-        description: form.description.trim() || undefined,
-      });
+      await roleService.update(id, toUpdateRolePayload(form));
       await fetchRoles();
       return true;
     } catch (err) {

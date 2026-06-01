@@ -47,11 +47,11 @@ export function useUsers() {
     setPage(1);
   }, [debouncedSearch]);
 
-  const createUser = async (form: UserFormData, roleId?: number): Promise<boolean> => {
+  const createUser = async (form: UserFormData, roleAccessId: string): Promise<boolean> => {
     setIsSubmitting(true);
     setError(null);
     try {
-      await userService.create(toCreatePayload(form, roleId));
+      await userService.create(toCreatePayload(form, roleAccessId));
       await fetchUsers();
       return true;
     } catch (err) {
@@ -62,11 +62,15 @@ export function useUsers() {
     }
   };
 
-  const updateUser = async (id: string, form: UserFormData, roleId?: number): Promise<boolean> => {
+  const updateUser = async (
+    id: string,
+    form: UserFormData,
+    roleAccessId?: string,
+  ): Promise<boolean> => {
     setIsSubmitting(true);
     setError(null);
     try {
-      await userService.update(id, toUpdatePayload(form, roleId));
+      await userService.update(id, toUpdatePayload(form, roleAccessId));
       await fetchUsers();
       return true;
     } catch (err) {

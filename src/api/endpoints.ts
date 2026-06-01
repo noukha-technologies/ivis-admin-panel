@@ -14,9 +14,12 @@ export const ENDPOINTS = {
     BASE: '/users',
     BY_ID: (id: string) => `/users/${id}`,
   },
-  ROLES: {
-    BASE: '/masters/roles',
-    BY_ID: (id: string) => `/masters/roles/${id}`,
+  /** Role access matrix (core.role_access) — replaces legacy masters/roles */
+  PERMISSIONS: {
+    BASE: '/permissions',
+    KEYS: '/permissions/keys',
+    BY_ID: (id: string) => `/permissions/${id}`,
+    BY_NAME: (roleName: string) => `/permissions/by-name/${encodeURIComponent(roleName)}`,
   },
   VEHICLES: {
     BASE: '/masters/vehicles',

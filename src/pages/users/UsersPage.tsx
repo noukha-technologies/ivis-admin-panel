@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
@@ -15,6 +15,136 @@ import { Pencil, Trash2, Eye } from 'lucide-react';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
 import { masterService } from '../../api/services/master.service';
 import { SideDrawer } from '../../components/ui/SideDrawer';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal';
+
+interface PermissionModuleRow {
+  name: string;
+  createKey: string;
+  editKey: string;
+  viewKey: string;
+}
+
+const PERMISSION_GRID_MODULES: PermissionModuleRow[] = [
+  { name: 'Job Management', createKey: 'JOBS_CREATE', editKey: 'JOBS_UPSERT', viewKey: 'JOBS_VIEW' },
+  { name: 'Vehicle & Customer', createKey: 'CUSTOMERS_CREATE', editKey: 'CUSTOMERS_UPSERT', viewKey: 'CUSTOMERS_VIEW' },
+  { name: 'Appointments', createKey: 'APPOINTMENTS_CREATE', editKey: 'APPOINTMENTS_UPSERT', viewKey: 'APPOINTMENTS_VIEW' },
+  { name: 'Payments', createKey: 'PAYMENTS_CREATE', editKey: 'PAYMENTS_UPSERT', viewKey: 'PAYMENTS_VIEW' },
+  { name: 'Vehicle Records', createKey: 'VEHICLE_RECORDS_CREATE', editKey: 'VEHICLE_RECORDS_UPSERT', viewKey: 'VEHICLE_RECORDS_VIEW' },
+  { name: 'File Processing', createKey: '', editKey: '', viewKey: 'FILE_PROCESSING_VIEW' },
+  { name: 'ROP Integration', createKey: 'ROP_CREATE', editKey: 'ROP_UPSERT', viewKey: 'ROP_VIEW' },
+  { name: 'User & Roles', createKey: 'USER_CREATE', editKey: 'USER_EDIT', viewKey: 'USER_VIEW' },
+  { name: 'Reports & Analytics', createKey: '', editKey: '', viewKey: 'REPORTS_VIEW' }
+];
+
+const ACCESS_MODULE_MAP = [
+  { name: 'Job Management', permissions: ['JOBS_VIEW', 'JOBS_CREATE', 'JOBS_UPSERT', 'JOBS_DELETE'] },
+  { name: 'Vehicle & Customer', permissions: ['CUSTOMERS_VIEW', 'CUSTOMERS_CREATE', 'CUSTOMERS_UPSERT', 'CUSTOMERS_DELETE'] },
+  { name: 'Appointments', permissions: ['APPOINTMENTS_VIEW', 'APPOINTMENTS_CREATE', 'APPOINTMENTS_UPSERT', 'APPOINTMENTS_DELETE'] },
+  { name: 'Payments', permissions: ['PAYMENTS_VIEW', 'PAYMENTS_CREATE', 'PAYMENTS_UPSERT', 'PAYMENTS_DELETE'] },
+  { name: 'Vehicle Records', permissions: ['VEHICLE_RECORDS_VIEW', 'VEHICLE_RECORDS_CREATE', 'VEHICLE_RECORDS_UPSERT', 'VEHICLE_RECORDS_DELETE'] },
+  { name: 'File Processing', permissions: ['FILE_PROCESSING_VIEW'] },
+  { name: 'ROP Integration', permissions: ['ROP_VIEW', 'ROP_CREATE', 'ROP_UPSERT', 'ROP_DELETE'] },
+  { name: 'User & Roles', permissions: ['USER_VIEW', 'USER_CREATE', 'USER_EDIT', 'USER_DELETE', 'ROLES_VIEW', 'ROLES_CREATE', 'ROLES_UPSERT', 'ROLES_DELETE', 'PERMISSIONS_VIEW', 'PERMISSIONS_CREATE', 'PERMISSIONS_UPSERT', 'PERMISSIONS_DELETE'] },
+  { name: 'Reports & Analytics', permissions: ['REPORTS_VIEW'] },
+  { name: 'ANPR', permissions: ['ANPR_VIEW', 'ANPR_CREATE', 'ANPR_UPSERT', 'ANPR_DELETE'] },
+  { name: 'Configuration', permissions: ['CONFIGURATION_VIEW'] },
+  { name: 'Dashboard', permissions: ['DASHBOARD_VIEW'] },
+  { name: 'Master Management', permissions: ['MASTERS_VIEW', 'MASTERS_CREATE', 'MASTERS_UPSERT', 'MASTERS_DELETE'] }
+];
+
+export function getAccessModulesForPermissions(permissions: string[]): string[] {
+  const modules: string[] = [];
+  for (const item of ACCESS_MODULE_MAP) {
+    if (item.permissions.some(p => permissions?.includes(p))) {
+      modules.push(item.name);
+    }
+  }
+  return modules;
+}
+
+interface PermissionsGridProps {
+  selectedPermissions: string[];
+  onChange?: (permissions: string[]) => void;
+  disabled?: boolean;
+}
+
+const PermissionsGrid: React.FC<PermissionsGridProps> = ({
+  selectedPermissions,
+  onChange,
+  disabled = false,
+}) => {
+  const togglePermission = (key: string) => {
+    if (disabled || !onChange || !key) return;
+    const isChecked = selectedPermissions.includes(key);
+    const updated = isChecked
+      ? selectedPermissions.filter((p) => p !== key)
+      : [...selectedPermissions, key];
+    onChange(updated);
+  };
+
+  return (
+    <div className="w-full mt-4 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <table className="w-full border-collapse bg-white">
+        <thead>
+          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[13px]">
+            <th className="py-3 px-4 text-left font-bold text-slate-600">Module</th>
+            <th className="py-3 px-4 text-center font-bold text-slate-600 w-24">Create</th>
+            <th className="py-3 px-4 text-center font-bold text-slate-600 w-24">Edit</th>
+            <th className="py-3 px-4 text-center font-bold text-slate-600 w-24">View</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {PERMISSION_GRID_MODULES.map((row) => (
+            <tr key={row.name} className="hover:bg-slate-50/50 transition-colors text-[13.5px] text-slate-700">
+              <td className="py-3 px-4 font-semibold text-slate-800">{row.name}</td>
+              <td className="py-3 px-4 text-center">
+                {row.createKey && (
+                  <input
+                    type="checkbox"
+                    checked={selectedPermissions.includes(row.createKey)}
+                    onChange={() => togglePermission(row.createKey)}
+                    disabled={disabled}
+                    className="w-4 h-4 text-[#101828] border-slate-300 rounded focus:ring-[#101828] transition-all cursor-pointer disabled:opacity-50"
+                  />
+                )}
+              </td>
+              <td className="py-3 px-4 text-center">
+                {row.editKey && (
+                  <input
+                    type="checkbox"
+                    checked={selectedPermissions.includes(row.editKey)}
+                    onChange={() => togglePermission(row.editKey)}
+                    disabled={disabled}
+                    className="w-4 h-4 text-[#101828] border-slate-300 rounded focus:ring-[#101828] transition-all cursor-pointer disabled:opacity-50"
+                  />
+                )}
+              </td>
+              <td className="py-3 px-4 text-center">
+                {row.viewKey && (
+                  <input
+                    type="checkbox"
+                    checked={selectedPermissions.includes(row.viewKey)}
+                    onChange={() => togglePermission(row.viewKey)}
+                    disabled={disabled}
+                    className="w-4 h-4 text-[#101828] border-slate-300 rounded focus:ring-[#101828] transition-all cursor-pointer disabled:opacity-50"
+                  />
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export function formatRoleName(name: string): string {
+  if (!name) return '';
+  return name
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 const UsersPage: React.FC = () => {
   const { canCreateUsers, canEditUsers } = usePermissions();
@@ -23,8 +153,6 @@ const UsersPage: React.FC = () => {
   const location = useLocation();
 
   const activeTab = location.pathname === ROUTES.USERS_ROLES ? 'roles' : 'users';
-  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const userColumns: ColumnDef<UserListItem>[] = [
     {
@@ -117,30 +245,58 @@ const UsersPage: React.FC = () => {
     }
   ];
 
+  const [roleToView, setRoleToView] = useState<RoleListItem | null>(null);
+  const [showViewRoleDrawer, setShowViewRoleDrawer] = useState(false);
+
   const roleColumns = useMemo<ColumnDef<RoleListItem>[]>(() => [
     {
       id: 'name',
       header: 'Role',
       accessorKey: 'name',
       cell: ({ value }) => (
-        <span className="font-bold text-[#101828]">{value}</span>
+        <span className="font-bold text-[#101828]">{formatRoleName(value)}</span>
       ),
       enableSorting: true,
       enableHiding: false,
     },
     {
-      id: 'description',
-      header: 'Description',
-      accessorKey: 'description',
-      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
-      enableSorting: false,
+      id: 'access',
+      header: 'Access',
+      cell: ({ row: role }) => {
+        const modules = getAccessModulesForPermissions(role.permissions || []);
+        const visibleModules = modules.slice(0, 5);
+        const remainingCount = modules.length - 5;
+        return (
+          <div className="flex flex-wrap gap-1.5 items-center w-full">
+            {visibleModules.map((m) => (
+              <span key={m} className="inline-flex items-center px-2 py-0.5 rounded-lg text-[12px] font-semibold bg-neutral-100 text-neutral-800 border border-neutral-200/80">
+                {m}
+              </span>
+            ))}
+            {remainingCount > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[12px] font-semibold bg-neutral-100 text-neutral-800 border border-neutral-200/80">
+                +{remainingCount}
+              </span>
+            )}
+            {modules.length === 0 && (
+              <span className="text-slate-400 font-normal italic text-[13px]">No access modules</span>
+            )}
+          </div>
+        );
+      },
     },
     {
-      id: 'created',
-      header: 'Created',
-      accessorKey: 'created',
-      cell: ({ value }) => <span className="text-[#475467] font-normal">{value}</span>,
-      enableSorting: true,
+      id: 'status',
+      header: 'Status',
+      cell: () => (
+        <div className="flex items-center gap-2">
+          <div className="relative flex h-2 w-2 items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </div>
+          <span className="text-[13.5px] font-medium text-neutral-700">Active</span>
+        </div>
+      ),
     },
     {
       id: 'actions',
@@ -150,6 +306,15 @@ const UsersPage: React.FC = () => {
       cell: ({ row: role }) => (
         <RowActions
           actions={[
+            {
+              id: 'view',
+              label: 'View Details',
+              icon: <Eye className="w-4 h-4 text-slate-500" />,
+              onClick: () => {
+                setRoleToView(role);
+                setShowViewRoleDrawer(true);
+              }
+            },
             ...(canEditUsers ? [
               {
                 id: 'edit',
@@ -157,7 +322,10 @@ const UsersPage: React.FC = () => {
                 icon: <Pencil className="w-4 h-4 text-slate-500" />,
                 onClick: () => {
                   setRoleToEdit(role);
-                  setRoleFormData({ role_name: role.name, description: role.description === '—' ? '' : role.description });
+                  setRoleFormData({
+                    role_name: role.name,
+                    permissions: role.permissions,
+                  });
                   setFormError(null);
                   setShowEditRoleModal(true);
                 }
@@ -226,16 +394,6 @@ const UsersPage: React.FC = () => {
     fetchOptions();
   }, []);
 
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setActiveDropdownId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
-
   const handleOpenAdd = () => {
     setFormData(emptyUserForm());
     setFormError(null);
@@ -247,13 +405,11 @@ const UsersPage: React.FC = () => {
     setFormData(userFormFromListItem(user));
     setFormError(null);
     setShowEditModal(true);
-    setActiveDropdownId(null);
   };
 
   const handleOpenView = (user: UserListItem) => {
     setSelectedUser(user);
     setShowViewModal(true);
-    setActiveDropdownId(null);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -274,9 +430,12 @@ const UsersPage: React.FC = () => {
     }
 
     const selectedRole = rolesHook.roles.find((r) => r.name === formData.role);
-    const roleId = selectedRole ? selectedRole.role_id : undefined;
+    if (!selectedRole?.id) {
+      setFormError('Please select a valid role');
+      return;
+    }
 
-    const ok = await usersHook.createUser(formData, roleId);
+    const ok = await usersHook.createUser(formData, selectedRole.id);
     if (ok) setShowNewModal(false);
   };
 
@@ -286,9 +445,9 @@ const UsersPage: React.FC = () => {
     setFormError(null);
 
     const selectedRole = rolesHook.roles.find((r) => r.name === formData.role);
-    const roleId = selectedRole ? selectedRole.role_id : undefined;
+    const roleAccessId = selectedRole?.id;
 
-    const ok = await usersHook.updateUser(selectedUser.id, formData, roleId);
+    const ok = await usersHook.updateUser(selectedUser.id, formData, roleAccessId);
     if (ok) {
       setShowEditModal(false);
       setSelectedUser(null);
@@ -298,7 +457,6 @@ const UsersPage: React.FC = () => {
   const handleDelete = (id: string) => {
     setUserToDelete(id);
     setShowDeleteModal(true);
-    setActiveDropdownId(null);
   };
 
   const confirmDelete = async () => {
@@ -466,7 +624,9 @@ const UsersPage: React.FC = () => {
           data={rolesHook.roles}
           columns={roleColumns}
           loading={isLoading}
-          searchPlaceholder="Search roles..."
+          searchPlaceholder="Search by"
+          animatedSearchHints={['Role Name', 'Access']}
+          rightElement={primaryActionButton}
           leftElement={tabSwitcher}
           defaultPageSize={50}
         />
@@ -734,50 +894,25 @@ const UsersPage: React.FC = () => {
         )}
       </SideDrawer>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-2xl w-100 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="mb-4">
-              <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="4" width="48" height="48" rx="24" fill="#FEE4E2" style={{ fill: '#FEE4E2', fillOpacity: 1 }} />
-                <rect x="4" y="4" width="48" height="48" rx="24" stroke="#FEF3F2" style={{ stroke: '#FEF3F2', strokeOpacity: 1 }} strokeWidth="8" />
-                <path d="M28 24V28M28 32H28.01M38 28C38 33.5228 33.5228 38 28 38C22.4772 38 18 33.5228 18 28C18 22.4772 22.4772 18 28 18C33.5228 18 38 22.4772 38 28Z" stroke="#D92D20" style={{ stroke: '#D92D20', strokeOpacity: 1 }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <h3 className="text-[18px] font-bold text-slate-900 mb-2">Delete User</h3>
-            <p className="text-[14px] text-slate-500 mb-6 leading-relaxed">
-              Are you sure you want to delete this User? This action cannot be undone.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setUserToDelete(null);
-                }}
-                className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 font-semibold text-[14px] text-slate-700 rounded-lg transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 bg-[#fee2e2] hover:bg-[#fca5a5] border border-[#f87171] text-[#dc2626] font-semibold text-[14px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-              >
-                {isSubmitting ? 'Deleting...' : 'Yes, Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete User Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete User"
+        message="Are you sure you want to delete this User? This action cannot be undone."
+        isSubmitting={isSubmitting}
+      />
 
-      {/* New Role Modal */}
-
+      {/* New Role Drawer */}
       <SideDrawer
         open={showNewRoleModal}
         onOpenChange={setShowNewRoleModal}
         title="New Role"
-        size="sm"
+        size="md"
         showCloseButton={false}
         bodyClassName="pt-6"
         footer={
@@ -793,50 +928,42 @@ const UsersPage: React.FC = () => {
               type="submit"
               form="new-role-form"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+              className="px-6 py-2 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
             >
               {isSubmitting ? 'Saving...' : 'Confirm'}
             </button>
           </div>
         }
       >
-
-        <form onSubmit={handleCreateRole} className="space-y-4" id="new-role-form">
-
+        <form onSubmit={handleCreateRole} className="space-y-4 text-slate-800" id="new-role-form">
           <div>
-            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name <span className="text-red-500">*</span></label>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name <span className="text-red-500">*</span></label>
             <input
               type="text"
               required
               value={roleFormData.role_name}
               onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
-              placeholder="e.g. admin"
+              placeholder="Enter"
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
             />
           </div>
           <div>
-            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
-            <textarea
-              value={roleFormData.description}
-              onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
-              placeholder="Optional description"
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1">Select Permission</label>
+            <PermissionsGrid
+              selectedPermissions={roleFormData.permissions}
+              onChange={(perms) => setRoleFormData({ ...roleFormData, permissions: perms })}
             />
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
-
         </form>
-
       </SideDrawer>
 
-      {/* Edit Role Modal */}
-
+      {/* Edit Role Drawer */}
       <SideDrawer
         open={showEditRoleModal}
         onOpenChange={setShowEditRoleModal}
         title="Edit Role"
-        size="sm"
+        size="md"
         showCloseButton={false}
         bodyClassName="pt-6"
         footer={
@@ -852,77 +979,84 @@ const UsersPage: React.FC = () => {
               type="submit"
               form="edit-role-form"
               disabled={isSubmitting}
-              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
+              className="px-6 py-2 bg-[#101828] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
             >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         }
       >
-
-        <form onSubmit={handleEditRoleSave} className="space-y-4" id="edit-role-form">
-
+        <form onSubmit={handleEditRoleSave} className="space-y-4 text-slate-800" id="edit-role-form">
           <div>
-            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Role Name <span className="text-red-500">*</span></label>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name <span className="text-red-500">*</span></label>
             <input
               type="text"
               required
               value={roleFormData.role_name}
               onChange={(e) => setRoleFormData({ ...roleFormData, role_name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+              placeholder="Enter"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
             />
           </div>
           <div>
-            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Description</label>
-            <textarea
-              value={roleFormData.description}
-              onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800"
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1">Select Permission</label>
+            <PermissionsGrid
+              selectedPermissions={roleFormData.permissions}
+              onChange={(perms) => setRoleFormData({ ...roleFormData, permissions: perms })}
             />
           </div>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
-
         </form>
-
       </SideDrawer>
 
-      {/* Delete Role Modal */}
-      {showDeleteRoleModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-[2px]">
-          <div className="bg-white rounded-2xl w-100 p-6 shadow-2xl border border-neutral-100 max-h-[90vh] overflow-y-auto">
-            <div className="mb-4">
-              <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="4" width="48" height="48" rx="24" fill="#FEE4E2" style={{ fill: '#FEE4E2', fillOpacity: 1 }} />
-                <rect x="4" y="4" width="48" height="48" rx="24" stroke="#FEF3F2" style={{ stroke: '#FEF3F2', strokeOpacity: 1 }} strokeWidth="8" />
-                <path d="M28 24V28M28 32H28.01M38 28C38 33.5228 33.5228 38 28 38C22.4772 38 18 33.5228 18 28C18 22.4772 22.4772 18 28 18C33.5228 18 38 22.4772 38 28Z" stroke="#D92D20" style={{ stroke: '#D92D20', strokeOpacity: 1 }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+      {/* Delete Role Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteRoleModal}
+        onClose={() => {
+          setShowDeleteRoleModal(false);
+          setRoleToDelete(null);
+        }}
+        onConfirm={confirmDeleteRole}
+        title="Delete Role"
+        message="Are you sure you want to delete this Role? This action cannot be undone."
+        isSubmitting={isSubmitting}
+      />
+
+      {/* View Role Drawer */}
+      <SideDrawer
+        open={showViewRoleDrawer && !!roleToView}
+        onOpenChange={setShowViewRoleDrawer}
+        title="View Role Details"
+        size="md"
+        showCloseButton={false}
+        bodyClassName="pt-6"
+        footer={
+          <div className="flex items-center justify-end w-full">
+            <button
+              onClick={() => setShowViewRoleDrawer(false)}
+              className="px-6 py-2 bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-[13.5px] rounded-lg transition-all cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        }
+      >
+        {roleToView && (
+          <div className="space-y-6 text-slate-800">
+            <div>
+              <span className="block text-[12px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Role Name</span>
+              <span className="text-[16px] font-bold text-neutral-800">{roleToView.name}</span>
             </div>
-            <h3 className="text-[18px] font-bold text-slate-900 mb-2">Delete Role</h3>
-            <p className="text-[14px] text-slate-500 mb-6 leading-relaxed">
-              Are you sure you want to delete this Role? This action cannot be undone.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteRoleModal(false);
-                  setRoleToDelete(null);
-                }}
-                className="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 font-semibold text-[14px] text-slate-700 rounded-lg transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteRole}
-                disabled={isSubmitting}
-                className="flex-1 py-2.5 bg-[#fee2e2] hover:bg-[#fca5a5] border border-[#f87171] text-[#dc2626] font-semibold text-[14px] rounded-lg transition-all cursor-pointer disabled:opacity-60"
-              >
-                {isSubmitting ? 'Deleting...' : 'Yes, Delete'}
-              </button>
+            <div>
+              <span className="block text-[12px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Permissions</span>
+              <PermissionsGrid
+                selectedPermissions={roleToView.permissions}
+                disabled={true}
+              />
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </SideDrawer>
 
       {/* View User Modal */}
       {showViewModal && selectedUser && (

@@ -310,7 +310,6 @@ export function DataTable<TData>({
                 {visibleColumns.map((col, idx) => {
                   const colId = getColumnId(col);
                   const isSortable = col.enableSorting !== false && col.accessorKey;
-                  const currentSort = sortConfig && sortConfig.key === col.accessorKey;
 
                   return (
                     <th
