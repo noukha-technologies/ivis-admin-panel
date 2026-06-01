@@ -218,45 +218,46 @@ const VehicleRecordsPage: React.FC = () => {
         columns={activeTab === 'ANPR capture' ? anprColumns : ropColumns}
         searchPlaceholder="Search"
         leftElement={
-          <div className="flex flex-row bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ height: '38px' }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('ANPR capture')}
-              className={`px-4 py-2 text-sm transition-all duration-200 border-r border-gray-200 cursor-pointer ${
-                activeTab === 'ANPR capture'
-                  ? 'font-semibold text-gray-900 bg-gray-50'
-                  : 'font-medium text-gray-500 bg-white hover:bg-gray-50'
-              }`}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              ANPR capture
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('ROP verification')}
-              className={`px-4 py-2 text-sm transition-all duration-200 cursor-pointer ${
-                activeTab === 'ROP verification'
-                  ? 'font-semibold text-gray-900 bg-gray-50'
-                  : 'font-medium text-gray-500 bg-white hover:bg-gray-50'
-              }`}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              ROP verification
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-row bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ height: '38px' }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ANPR capture')}
+                className={`px-4 py-2 text-sm transition-all duration-200 border-r border-gray-200 cursor-pointer ${
+                  activeTab === 'ANPR capture'
+                    ? 'font-semibold text-gray-900 bg-gray-50'
+                    : 'font-medium text-gray-500 bg-white hover:bg-gray-50'
+                }`}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                ANPR capture
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ROP verification')}
+                className={`px-4 py-2 text-sm transition-all duration-200 cursor-pointer ${
+                  activeTab === 'ROP verification'
+                    ? 'font-semibold text-gray-900 bg-gray-50'
+                    : 'font-medium text-gray-500 bg-white hover:bg-gray-50'
+                }`}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                ROP verification
+              </button>
+            </div>
+            {activeTab === 'ANPR capture' && (
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#1e293b] rounded-lg hover:bg-[#334155] cursor-pointer shrink-0"
+                style={{ height: '38px', whiteSpace: 'nowrap' }}
+              >
+                New ANPR Capture
+              </button>
+            )}
           </div>
         }
-        filterElement={
-          activeTab === 'ANPR capture' ? (
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 text-sm font-semibold text-white bg-[#1e293b] rounded-lg hover:bg-[#334155] cursor-pointer shrink-0"
-              style={{ height: '38px', whiteSpace: 'nowrap' }}
-            >
-              New ANPR Capture
-            </button>
-          ) : undefined
-        }
+        filterElement={undefined}
       />
 
       {showCreateModal && (

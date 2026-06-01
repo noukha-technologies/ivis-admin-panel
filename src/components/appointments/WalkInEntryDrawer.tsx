@@ -54,7 +54,7 @@ export const WalkInEntryDrawer: React.FC<WalkInEntryDrawerProps> = ({
     }
   >
     <form id="walk-in-entry-form" onSubmit={onSubmit} className="grid grid-cols-1 gap-8 xl:grid-cols-[1fr_auto_1fr]">
-      <div className="flex flex-col gap-3 pt-4 xl:max-h-[620px] xl:overflow-y-auto xl:pr-3">
+      <div className="flex flex-col gap-3 pt-4 xl:pr-3">
         <h3 className="text-base font-bold text-[#111827]">Entry details</h3>
 
         <div>
@@ -161,7 +161,7 @@ export const WalkInEntryDrawer: React.FC<WalkInEntryDrawerProps> = ({
 
       <div className="hidden w-px self-stretch bg-neutral-200 xl:block" />
 
-      <div className="flex flex-col gap-3 pt-4 xl:max-h-[620px] xl:overflow-y-auto xl:pr-3">
+      <div className="flex flex-col gap-3 pt-4 xl:pr-3">
         <h3 className="text-base font-bold text-[#111827]">Add Payment</h3>
 
         <div>
