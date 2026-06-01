@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES } from './routes';
+import { PERMISSIONS } from '../constants/permissions';
 import LoginPage from '../pages/auth/LoginPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
 import PrivateRoute from './PrivateRoute';
+import PermissionRoute from './PermissionRoute';
 import PublicRoute from './PublicRoute';
 import MainLayout from '../components/layout/MainLayout';
 import DashboardPage from '../pages/dashboard/DashboardPage';
@@ -27,32 +29,88 @@ import UsersPage from '../pages/users/UsersPage';
 import ConfigurationPage from '../pages/configuration/ConfigurationPage';
 import FileProcessingPage from '../pages/file-processing/FileProcessingPage';
 
-/**
- * Root router configuration.
- * Add routes here as you build out features.
- */
 const AppRouter = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
         <Route path={ROUTES.LOGIN} element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.LOGIN} replace />} />
 
-        {/* Protected routes with layout */}
         <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
           <Route path="/transactions" element={<Navigate to={ROUTES.PAYMENTS} replace />} />
-          <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
-          <Route path={ROUTES.APPOINTMENTS} element={<AppointmentsPage />} />
-          <Route path={ROUTES.PAYMENTS} element={<PaymentsPage />} />
-          <Route path={ROUTES.VEHICLE_RECORDS} element={<VehicleRecordsPage />} />
-          <Route path={ROUTES.CUSTOMERS} element={<CustomersPage />} />
-          <Route path={ROUTES.ROP_MANAGEMENT} element={<RopManagementPage />} />
-          <Route path={ROUTES.JOB_MANAGEMENT} element={<JobManagementPage />} />
-          <Route path={ROUTES.JOB_DETAIL} element={<JobDetailPage />} />
-          <Route path={ROUTES.REPORTS} element={<ReportsPage />} />
+          <Route
+            path={ROUTES.DASHBOARD}
+            element={
+              <PermissionRoute required={PERMISSIONS.DASHBOARD_VIEW}>
+                <DashboardPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.APPOINTMENTS}
+            element={
+              <PermissionRoute required={PERMISSIONS.APPOINTMENTS_VIEW}>
+                <AppointmentsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.PAYMENTS}
+            element={
+              <PermissionRoute required={PERMISSIONS.PAYMENTS_VIEW}>
+                <PaymentsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.VEHICLE_RECORDS}
+            element={
+              <PermissionRoute required={PERMISSIONS.VEHICLE_RECORDS_VIEW}>
+                <VehicleRecordsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.CUSTOMERS}
+            element={
+              <PermissionRoute required={PERMISSIONS.CUSTOMERS_VIEW}>
+                <CustomersPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.ROP_MANAGEMENT}
+            element={
+              <PermissionRoute required={PERMISSIONS.ROP_VIEW}>
+                <RopManagementPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.JOB_MANAGEMENT}
+            element={
+              <PermissionRoute required={PERMISSIONS.JOBS_VIEW}>
+                <JobManagementPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.REPORTS}
+            element={
+              <PermissionRoute required={PERMISSIONS.REPORTS_VIEW}>
+                <ReportsPage />
+              </PermissionRoute>
+            }
+          />
 
-          <Route path={ROUTES.MASTER_MANAGEMENT} element={<MasterManagementPage />}>
+          <Route
+            path={ROUTES.MASTER_MANAGEMENT}
+            element={
+              <PermissionRoute required={PERMISSIONS.MASTERS_VIEW}>
+                <MasterManagementPage />
+              </PermissionRoute>
+            }
+          >
             <Route index element={<Navigate to={ROUTES.MASTER_VEHICLES} replace />} />
             <Route path="vehicles" element={<VehicleMasterPage />} />
             <Route path="tests" element={<TestMasterPage />} />
@@ -63,15 +121,42 @@ const AppRouter = () => {
             <Route path="payments" element={<PaymentMasterPage />} />
           </Route>
 
-          <Route path={ROUTES.USERS_MANAGEMENT} element={<UsersPage />} />
-          <Route path={ROUTES.USERS_ROLES} element={<UsersPage />} />
+          <Route
+            path={ROUTES.USERS_MANAGEMENT}
+            element={
+              <PermissionRoute required={PERMISSIONS.USER_VIEW}>
+                <UsersPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.USERS_ROLES}
+            element={
+              <PermissionRoute required={PERMISSIONS.PERMISSIONS_VIEW}>
+                <UsersPage />
+              </PermissionRoute>
+            }
+          />
           <Route path="/users" element={<Navigate to={ROUTES.USERS_MANAGEMENT} replace />} />
           <Route path="/users/roles" element={<Navigate to={ROUTES.USERS_ROLES} replace />} />
-          <Route path={ROUTES.CONFIGURATION} element={<ConfigurationPage />} />
-          <Route path={ROUTES.FILE_PROCESSING} element={<FileProcessingPage />} />
+          <Route
+            path={ROUTES.CONFIGURATION}
+            element={
+              <PermissionRoute required={PERMISSIONS.CONFIGURATION_VIEW}>
+                <ConfigurationPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path={ROUTES.FILE_PROCESSING}
+            element={
+              <PermissionRoute required={PERMISSIONS.FILE_PROCESSING_VIEW}>
+                <FileProcessingPage />
+              </PermissionRoute>
+            }
+          />
         </Route>
 
-        {/* Error routes */}
         <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

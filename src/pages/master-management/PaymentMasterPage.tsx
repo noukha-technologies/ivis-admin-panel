@@ -7,6 +7,9 @@ import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { DataTable } from '../../components/ui/DataTable';
 import { RowActions } from '../../components/ui/RowActions';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
+import { PermissionGate } from '../../components/PermissionGate';
+import { PERMISSIONS } from '../../constants/permissions';
+
 
 const PaymentMasterPage: React.FC = () => {
   const [payments, setPayments] = useState<ApiPayment[]>([]);
@@ -228,7 +231,8 @@ const PaymentMasterPage: React.FC = () => {
         searchPlaceholder="Search Payments..."
         defaultPageSize={8}
         leftElement={
-          <button
+          <PermissionGate permission={PERMISSIONS.MASTERS_CREATE}>
+            <button
             onClick={handleOpenAddModal}
             className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
           >
@@ -237,6 +241,7 @@ const PaymentMasterPage: React.FC = () => {
             </svg>
             <span>Add Payment</span>
           </button>
+          </PermissionGate>
         }
       />
 

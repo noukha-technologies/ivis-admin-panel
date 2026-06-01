@@ -3,13 +3,10 @@ import { ENV_CONFIG } from '../constants/config';
 import {
   getToken,
   getRefreshToken,
-  setToken,
-  setRefreshToken,
-  setUser,
-  setPermissions,
   clearAuth,
 } from '../utils/storage';
-import { resolvePermissionsForRole } from '../constants/rolePermissions';
+import { applyAuthSession } from '../utils/authSession';
+import type { LoginResponse } from '../interfaces/auth.interface';
 import { ENDPOINTS } from './endpoints';
 
 const axiosInstance = axios.create({
@@ -88,18 +85,13 @@ axiosInstance.interceptors.response.use(
           `${ENV_CONFIG.API_BASE_URL}${ENDPOINTS.AUTH.REFRESH}`,
           { refreshToken }
         );
-        const loginResponse = response.data?.data;
+        const loginResponse = response.data?.data as LoginResponse | undefined;
         if (!loginResponse?.accessToken) {
           throw new Error('No access token in refresh response');
         }
 
+        applyAuthSession(loginResponse);
         const newAccessToken = loginResponse.accessToken;
-        const newRefreshToken = loginResponse.refreshToken;
-
-        setToken(newAccessToken);
-        setRefreshToken(newRefreshToken);
-        setUser(loginResponse.user);
-        setPermissions(resolvePermissionsForRole(loginResponse.user.role));
 
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

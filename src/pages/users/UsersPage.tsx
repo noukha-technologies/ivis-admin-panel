@@ -147,7 +147,13 @@ export function formatRoleName(name: string): string {
 }
 
 const UsersPage: React.FC = () => {
-  const { canCreateUsers, canEditUsers } = usePermissions();
+  const {
+    canCreateUsers,
+    canEditUsers,
+    canDeleteUsers,
+    canManageRoles,
+    canDeleteRoles,
+  } = usePermissions();
   const usersHook = useUsers();
   const rolesHook = useRoles();
   const location = useLocation();
@@ -156,6 +162,16 @@ const UsersPage: React.FC = () => {
 
 
   const userColumns: ColumnDef<UserListItem>[] = [
+    {
+      id: 'userCode',
+      header: 'User Code',
+      accessorKey: 'userCode',
+      cell: ({ value }) => (
+        <span className="font-semibold text-[#101828] tracking-wide">{value}</span>
+      ),
+      enableSorting: true,
+      enableHiding: false,
+    },
     {
       id: 'name',
       header: 'User Name',
@@ -225,21 +241,27 @@ const UsersPage: React.FC = () => {
               icon: <Eye className="w-4 h-4 text-slate-500" />,
               onClick: () => handleOpenView(row),
             },
-            ...(canEditUsers ? [
-              {
-                id: 'edit',
-                label: 'Edit User',
-                icon: <Pencil className="w-4 h-4 text-slate-500" />,
-                onClick: () => handleOpenEdit(row),
-              },
-              {
-                id: 'delete',
-                label: 'Delete',
-                icon: <Trash2 className="w-4 h-4 text-rose-500" />,
-                onClick: () => handleDelete(row.id),
-                variant: 'danger' as const,
-              }
-            ] : [])
+            ...(canEditUsers
+              ? [
+                  {
+                    id: 'edit',
+                    label: 'Edit User',
+                    icon: <Pencil className="w-4 h-4 text-slate-500" />,
+                    onClick: () => handleOpenEdit(row),
+                  },
+                ]
+              : []),
+            ...(canDeleteUsers
+              ? [
+                  {
+                    id: 'delete',
+                    label: 'Delete',
+                    icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+                    onClick: () => handleDelete(row.id),
+                    variant: 'danger' as const,
+                  },
+                ]
+              : [])
           ]}
         />
       )
@@ -316,37 +338,43 @@ const UsersPage: React.FC = () => {
                 setShowViewRoleDrawer(true);
               }
             },
-            ...(canEditUsers ? [
-              {
-                id: 'edit',
-                label: 'Edit Role',
-                icon: <Pencil className="w-4 h-4 text-slate-500" />,
-                onClick: () => {
-                  setRoleToEdit(role);
-                  setRoleFormData({
-                    role_name: role.name,
-                    permissions: role.permissions,
-                  });
-                  setFormError(null);
-                  setShowEditRoleModal(true);
-                }
-              },
-              {
-                id: 'delete',
-                label: 'Delete',
-                icon: <Trash2 className="w-4 h-4 text-rose-500" />,
-                onClick: () => {
-                  setRoleToDelete(role.id);
-                  setShowDeleteRoleModal(true);
-                },
-                variant: 'danger' as const
-              }
-            ] : [])
+            ...(canManageRoles
+              ? [
+                  {
+                    id: 'edit',
+                    label: 'Edit Role',
+                    icon: <Pencil className="w-4 h-4 text-slate-500" />,
+                    onClick: () => {
+                      setRoleToEdit(role);
+                      setRoleFormData({
+                        role_name: role.name,
+                        permissions: role.permissions,
+                      });
+                      setFormError(null);
+                      setShowEditRoleModal(true);
+                    },
+                  },
+                ]
+              : []),
+            ...(canDeleteRoles
+              ? [
+                  {
+                    id: 'delete',
+                    label: 'Delete',
+                    icon: <Trash2 className="w-4 h-4 text-rose-500" />,
+                    onClick: () => {
+                      setRoleToDelete(role.id);
+                      setShowDeleteRoleModal(true);
+                    },
+                    variant: 'danger' as const,
+                  },
+                ]
+              : [])
           ]}
         />
       )
     }
-  ], [canEditUsers]);
+  ], [canManageRoles, canDeleteRoles]);
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -425,9 +453,13 @@ const UsersPage: React.FC = () => {
       setFormError('Passwords do not match');
       return;
     }
-    const userId = parseInt(formData.user_id, 10);
-    if (!userId || userId < 1) {
-      setFormError('User ID must be a positive number');
+    if (!formData.user_code.trim()) {
+      setFormError('User code is required');
+      return;
+    }
+    const code = formData.user_code.trim().toUpperCase();
+    if (!/^[A-Za-z0-9]+$/.test(code)) {
+      setFormError('User code must contain only letters and numbers');
       return;
     }
 
@@ -445,6 +477,16 @@ const UsersPage: React.FC = () => {
     e.preventDefault();
     if (!selectedUser) return;
     setFormError(null);
+
+    if (!formData.user_code.trim()) {
+      setFormError('User code is required');
+      return;
+    }
+    const code = formData.user_code.trim().toUpperCase();
+    if (!/^[A-Za-z0-9]+$/.test(code)) {
+      setFormError('User code must contain only letters and numbers');
+      return;
+    }
 
     const selectedRole = rolesHook.roles.find((r) => r.name === formData.role);
     const roleAccessId = selectedRole?.id;
@@ -557,7 +599,7 @@ const UsersPage: React.FC = () => {
       </button>
     )
   ) : (
-    canCreateUsers && (
+    canManageRoles && (
       <button
         onClick={handleOpenNewRole}
         disabled={isSubmitting}
@@ -666,15 +708,19 @@ const UsersPage: React.FC = () => {
         <form onSubmit={handleCreate} className="space-y-4" id="new-user-form">
 
           <div>
-            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">User Code <span className="text-red-500">*</span></label>
+            <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">
+              User Code <span className="text-red-500">*</span>
+            </label>
             <input
-              type="number"
+              type="text"
               required
-              min={1}
-              value={formData.user_id}
-              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
-              placeholder="e.g. 1001"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800"
+              value={formData.user_code}
+              onChange={(e) =>
+                setFormData({ ...formData, user_code: e.target.value.replace(/[^A-Za-z0-9]/g, '') })
+              }
+              placeholder="e.g. USR1001"
+              maxLength={32}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 placeholder:text-slate-400 text-slate-800 uppercase"
             />
           </div>
           <div>
@@ -814,6 +860,19 @@ const UsersPage: React.FC = () => {
         {selectedUser && (
           <form onSubmit={handleEditSave} className="space-y-4" id="edit-user-form">
 
+            <div>
+              <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">User Code <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                required
+                value={formData.user_code}
+                onChange={(e) =>
+                  setFormData({ ...formData, user_code: e.target.value.replace(/[^A-Za-z0-9]/g, '') })
+                }
+                maxLength={32}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-slate-400 text-slate-800 uppercase"
+              />
+            </div>
             <div>
               <label className="block text-[13.5px] font-semibold text-[#334155] mb-1.5">Name <span className="text-red-500">*</span></label>
               <input
@@ -1067,7 +1126,7 @@ const UsersPage: React.FC = () => {
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-neutral-100">
               <div>
                 <h3 className="text-[18px] font-bold text-gray-900">{selectedUser.name}</h3>
-                <p className="text-[12px] text-gray-500 mt-0.5">ID: {selectedUser.userId}</p>
+                <p className="text-[12px] text-gray-500 mt-0.5">{selectedUser.userCode}</p>
               </div>
               <button onClick={() => setShowViewModal(false)} className="w-8 h-8 rounded-full hover:bg-neutral-100 flex items-center justify-center text-gray-500 cursor-pointer">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -1077,6 +1136,10 @@ const UsersPage: React.FC = () => {
             </div>
 
             <div className="space-y-4">
+              <div>
+                <span className="block text-[12px] font-bold text-neutral-400 uppercase tracking-wider">User Code</span>
+                <span className="text-[15px] font-medium text-neutral-800">{selectedUser.userCode}</span>
+              </div>
               <div>
                 <span className="block text-[12px] font-bold text-neutral-400 uppercase tracking-wider">Email Address</span>
                 <span className="text-[15px] font-medium text-neutral-800">{selectedUser.email}</span>

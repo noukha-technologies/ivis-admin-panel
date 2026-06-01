@@ -2,6 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import topNavIcon from '../../assets/images/top_nav_icon.svg';
+import { usePermissions } from '../../hooks/usePermissions';
+import { MENU_PERMISSIONS } from '../../constants/navPermissions';
+import { canAccessMenu } from '../../utils/landingRoute';
 
 interface TopbarProps {
   title?: string;
@@ -29,6 +32,7 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { permissions } = usePermissions();
 
   const dashboardRoutes = [
     '/users-management',
@@ -45,9 +49,10 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const firstSegment = '/' + location.pathname.split('/')[1];
   const showDashboard = dashboardRoutes.includes(firstSegment);
 
-  const currentMenuItems = showDashboard
+  const currentMenuItems = (showDashboard
     ? [{ name: 'Dashboard' }, ...menuItems]
-    : menuItems;
+    : menuItems
+  ).filter((item) => canAccessMenu(item.name, MENU_PERMISSIONS, permissions));
 
   // Close dropdown when clicking outside
   useEffect(() => {

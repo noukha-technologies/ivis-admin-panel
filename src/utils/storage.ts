@@ -11,11 +11,15 @@ const PERMISSIONS_KEY = 'auth_permissions';
 export interface StoredAuthUser {
   id: string;
   user_id: number;
+  user_code?: string;
   user_name: string;
   email: string;
   role: string;
+  role_access_id?: string;
   center?: string;
   line?: string;
+  center_id?: string;
+  line_ids?: string[];
 }
 
 export const getToken = (): string | null => {
@@ -73,4 +77,5 @@ export const clearAuth = (): void => {
   removeRefreshToken();
   removeUser();
   removePermissions();
+  window.dispatchEvent(new Event('ivis-auth-session-updated'));
 };

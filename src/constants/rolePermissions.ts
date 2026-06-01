@@ -1,3 +1,7 @@
+/**
+ * Fallback permission lists by role name when login API returns no permissions.
+ * Authoritative permissions come from core.role_access via login/refresh `permissions`.
+ */
 import { PERMISSIONS, type Permission } from './permissions';
 
 const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS);

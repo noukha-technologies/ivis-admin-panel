@@ -2,15 +2,8 @@ import axiosInstance from '../axios.instance';
 import { ENDPOINTS } from '../endpoints';
 import { unwrapData } from '../apiResponse';
 import type { ApiEnvelope } from '../../types/api.types';
-import type { StoredAuthUser } from '../../utils/storage';
-import {
-  setToken,
-  setRefreshToken,
-  setUser,
-  setPermissions,
-  clearAuth,
-} from '../../utils/storage';
-import { resolvePermissionsForRole } from '../../constants/rolePermissions';
+import { clearAuth } from '../../utils/storage';
+import { applyAuthSession } from '../../utils/authSession';
 import type {
   LoginPayload,
   AuthUser,
@@ -30,10 +23,7 @@ export const authService = {
       payload
     );
     const data = unwrapData(response);
-    setToken(data.accessToken);
-    setRefreshToken(data.refreshToken);
-    setUser(data.user as StoredAuthUser);
-    setPermissions(resolvePermissionsForRole(data.user.role));
+    applyAuthSession(data);
     return data;
   },
 
@@ -43,10 +33,7 @@ export const authService = {
       { refreshToken }
     );
     const data = unwrapData(response);
-    setToken(data.accessToken);
-    setRefreshToken(data.refreshToken);
-    setUser(data.user as StoredAuthUser);
-    setPermissions(resolvePermissionsForRole(data.user.role));
+    applyAuthSession(data);
     return data;
   },
 

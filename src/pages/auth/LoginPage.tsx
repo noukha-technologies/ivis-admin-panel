@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ROUTES } from '../../router/routes';
 import { authService } from '../../api/services/auth.service';
+import { resolveLandingRoute } from '../../utils/landingRoute';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import { isEmail, isRequired } from '../../utils/validators';
 
@@ -50,7 +51,7 @@ const LoginPage: React.FC = () => {
     try {
       await authService.login({ email: email.trim(), password });
       toast.success('Successfully signed in.');
-      navigate(ROUTES.DASHBOARD);
+      navigate(resolveLandingRoute());
     } catch (err: unknown) {
       const status =
         err &&

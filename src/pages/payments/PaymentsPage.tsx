@@ -1,5 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { PermissionGate } from '../../components/PermissionGate';
+import { PERMISSIONS } from '../../constants/permissions';
 import { toast } from 'sonner';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { PaymentTransactionDrawer } from '@/components/payments/PaymentTransactionDrawer';
@@ -196,16 +198,18 @@ const PaymentsPage: React.FC = () => {
     <div className="flex flex-col min-h-full">
       <div className="flex flex-col gap-4 min-h-full mx-5 mt-1.5">
         <div className="flex justify-between items-center min-h-[38px]">
-          <button
-            onClick={handleOpenDrawer}
-            type="button"
-            className="transition-all cursor-pointer hover:bg-opacity-95 bg-[#1c1c1e] text-white border-none rounded-[10px] px-[18px] py-2 text-[13px] font-semibold flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.08)] h-[38px]"
-          >
-            <span className="text-[18px] font-normal leading-none inline-block relative -top-[1px]">
-              +
-            </span>
-            <span>New Payment</span>
-          </button>
+          <PermissionGate permission={PERMISSIONS.PAYMENTS_CREATE}>
+            <button
+              onClick={handleOpenDrawer}
+              type="button"
+              className="transition-all cursor-pointer hover:bg-opacity-95 bg-[#1c1c1e] text-white border-none rounded-[10px] px-[18px] py-2 text-[13px] font-semibold flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.08)] h-[38px]"
+            >
+              <span className="text-[18px] font-normal leading-none inline-block relative -top-[1px]">
+                +
+              </span>
+              <span>New Payment</span>
+            </button>
+          </PermissionGate>
 
           <div className="flex items-center gap-3">
             <div className="relative">

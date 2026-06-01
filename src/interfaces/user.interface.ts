@@ -8,6 +8,7 @@ export interface UserLineSummary {
 export interface ApiUser {
   id: string;
   user_id: number;
+  user_code: string;
   user_name: string;
   email: string;
   role_access_id: string;
@@ -22,7 +23,7 @@ export interface ApiUser {
 }
 
 export interface CreateUserPayload {
-  user_id: number;
+  user_code: string;
   user_name: string;
   email: string;
   role_access_id: string;
@@ -35,6 +36,7 @@ export interface UpdateUserPayload {
   user_name?: string;
   email?: string;
   role_access_id?: string;
+  user_code?: string;
   center_id?: string | null;
   line_ids?: string[] | null;
 }

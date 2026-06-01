@@ -18,6 +18,7 @@ export function toUserListItem(user: ApiUser): UserListItem {
   return {
     id: user.id,
     userId: user.user_id,
+    userCode: user.user_code,
     name: user.user_name,
     email: user.email,
     role: roleName,
@@ -65,7 +66,7 @@ export function toCreatePayload(
   roleAccessId: string,
 ): CreateUserPayload {
   return {
-    user_id: parseInt(form.user_id, 10),
+    user_code: form.user_code.trim().toUpperCase(),
     user_name: form.name.trim(),
     email: form.email.trim().toLowerCase(),
     role_access_id: roleAccessId,
@@ -82,6 +83,7 @@ export function toUpdatePayload(
   return {
     user_name: form.name.trim(),
     email: form.email.trim().toLowerCase(),
+    user_code: form.user_code.trim().toUpperCase(),
     ...(roleAccessId ? { role_access_id: roleAccessId } : {}),
     center_id: form.centre || null,
     line_ids: form.line ? [form.line] : [],
@@ -90,7 +92,7 @@ export function toUpdatePayload(
 
 export function userFormFromListItem(user: UserListItem): UserFormData {
   return {
-    user_id: String(user.userId),
+    user_code: user.userCode,
     name: user.name,
     email: user.email,
     role: user.role,

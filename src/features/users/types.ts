@@ -3,6 +3,7 @@ import type { RoleAccessMatrix } from '../../constants/roleAccessMatrix';
 export interface UserListItem {
   id: string;
   userId: number;
+  userCode: string;
   name: string;
   email: string;
   role: string;
@@ -24,7 +25,7 @@ export interface RoleListItem {
 }
 
 export interface UserFormData {
-  user_id: string;
+  user_code: string;
   name: string;
   email: string;
   role: string;
@@ -40,7 +41,7 @@ export interface RoleFormData {
 }
 
 export const emptyUserForm = (): UserFormData => ({
-  user_id: '',
+  user_code: '',
   name: '',
   email: '',
   role: '',

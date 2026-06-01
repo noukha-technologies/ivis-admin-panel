@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import leftButten from '@/assets/images/left_butten.svg';
 import rightButten from '@/assets/images/right_butten.svg';
+import { PermissionGate } from '@/components/PermissionGate';
+import { PERMISSIONS } from '@/constants/permissions';
 
 interface AppointmentsToolbarProps {
   viewMode: 'calendar' | 'list';
@@ -187,30 +189,31 @@ export const AppointmentsToolbar: React.FC<AppointmentsToolbarProps> = ({
               </div>
             </div>
 
-            {/* New Walk-in button */}
-            <button
-              onClick={onNewWalkIn}
-              type="button"
-              className="transition-all cursor-pointer hover:bg-opacity-95"
-              style={{
-                backgroundColor: '#1c1c1e',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '8px 18px',
-                fontSize: '13px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-                height: '38px',
-              }}
-            >
-              <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
-              <span>New Walk-in</span>
-            </button>
+            <PermissionGate permission={PERMISSIONS.APPOINTMENTS_CREATE}>
+              <button
+                onClick={onNewWalkIn}
+                type="button"
+                className="transition-all cursor-pointer hover:bg-opacity-95"
+                style={{
+                  backgroundColor: '#1c1c1e',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+                  height: '38px',
+                }}
+              >
+                <span style={{ fontSize: '18px', fontWeight: '400', lineHeight: '1', display: 'inline-block', position: 'relative', top: '-1px' }}>+</span>
+                <span>New Walk-in</span>
+              </button>
+            </PermissionGate>
           </>
         ) : (
           <div className="relative">

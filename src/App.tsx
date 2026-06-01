@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppRouter from './router';
 import { Toaster } from 'sonner';
+import { resolveLandingRoute } from './utils/landingRoute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,12 +16,19 @@ const queryClient = new QueryClient({
 function App() {
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'auth_token') {
-        if (!e.newValue) {
-          window.location.href = '/login';
-        } else if (window.location.pathname === '/login') {
-          window.location.href = '/dashboard';
-        }
+      if (e.key === 'auth_token' && !e.newValue) {
+        window.location.href = '/login';
+        return;
+      }
+      if (
+        (e.key === 'auth_token' || e.key === 'auth_permissions') &&
+        e.newValue &&
+        window.location.pathname === '/login'
+      ) {
+        window.location.href = resolveLandingRoute();
+      }
+      if (e.key === 'auth_permissions') {
+        window.dispatchEvent(new Event('ivis-auth-session-updated'));
       }
     };
     window.addEventListener('storage', handleStorageChange);

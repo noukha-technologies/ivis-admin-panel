@@ -6,6 +6,9 @@ import { getUser, clearAuth } from '../../utils/storage';
 import { authService } from '../../api/services/auth.service';
 import { toast } from 'sonner';
 import { useAppStore } from '../../store/app.store';
+import { usePermissions } from '../../hooks/usePermissions';
+import { MENU_PERMISSIONS } from '../../constants/navPermissions';
+import { canAccessMenu } from '../../utils/landingRoute';
 
 const AVATAR_COLOR_PALETTES = [
   { bg: 'bg-indigo-50 border border-indigo-200 text-indigo-700' },
@@ -42,6 +45,13 @@ interface MenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useAppStore();
+  const { permissions } = usePermissions();
+
+  const filterNavItems = React.useCallback(
+    (items: MenuItem[]) =>
+      items.filter((item) => canAccessMenu(item.name, MENU_PERMISSIONS, permissions)),
+    [permissions],
+  );
   const location = useLocation();
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = React.useState(false);
@@ -297,15 +307,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuChange }) => {
     }
   ];
 
-  const menuItems = isConfiguration
-    ? configurationMenuItems
-    : isTransactions
-      ? transactionsMenuItems
-      : isMasterManagement
-        ? masterMenuItems
-        : isUserManagement
-          ? userMenuItems
-          : defaultMenuItems;
+  const menuItems = filterNavItems(
+    isConfiguration
+      ? configurationMenuItems
+      : isTransactions
+        ? transactionsMenuItems
+        : isMasterManagement
+          ? masterMenuItems
+          : isUserManagement
+            ? userMenuItems
+            : defaultMenuItems,
+  );
 
   return (
     <aside className={`transition-all duration-300 ease-in-out flex-none bg-[#F5F6F8] border-r border-neutral-200 flex flex-col pt-5 pb-3 relative ${sidebarCollapsed ? 'sidebar-collapsed' : 'w-65 px-4'}`}>
