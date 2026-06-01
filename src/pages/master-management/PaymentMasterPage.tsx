@@ -221,50 +221,24 @@ const PaymentMasterPage: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col relative">
-      {isLoading ? (
-        <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '38%' }}>Name</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '20%' }}>Code</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Status</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '14%' }}>Created</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '10%' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <tr key={index} className="border-b border-gray-55 bg-white animate-pulse">
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-28"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-16"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-6 bg-neutral-100 rounded-lg w-16"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded w-20"></div></td>
-                  <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg w-7 ml-auto"></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <DataTable
-          data={payments}
-          columns={columns}
-          searchPlaceholder="Search Payments..."
-          defaultPageSize={8}
-          filterElement={
-            <button
-              onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
-              </svg>
-              <span>Add Payment</span>
-            </button>
-          }
-        />
-      )}
+      <DataTable
+        data={payments}
+        columns={columns}
+        loading={isLoading}
+        searchPlaceholder="Search Payments..."
+        defaultPageSize={8}
+        leftElement={
+          <button
+            onClick={handleOpenAddModal}
+            className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
+            </svg>
+            <span>Add Payment</span>
+          </button>
+        }
+      />
 
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (

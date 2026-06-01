@@ -222,52 +222,24 @@ const TestMasterPage: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col relative">
-      {isLoading ? (
-        <div className="w-full bg-white border border-neutral-200/80 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-100 bg-[#F9FAFB]">
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>ID</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '38%' }}>Name</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '18%' }}>Code</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Status</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold" style={{ padding: '12px 20px', width: '12%' }}>Created</th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold text-right" style={{ padding: '12px 20px', width: '8%' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <tr key={index} className="border-b border-gray-50 bg-white">
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-10"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-48"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-20"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-6.5 bg-neutral-100 rounded-lg animate-pulse w-16"></div></td>
-                  <td className="px-6 py-5.5"><div className="h-4 bg-neutral-100 rounded animate-pulse w-24"></div></td>
-                  <td className="px-6 py-5.5 text-right"><div className="h-7 bg-neutral-100 rounded-lg animate-pulse w-7 ml-auto"></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <DataTable
-          data={tests}
-          columns={columns}
-          searchPlaceholder="Search manual tests..."
-          defaultPageSize={8}
-          filterElement={
-            <button
-              onClick={handleOpenAddModal}
-              className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
-              </svg>
-              <span>Add Test</span>
-            </button>
-          }
-        />
-      )}
+      <DataTable
+        data={tests}
+        columns={columns}
+        loading={isLoading}
+        searchPlaceholder="Search manual tests..."
+        defaultPageSize={8}
+        leftElement={
+          <button
+            onClick={handleOpenAddModal}
+            className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#171717] hover:bg-neutral-800 text-white font-semibold text-[13.5px] rounded-xl transition-all cursor-pointer shadow-sm shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5H4.5" />
+            </svg>
+            <span>Add Test</span>
+          </button>
+        }
+      />
 
       {/* VIEW DETAILS MODAL */}
       {showViewModal && selectedItem && (

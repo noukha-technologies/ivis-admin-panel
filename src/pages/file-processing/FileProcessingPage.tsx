@@ -116,11 +116,6 @@ const FileProcessingPage: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col pt-3 pb-8">
-      {/* Title Header */}
-      <div className="mb-6">
-        <h1 className="text-[26px] font-bold text-[#1e293b] leading-tight mb-1">File Processing</h1>
-        <p className="text-[14px] text-[#64748b] font-normal font-sans">Import vehicle registration registers, ANPR daily log sheets, and database backups</p>
-      </div>
 
       {/* Drag & Drop Upload Zone */}
       <div className="mb-6 bg-white border-2 border-dashed border-neutral-300 hover:border-neutral-400/80 rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-all shadow-sm">

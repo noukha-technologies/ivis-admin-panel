@@ -58,7 +58,10 @@ export interface DataTableProps<TData> {
   leftElement?: React.ReactNode;
   showControls?: boolean;
   showPagination?: boolean;
+  loading?: boolean;
   onRowClick?: (row: TData) => void;
+  headerWeightClassName?: string;
+  cellWeightClassName?: string;
 }
 
 // ==========================================
@@ -100,4 +103,5 @@ export interface SideDrawerProps {
   size?: SideDrawerSize;
   className?: string;
   bodyClassName?: string;
+  showCloseButton?: boolean;
 }

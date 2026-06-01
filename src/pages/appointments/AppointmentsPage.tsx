@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { buildAnprCapturePayload } from '@/features/anpr/buildAnprCapturePayload';
 import { useAppointments } from '../../features/appointments/hooks/useAppointments';
@@ -7,7 +7,7 @@ import { useMasterLookups } from '../../hooks/useMasterLookups';
 import { anprCaptureService } from '../../api/services/anpr-capture.service';
 import type { AppointmentCalendarItem } from '../../features/appointments/types';
 import { MONTH_NAMES } from '@/constants/appointments';
-import { buildCalendarGridCells, getDaysInMonth } from '@/utils/calendarGrid';
+import { getDaysInMonth } from '@/utils/calendarGrid';
 import { AppointmentsToolbar } from '@/components/appointments/AppointmentsToolbar';
 import { AppointmentsCalendarView } from '@/components/appointments/AppointmentsCalendarView';
 import { AppointmentsListView } from '@/components/appointments/AppointmentsListView';
@@ -129,11 +129,6 @@ const AppointmentsPage: React.FC = () => {
     }
   };
 
-  const gridCells = useMemo(
-    () => buildCalendarGridCells(currentYear, currentMonth),
-    [currentYear, currentMonth],
-  );
-
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
 
   return (
@@ -160,7 +155,6 @@ const AppointmentsPage: React.FC = () => {
 
       {viewMode === 'calendar' ? (
         <AppointmentsCalendarView
-          gridCells={gridCells}
           currentMonth={currentMonth}
           currentYear={currentYear}
           appointments={appointmentsApi.calendarItems}

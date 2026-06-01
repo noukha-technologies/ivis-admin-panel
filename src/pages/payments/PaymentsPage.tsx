@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
@@ -8,7 +9,8 @@ import { emptyPaymentForm, type PaymentFormState } from '@/features/payments/typ
 import { useIntake } from '@/features/intake/IntakeContext';
 import { useMasterLookups } from '@/hooks/useMasterLookups';
 import { computePaymentAmounts } from '@/features/payments/paymentAmounts';
-
+import { DataTable } from '@/components/ui/DataTable';
+import type { ColumnDef } from '@/interfaces/ui.interfaces';
 const PaymentsPage: React.FC = () => {
   const [showNewDrawer, setShowNewDrawer] = useState(false);
   const [paymentForm, setPaymentForm] = useState<PaymentFormState>(emptyPaymentForm);
@@ -20,6 +22,52 @@ const PaymentsPage: React.FC = () => {
   const intake = useIntake();
   const { centres, lines, cameras, adminPcs, paymentModes } = useMasterLookups();
   const paymentsApi = usePaymentTransactions();
+
+  const columns = useMemo<ColumnDef<any>[]>(() => [
+    {
+      id: 'displayId',
+      header: 'Transaction ID',
+      accessorKey: 'displayId',
+      cell: ({ value }) => <span className="font-semibold text-gray-900 underline">{value}</span>,
+      enableSorting: true,
+      enableHiding: false,
+    },
+    {
+      id: 'customer',
+      header: 'Customer',
+      accessorKey: 'customer',
+      cell: ({ value }) => <span className="text-gray-500 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'vehicle',
+      header: 'Vehicle',
+      accessorKey: 'vehicle',
+      cell: ({ value }) => <span className="text-gray-500 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'total',
+      header: 'Total',
+      accessorKey: 'total',
+      cell: ({ value }) => <span className="text-gray-500 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'mode',
+      header: 'Mode',
+      accessorKey: 'mode',
+      cell: ({ value }) => <span className="text-gray-500 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      accessorKey: 'type',
+      cell: ({ value }) => <span className="text-gray-500 font-medium">{value}</span>,
+      enableSorting: true,
+    },
+  ], []);
 
   const [centreId, setCentreId] = useState('');
   const [lineId, setLineId] = useState('');
@@ -143,13 +191,22 @@ const PaymentsPage: React.FC = () => {
     return true;
   });
 
+
   return (
     <div className="flex flex-col min-h-full">
-      <div
-        className="flex flex-col gap-4 min-h-full"
-        style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}
-      >
-        <div className="flex justify-between items-center" style={{ minHeight: '38px' }}>
+      <div className="flex flex-col gap-4 min-h-full mx-5 mt-1.5">
+        <div className="flex justify-between items-center min-h-[38px]">
+          <button
+            onClick={handleOpenDrawer}
+            type="button"
+            className="transition-all cursor-pointer hover:bg-opacity-95 bg-[#1c1c1e] text-white border-none rounded-[10px] px-[18px] py-2 text-[13px] font-semibold flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.08)] h-[38px]"
+          >
+            <span className="text-[18px] font-normal leading-none inline-block relative -top-[1px]">
+              +
+            </span>
+            <span>New Payment</span>
+          </button>
+
           <div className="flex items-center gap-3">
             <div className="relative">
               <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
@@ -166,22 +223,12 @@ const PaymentsPage: React.FC = () => {
                   paymentsApi.setSearchQuery(e.target.value);
                   paymentsApi.setPage(1);
                 }}
-                className="bg-white transition-all focus:outline-none focus:border-gray-400"
-                style={{
-                  width: '320px',
-                  height: '38px',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '10px',
-                  paddingLeft: '40px',
-                  paddingRight: '16px',
-                  fontSize: '14px',
-                  color: '#1e293b',
-                  boxSizing: 'border-box',
-                }}
+                className="bg-white transition-all focus:outline-none focus:border-gray-400 w-[320px] h-[38px] border border-[#cbd5e1] rounded-[10px] pl-10 pr-4 text-[14px] text-[#1e293b] box-border"
               />
             </div>
+
             <FilterDropdown
-              align="left"
+              align="right"
               fields={[
                 {
                   id: 'mode',
@@ -216,126 +263,61 @@ const PaymentsPage: React.FC = () => {
               }}
             />
           </div>
-          <button
-            onClick={handleOpenDrawer}
-            type="button"
-            className="transition-all cursor-pointer hover:bg-opacity-95"
-            style={{
-              backgroundColor: '#1c1c1e',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '8px 18px',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-              height: '38px',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '18px',
-                fontWeight: '400',
-                lineHeight: '1',
-                display: 'inline-block',
-                position: 'relative',
-                top: '-1px',
-              }}
-            >
-              +
-            </span>
-            <span>New Payment</span>
-          </button>
         </div>
 
-        <div className="w-full overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
-          <table className="w-full text-left border-collapse min-w-200">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th
-                  className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap cursor-pointer select-none"
-                  style={{ padding: '12px 20px' }}
-                >
-                  <div className="flex items-center gap-1">
-                    Transaction ID
-                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  Customer
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  Vehicle
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  Total
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  Mode
-                </th>
-                <th className="px-5 py-3 text-[14px] text-[#667085] font-semibold whitespace-nowrap" style={{ padding: '12px 20px' }}>
-                  Type
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentsApi.isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    Loading…
-                  </td>
-                </tr>
-              ) : filteredPayments.length > 0 ? (
-                filteredPayments.map((payment) => (
-                  <tr
-                    key={payment.id}
-                    className="border-b border-gray-100 transition-colors duration-150 cursor-pointer hover:bg-gray-50 bg-white"
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-900 underline">{payment.displayId}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.customer}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.vehicle}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.total}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.mode}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{payment.type}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No transactions found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-white">
-            <span className="text-[13px] text-slate-500 font-medium">
-              Page {paymentsApi.page} of {paymentsApi.totalPages} · {paymentsApi.total} Records
-            </span>
-            <div className="flex gap-2">
+        <DataTable
+          loading={paymentsApi.isLoading}
+          data={filteredPayments}
+          columns={columns}
+          showControls={false}
+          showPagination={false}
+        />
+
+        <div className="flex items-center justify-between px-6 py-4 border border-neutral-200/90 rounded-2xl bg-[#FCFCFD] text-[13.5px] text-[#475467] select-none font-medium bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <div>
+            Showing <span className="font-semibold text-[#101828]">{filteredPayments.length}</span> of <span className="font-semibold text-[#101828]">{paymentsApi.total}</span> row(s).
+          </div>
+          <div className="flex items-center gap-6">
+            <div>
+              Page <span className="font-semibold text-[#101828]">{paymentsApi.page}</span> of <span className="font-semibold text-[#101828]">{paymentsApi.totalPages}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => paymentsApi.setPage(1)}
+                disabled={paymentsApi.page === 1}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                title="First Page"
+              >
+                «
+              </button>
               <button
                 onClick={() => paymentsApi.setPage((p) => Math.max(1, p - 1))}
                 disabled={paymentsApi.page === 1}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                title="Previous Page"
               >
-                Previous
+                ‹
               </button>
               <button
                 onClick={() => paymentsApi.setPage((p) => Math.min(paymentsApi.totalPages, p + 1))}
                 disabled={paymentsApi.page >= paymentsApi.totalPages}
-                className={`px-4 py-1.5 text-[13px] font-medium border border-slate-300 rounded-lg bg-white transition-all duration-150 ${paymentsApi.page >= paymentsApi.totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50 cursor-pointer'}`}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                title="Next Page"
               >
-                Next
+                ›
+              </button>
+              <button
+                onClick={() => paymentsApi.setPage(paymentsApi.totalPages)}
+                disabled={paymentsApi.page >= paymentsApi.totalPages}
+                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                title="Last Page"
+              >
+                »
               </button>
             </div>
           </div>
         </div>
+
       </div>
 
       <PaymentTransactionDrawer

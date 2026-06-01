@@ -72,19 +72,13 @@ export const AppointmentsListView: React.FC<AppointmentsListViewProps> = ({
     );
   }, [rows, searchQuery]);
 
-  if (isLoading) {
-    return (
-      <div className="w-full py-16 flex flex-col items-center justify-center text-center bg-white border border-neutral-200/90 rounded-2xl shadow-sm">
-        <p className="text-[15px] font-semibold text-[#1e293b]">Loading appointments...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full flex flex-col">
       <DataTable
         data={filteredRows}
         columns={columns}
+        loading={isLoading}
         showControls={false}
         showPagination={true}
         defaultPageSize={10}

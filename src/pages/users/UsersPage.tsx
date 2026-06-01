@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useLocation } from 'react-router-dom';
 import { ROUTES } from '../../router/routes';
 import { useUsers } from '../../features/users/hooks/useUsers';
@@ -396,6 +397,12 @@ const UsersPage: React.FC = () => {
   const isLoading = activeTab === 'users' ? usersHook.isLoading : rolesHook.isLoading;
   const isSubmitting = usersHook.isSubmitting || rolesHook.isSubmitting;
 
+  useEffect(() => {
+    if (displayError) {
+      toast.error(displayError);
+    }
+  }, [displayError]);
+
   const tabSwitcher = null;
 
   return (
@@ -433,67 +440,54 @@ const UsersPage: React.FC = () => {
         )}
       </div>
 
-      {displayError && (
-        <div className="mb-4 rounded-lg bg-red-50 p-3.5 text-sm text-red-600 border border-red-200">
-          {displayError}
-        </div>
-      )}
-
       {activeTab === 'users' ? (
-        /* Users Table Grid using global generic DataTable */
-        <div className="w-full">
-          {isLoading ? (
-            <div className="w-full py-16 flex flex-col items-center justify-center text-center bg-white border border-neutral-200/90 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.02)]">
-              <p className="text-[15px] font-semibold text-[#1e293b]">Loading users...</p>
-            </div>
-          ) : (
-            <DataTable
-              data={filteredUsers}
-              columns={userColumns}
-              searchPlaceholder="Search users..."
-              leftElement={tabSwitcher}
-              filterElement={
-                <FilterDropdown
-                  align="right"
-                  fields={[
-                    {
-                      id: 'status',
-                      label: 'Status',
-                      type: 'select',
-                      selectType: 'single',
-                      options: [
-                        { label: 'Active', value: 'Active' },
-                        { label: 'Inactive', value: 'Inactive' }
-                      ],
-                      value: activeFilters.status
-                    },
-                    {
-                      id: 'role',
-                      label: 'Role',
-                      type: 'select',
-                      selectType: 'multiple',
-                      options: rolesHook.roles.map(r => ({ label: r.name, value: r.name })),
-                      value: activeFilters.role
-                    },
-                    {
-                      id: 'centre',
-                      label: 'Centre',
-                      type: 'select',
-                      selectType: 'single',
-                      options: centreOptions.map(c => ({ label: c.name, value: c.name })),
-                      value: activeFilters.centre
-                    }
-                  ]}
-                  onChange={(updated) => setActiveFilters(updated)}
-                />
-              }
+        <DataTable
+          data={filteredUsers}
+          columns={userColumns}
+          loading={isLoading}
+          searchPlaceholder="Search users..."
+          leftElement={tabSwitcher}
+          filterElement={
+            <FilterDropdown
+              align="right"
+              fields={[
+                {
+                  id: 'status',
+                  label: 'Status',
+                  type: 'select',
+                  selectType: 'single',
+                  options: [
+                    { label: 'Active', value: 'Active' },
+                    { label: 'Inactive', value: 'Inactive' }
+                  ],
+                  value: activeFilters.status
+                },
+                {
+                  id: 'role',
+                  label: 'Role',
+                  type: 'select',
+                  selectType: 'multiple',
+                  options: rolesHook.roles.map(r => ({ label: r.name, value: r.name })),
+                  value: activeFilters.role
+                },
+                {
+                  id: 'centre',
+                  label: 'Centre',
+                  type: 'select',
+                  selectType: 'single',
+                  options: centreOptions.map(c => ({ label: c.name, value: c.name })),
+                  value: activeFilters.centre
+                }
+              ]}
+              onChange={(updated) => setActiveFilters(updated)}
             />
-          )}
-        </div>
+          }
+        />
       ) : (
         <DataTable
           data={rolesHook.roles}
           columns={roleColumns}
+          loading={isLoading}
           searchPlaceholder="Search roles..."
           leftElement={tabSwitcher}
           defaultPageSize={50}

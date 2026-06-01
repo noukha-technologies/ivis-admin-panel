@@ -1,6 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import SwirlingEffectSpinner from './SwirlingEffectSpinner';
 import { cn } from '../../utils/cn';
 import { DropdownMenu } from './DropdownMenu';
+import noDataImg from '../../assets/images/no_data_premium.png';
 import type { ColumnDef, DataTableProps, DropdownMenuSection } from '../../interfaces/ui.interfaces';
 
 export function DataTable<TData>({
@@ -16,11 +18,15 @@ export function DataTable<TData>({
   leftElement,
   showControls = true,
   showPagination = true,
+  loading = false,
   onRowClick,
+  headerWeightClassName = "font-semibold",
+  cellWeightClassName = "font-medium",
 }: DataTableProps<TData>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
   // State for Column Visibility Controller
@@ -124,11 +130,11 @@ export function DataTable<TData>({
   }, [data, searchQuery, filterColumnKey, filterValue, searchKey, sortConfig]);
 
   // Pagination bounds
-  const totalPages = Math.ceil(processedData.length / defaultPageSize) || 1;
+  const totalPages = Math.ceil(processedData.length / pageSize) || 1;
   const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * defaultPageSize;
-    return processedData.slice(start, start + defaultPageSize);
-  }, [processedData, currentPage, defaultPageSize]);
+    const start = (currentPage - 1) * pageSize;
+    return processedData.slice(start, start + pageSize);
+  }, [processedData, currentPage, pageSize]);
 
   // Handle active page switching
   const handlePageChange = (page: number) => {
@@ -137,22 +143,7 @@ export function DataTable<TData>({
     }
   };
 
-  // Generate sliding window centered page numbers matching the mockup:
-  const pageNumbers = useMemo(() => {
-    const pages: (number | string)[] = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, '...', totalPages - 2, totalPages - 1, totalPages);
-      } else {
-        pages.push(1, '...', currentPage, '...', totalPages);
-      }
-    }
-    return pages;
-  }, [currentPage, totalPages]);
+
 
   return (
     <div className="w-full flex flex-col gap-4">
@@ -215,7 +206,7 @@ export function DataTable<TData>({
               return (
                 <DropdownMenu
                   trigger={
-                    <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer">
+                    <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer whitespace-nowrap">
                       <span>{activeFilterLabel}</span>
                       <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -286,7 +277,8 @@ export function DataTable<TData>({
                       key={colId || idx}
                       onClick={() => isSortable && typeof col.accessorKey === 'string' && handleSort(col.accessorKey)}
                       className={cn(
-                        "px-6 py-3.5 text-[12.5px] text-[#667085] font-semibold select-none",
+                        "px-6 py-3.5 text-[12.5px] text-[#667085] select-none",
+                        headerWeightClassName,
                         isSortable ? "cursor-pointer hover:text-neutral-900 transition-colors" : ""
                       )}
                     >
@@ -314,7 +306,16 @@ export function DataTable<TData>({
               </tr>
             </thead>
             <tbody>
-              {paginatedData.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={visibleColumns.length} className="px-6 py-16 text-center bg-white">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <SwirlingEffectSpinner />
+                      <p className="text-[13px] text-[#667085] font-medium">Loading data…</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedData.length > 0 ? (
                 paginatedData.map((row, rowIdx) => (
                   <tr
                     key={rowIdx}
@@ -329,7 +330,7 @@ export function DataTable<TData>({
                       const rawValue = col.accessorKey ? (row as any)[col.accessorKey] : undefined;
 
                       return (
-                        <td key={colId || colIdx} className="px-6 py-4 text-[14px]">
+                        <td key={colId || colIdx} className={cn("px-6 py-4 text-[14px]", cellWeightClassName)}>
                           {col.cell ? col.cell({ row, value: rawValue }) : String(rawValue ?? '')}
                         </td>
                       );
@@ -338,8 +339,17 @@ export function DataTable<TData>({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-6 py-12 text-center text-[14px] text-slate-500 font-medium">
-                    No results found.
+                  <td colSpan={visibleColumns.length} className="px-6 py-16 text-center select-none bg-white">
+                    <div className="flex flex-col items-center justify-center gap-4 max-w-sm mx-auto">
+                      <img
+                        src={noDataImg}
+                        alt="No records found"
+                        className="w-36 h-36 object-contain opacity-95 drop-shadow-[0_4px_12px_rgba(0,0,0,0.03)]"
+                      />
+                      <div>
+                        <h4 className="text-[15.5px] font-bold text-[#101828] mb-0.5">No results found</h4>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -347,60 +357,87 @@ export function DataTable<TData>({
           </table>
         </div>
 
-        {/* Centered Pagination Footer (Mockup layout) */}
-        {showPagination && totalPages > 0 && (
-          <div className="flex items-center justify-center gap-1.5 px-6 py-4.5 border-t border-neutral-100 bg-white select-none">
-            {/* Previous link button with chevron */}
-            <button
-              disabled={currentPage <= 1}
-              onClick={() => handlePageChange(currentPage - 1)}
-              className="px-3 py-1.5 text-[13.5px] font-semibold text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/50 rounded-lg flex items-center gap-1 cursor-pointer transition-all shrink-0"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-              <span>Previous</span>
-            </button>
-
-            {/* Centered Page Numbers */}
-            <div className="flex items-center gap-1">
-              {pageNumbers.map((page, idx) => {
-                if (typeof page === 'string') {
-                  return (
-                    <span key={idx} className="px-2 py-1.5 text-[13.5px] text-neutral-400 font-semibold select-none">
-                      {page}
-                    </span>
-                  );
-                }
-                const isActive = page === currentPage;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handlePageChange(page)}
-                    className={cn(
-                      "px-3 py-1.5 text-[13.5px] cursor-pointer transition-all min-w-8 text-center",
-                      isActive
-                        ? "border border-neutral-200 bg-white rounded-lg text-neutral-800 shadow-sm font-bold"
-                        : "text-neutral-500 hover:text-neutral-800 hover:bg-neutral-50 rounded-lg font-semibold"
-                    )}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
+        {/* Custom Premium Pagination Footer (Matching User Mockup) */}
+        {showPagination && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-[#FCFCFD] text-[13.5px] text-[#475467] select-none font-medium">
+            {/* Left side: Showing X of Y row(s) */}
+            <div>
+              Showing <span className="font-semibold text-[#101828]">{paginatedData.length}</span> of <span className="font-semibold text-[#101828]">{processedData.length}</span> row(s).
             </div>
 
-            {/* Next link button with chevron */}
-            <button
-              disabled={currentPage >= totalPages}
-              onClick={() => handlePageChange(currentPage + 1)}
-              className="px-3 py-1.5 text-[13.5px] font-semibold text-neutral-500 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-50/50 rounded-lg flex items-center gap-1 cursor-pointer transition-all shrink-0"
-            >
-              <span>Next</span>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-              </svg>
-            </button>
+            {/* Right side controls */}
+            <div className="flex items-center gap-6">
+              {/* Rows per page selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-[#344054]">Rows per page</span>
+                <div className="relative">
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="appearance-none bg-white border border-[#d0d5dd] rounded-lg px-3 py-1.5 pr-8 text-[13px] font-semibold text-[#344054] focus:outline-none focus:border-neutral-400 cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
+                  >
+                    {[5, 10, 15, 20, 30, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {/* Page indicator */}
+              <div>
+                Page <span className="font-semibold text-[#101828]">{currentPage}</span> of <span className="font-semibold text-[#101828]">{totalPages}</span>
+              </div>
+
+              {/* Navigation buttons */}
+              <div className="flex items-center gap-1.5">
+                {/* First page */}
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                  title="First Page"
+                >
+                  «
+                </button>
+                {/* Previous */}
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                  title="Previous Page"
+                >
+                  ‹
+                </button>
+                {/* Next */}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                  title="Next Page"
+                >
+                  ›
+                </button>
+                {/* Last page */}
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
+                  title="Last Page"
+                >
+                  »
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
