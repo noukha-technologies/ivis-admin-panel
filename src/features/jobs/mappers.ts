@@ -12,6 +12,7 @@ export function mapJobStatusToTab(status: JobStatus): JobTabFilter {
     case 'Failed':
       return 'Redo Test';
     case 'Ready':
+      return 'Job Queue';
     case 'Pending':
     default:
       return 'Pending';
@@ -26,9 +27,11 @@ export function tabToBackendStatuses(tab: JobTabFilter): JobStatus[] {
       return ['Failed'];
     case 'Completed':
       return ['Passed', 'Cancelled'];
+    case 'Job Queue':
+      return ['Ready'];
     case 'Pending':
     default:
-      return ['Pending', 'Ready'];
+      return ['Pending'];
   }
 }
 
@@ -39,8 +42,10 @@ export function toJobListItem(row: ApiJob): JobListItem {
     displayId: `#J${String(row.job_id).padStart(2, '0')}`,
     vehicle: row.vehicleRecord?.plate_number ?? '—',
     customer: row.customer?.name ?? '—',
+    source: row.source || '-',
     center: row.centre?.name ?? '—',
     line: row.line?.name ?? '—',
+    ropApiStatus: (row as any).rop_api_status || '-',
     created: formatDateTime(row.created_at),
     status: tabStatus,
     rawStatus: row.status,

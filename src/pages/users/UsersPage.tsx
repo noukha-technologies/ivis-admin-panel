@@ -154,6 +154,7 @@ const UsersPage: React.FC = () => {
 
   const activeTab = location.pathname === ROUTES.USERS_ROLES ? 'roles' : 'users';
 
+
   const userColumns: ColumnDef<UserListItem>[] = [
     {
       id: 'name',
@@ -393,6 +394,7 @@ const UsersPage: React.FC = () => {
     };
     fetchOptions();
   }, []);
+
 
   const handleOpenAdd = () => {
     setFormData(emptyUserForm());
