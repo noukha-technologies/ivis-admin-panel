@@ -10,6 +10,7 @@ import { getApiErrorMessage } from '../../api/apiResponse';
 import { ROUTES } from '../../router/routes';
 import { DataTable } from '../../components/ui/DataTable';
 import { JobPaymentForm } from '../../components/jobs/JobPaymentForm';
+import { ChevronDown, Plus } from 'lucide-react';
 
 const JobDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,10 +23,42 @@ const JobDetailPage: React.FC = () => {
 
 
   // Form states for Step 1
+  const [customers, setCustomers] = useState([
+    { name: 'Ramesh', contact: '+968 91000001', id: 'ID20000001' },
+    { name: 'Suresh', contact: '+968 91000002', id: 'ID20000002' },
+    { name: 'Ali', contact: '+968 91000003', id: 'ID20000003' },
+  ]);
   const [customerName, setCustomerName] = useState('Ramesh');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const [customerContact, setCustomerContact] = useState('');
   const [driverName, setDriverName] = useState('');
+  const [isDriverDropdownOpen, setIsDriverDropdownOpen] = useState(false);
   const [driverContact, setDriverContact] = useState('');
+
+  // Modal State for new customer creation
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerContact, setNewCustomerContact] = useState('');
+  const [newCustomerId, setNewCustomerId] = useState('');
+
+  const handleAddCustomerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomerName.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
+    const newCust = {
+      name: newCustomerName.trim(),
+      contact: newCustomerContact.trim(),
+      id: newCustomerId.trim(),
+    };
+    
+    setCustomers((prev) => [...prev, newCust]);
+    setCustomerName(newCust.name);
+    setCustomerContact(newCust.contact);
+    setShowAddCustomerModal(false);
+    toast.success('Customer added successfully');
+  };
 
   // Payment tables configuration
   const paymentColumns = [
@@ -301,18 +334,71 @@ const JobDetailPage: React.FC = () => {
       {/* Form fields (Only visible in Step 1) */}
       {currentStep === 1 && (
         <div className="grid grid-cols-2 gap-4 max-w-250 mb-4">
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold text-gray-600 mb-1.5">Customer Name</label>
-            <select
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full bg-white border border-[#D0D5DD] rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold cursor-pointer"
-            >
-              <option value="">Select</option>
-              <option value="Ramesh">Ramesh</option>
-              <option value="Suresh">Suresh</option>
-              <option value="Ali">Ali</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 flex items-center">
+                <input
+                  type="text"
+                  value={customerName}
+                  placeholder="Select or enter customer name"
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    setIsCustomerDropdownOpen(true);
+                  }}
+                  onFocus={() => setIsCustomerDropdownOpen(true)}
+                  className="w-full bg-white border border-[#D0D5DD] rounded-lg pl-3.5 pr-10 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
+                />
+                <ChevronDown 
+                  onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+                  className={`absolute right-3 w-4 h-4 text-gray-500 transition-transform duration-200 cursor-pointer ${isCustomerDropdownOpen ? 'rotate-180' : ''}`} 
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewCustomerName('');
+                  setNewCustomerContact('');
+                  setNewCustomerId('');
+                  setShowAddCustomerModal(true);
+                }}
+                className="flex items-center justify-center p-3 bg-[#111827] text-white hover:bg-gray-800 rounded-lg transition-colors cursor-pointer shrink-0 shadow-sm"
+                title="Add Customer"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {isCustomerDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsCustomerDropdownOpen(false)}
+                ></div>
+                <div className="absolute z-20 w-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] py-1.5 overflow-hidden transform origin-top animate-in fade-in slide-in-from-top-2 duration-200 max-h-60 overflow-y-auto">
+                  {customers
+                    .filter((c) => c.name.toLowerCase().includes(customerName.toLowerCase()))
+                    .map((c) => (
+                      <div
+                        key={c.name}
+                        onClick={() => {
+                          setCustomerName(c.name);
+                          setCustomerContact(c.contact);
+                          setIsCustomerDropdownOpen(false);
+                        }}
+                        className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors flex items-center justify-between"
+                      >
+                        <span className="text-gray-700">{c.name}</span>
+                        {customerName === c.name && (
+                          <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1.5">Customer Contact No</label>
@@ -324,17 +410,55 @@ const JobDetailPage: React.FC = () => {
               className="w-full bg-white border border-[#D0D5DD] rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold text-gray-600 mb-1.5">Driver Name</label>
-            <select
-              value={driverName}
-              onChange={(e) => setDriverName(e.target.value)}
-              className="w-full bg-white border border-[#D0D5DD] rounded-lg px-3.5 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold cursor-pointer"
-            >
-              <option value="">Select</option>
-              <option value="John">John</option>
-              <option value="Smith">Smith</option>
-            </select>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={driverName}
+                placeholder="Select or enter driver name"
+                onChange={(e) => {
+                  setDriverName(e.target.value);
+                  setIsDriverDropdownOpen(true);
+                }}
+                onFocus={() => setIsDriverDropdownOpen(true)}
+                className="w-full bg-white border border-[#D0D5DD] rounded-lg pl-3.5 pr-10 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
+              />
+              <ChevronDown 
+                onClick={() => setIsDriverDropdownOpen(!isDriverDropdownOpen)}
+                className={`absolute right-3 w-4 h-4 text-gray-500 transition-transform duration-200 cursor-pointer ${isDriverDropdownOpen ? 'rotate-180' : ''}`} 
+              />
+            </div>
+            
+            {isDriverDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsDriverDropdownOpen(false)}
+                ></div>
+                <div className="absolute z-20 w-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] py-1.5 overflow-hidden transform origin-top animate-in fade-in slide-in-from-top-2 duration-200">
+                  {['John', 'Smith']
+                    .filter((option) => option.toLowerCase().includes(driverName.toLowerCase()))
+                    .map((option) => (
+                      <div
+                        key={option}
+                        onClick={() => {
+                          setDriverName(option);
+                          setIsDriverDropdownOpen(false);
+                        }}
+                        className="px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer transition-colors flex items-center justify-between"
+                      >
+                        {option}
+                        {driverName === option && (
+                          <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-600 mb-1.5">Driver Contact No</label>
@@ -845,6 +969,82 @@ const JobDetailPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Add Customer Modal */}
+      {showAddCustomerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-100 transform transition-transform duration-300 scale-100">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Add New Customer</h2>
+              <button 
+                type="button"
+                onClick={() => setShowAddCustomerModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddCustomerSubmit} className="space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Customer Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Contact Number
+                </label>
+                <input
+                  type="text"
+                  value={newCustomerContact}
+                  onChange={(e) => setNewCustomerContact(e.target.value)}
+                  placeholder="e.g. +968 91000000"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  ID Number
+                </label>
+                <input
+                  type="text"
+                  value={newCustomerId}
+                  onChange={(e) => setNewCustomerId(e.target.value)}
+                  placeholder="e.g. ID20000000"
+                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-gray-400 font-semibold"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomerModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-[#111827] text-white hover:bg-gray-800 rounded-lg text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  Add Customer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

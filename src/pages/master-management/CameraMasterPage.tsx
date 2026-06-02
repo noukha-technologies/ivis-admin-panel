@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { masterService } from '../../api/services/master.service';
 import type { ApiCamera } from '../../interfaces/camera.interface';
 import type { ApiLine } from '../../interfaces/line.interface';
@@ -10,6 +10,73 @@ import { RowActions } from '../../components/ui/RowActions';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
 import { PermissionGate } from '../../components/PermissionGate';
 import { PERMISSIONS } from '../../constants/permissions';
+import { cn } from '../../utils/cn';
+
+function CustomSelect({ label, options, value, onChange }: {
+  label: string;
+  options: { label: string, value: string }[];
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="relative w-full text-left" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full bg-white border border-[#d0d5dd] text-[#101828] text-sm font-semibold rounded-xl px-3.5 py-2.5 hover:bg-neutral-50 transition-all shadow-sm cursor-pointer"
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : label}</span>
+        <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-full bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left max-h-60 overflow-y-auto">
+          {options.map(opt => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors text-left first:rounded-t-xl last:rounded-b-xl",
+                  isSelected ? "bg-neutral-100 text-[#101828]" : "text-[#344054] hover:bg-neutral-50"
+                )}
+              >
+                <span>{opt.label}</span>
+                {isSelected && (
+                  <svg className="w-4 h-4 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 
 const CameraMasterPage: React.FC = () => {
@@ -372,8 +439,8 @@ const CameraMasterPage: React.FC = () => {
       {/* CREATE MODAL */}
       {showNewModal && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
+          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-visible animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white rounded-t-3xl">
               <h3 className="text-[18px] font-bold text-[#101828]">Add Camera</h3>
               <button
                 type="button"
@@ -418,36 +485,24 @@ const CameraMasterPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
-                    <select
-                      required
-                      disabled={isSubmitting}
+                    <CustomSelect
+                      label="Select Type"
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
-                    >
-                      <option value="ANPR">ANPR</option>
-                      <option value="CCTV">CCTV</option>
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, type: val })}
+                      options={[
+                        { label: 'ANPR', value: 'ANPR' },
+                        { label: 'CCTV', value: 'CCTV' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
-                    <select
-                      required
-                      disabled={isSubmitting || lines.length === 0}
+                    <CustomSelect
+                      label={lines.length === 0 ? "No active lines available" : "Select Line"}
                       value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
-                    >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
-                      ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, line_id: val })}
+                      options={lines.map((line) => ({ label: line.name, value: line.id }))}
+                    />
                   </div>
                 </div>
 
@@ -521,8 +576,8 @@ const CameraMasterPage: React.FC = () => {
       {/* EDIT MODAL */}
       {showEditModal && selectedItem && (
         <div className="fixed inset-0 bg-[#0b0f19]/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white">
+          <div className="bg-white rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] w-full max-w-120 border border-neutral-100 overflow-visible animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between bg-white rounded-t-3xl">
               <h3 className="text-[18px] font-bold text-[#101828]">Edit Camera</h3>
               <button
                 type="button"
@@ -570,36 +625,24 @@ const CameraMasterPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Type</label>
-                    <select
-                      required
-                      disabled={isSubmitting}
+                    <CustomSelect
+                      label="Select Type"
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
-                    >
-                      <option value="ANPR">ANPR</option>
-                      <option value="CCTV">CCTV</option>
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, type: val })}
+                      options={[
+                        { label: 'ANPR', value: 'ANPR' },
+                        { label: 'CCTV', value: 'CCTV' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
-                    <select
-                      required
-                      disabled={isSubmitting || lines.length === 0}
+                    <CustomSelect
+                      label={lines.length === 0 ? "No active lines available" : "Select Line"}
                       value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
-                    >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
-                      ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, line_id: val })}
+                      options={lines.map((line) => ({ label: line.name, value: line.id }))}
+                    />
                   </div>
                 </div>
 

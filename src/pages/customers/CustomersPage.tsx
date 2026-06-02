@@ -161,6 +161,7 @@ const CustomersPage: React.FC = () => {
         searchPlaceholder="Search customers..."
         filterColumnKey="vehicle"
         filterPlaceholder="All Vehicles"
+        filterPosition="left"
         filterOptions={[
           { label: 'Sedan', value: 'Sedan' },
           { label: 'SUV', value: 'SUV' },

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
 import { buildAnprCapturePayload } from '@/features/anpr/buildAnprCapturePayload';
 import { useAnprCaptures } from '../../features/anpr/hooks/useAnprCaptures';
@@ -7,6 +7,73 @@ import { useIntake } from '../../features/intake/IntakeContext';
 import { useMasterLookups } from '../../hooks/useMasterLookups';
 import { DataTable } from '../../components/ui/DataTable';
 import type { ColumnDef } from '../../interfaces/ui.interfaces';
+import { cn } from '../../utils/cn';
+
+function CustomSelect({ label, options, value, onChange }: {
+  label: string;
+  options: { label: string, value: string }[];
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="relative w-full text-left" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full bg-white border border-[#d0d5dd] text-[#101828] text-sm font-semibold rounded-xl px-3.5 py-2.5 hover:bg-neutral-50 transition-all shadow-sm cursor-pointer"
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : label}</span>
+        <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-full bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left max-h-60 overflow-y-auto">
+          {options.map(opt => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors text-left first:rounded-t-xl last:rounded-b-xl",
+                  isSelected ? "bg-neutral-100 text-[#101828]" : "text-[#344054] hover:bg-neutral-50"
+                )}
+              >
+                <span>{opt.label}</span>
+                {isSelected && (
+                  <svg className="w-4 h-4 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const VehicleRecordsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ANPR capture' | 'ROP verification'>('ANPR capture');
@@ -264,7 +331,7 @@ const VehicleRecordsPage: React.FC = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/35">
           <form
             onSubmit={handleCreateCapture}
-            className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-100"
+            className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl border border-gray-100 overflow-visible"
           >
             <h3 className="text-lg font-bold text-gray-900 mb-4">New ANPR Capture</h3>
             <label className="block text-sm font-semibold text-gray-600 mb-1">Plate number</label>
@@ -275,18 +342,17 @@ const VehicleRecordsPage: React.FC = () => {
               required
             />
             <label className="block text-sm font-semibold text-gray-600 mb-1">Camera</label>
-            <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 text-sm"
-              value={cameraId}
-              onChange={(e) => setCameraId(e.target.value)}
-              required
-            >
-              {cameras.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.code})
-                </option>
-              ))}
-            </select>
+            <div className="mb-4">
+              <CustomSelect
+                label="Select Camera"
+                value={cameraId}
+                onChange={(val) => setCameraId(val)}
+                options={cameras.map((c) => ({
+                  label: `${c.name} (${c.code})`,
+                  value: c.id,
+                }))}
+              />
+            </div>
             <p className="text-xs text-gray-500 mb-4">Simulated ROP and vehicle record upsert will run automatically.</p>
             <div className="flex justify-end gap-2">
               <button

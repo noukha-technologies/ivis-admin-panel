@@ -45,6 +45,7 @@ function vehicleToForm(item: ApiVehicle): VehicleFormState {
   };
 }
 
+
 const VehicleMasterPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
