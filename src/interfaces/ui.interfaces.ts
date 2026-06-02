@@ -64,6 +64,12 @@ export interface DataTableProps<TData> {
   onRowClick?: (row: TData) => void;
   headerWeightClassName?: string;
   cellWeightClassName?: string;
+  serverSidePagination?: boolean;
+  totalRows?: number;
+  totalPages?: number;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  filterPosition?: 'left' | 'right';
 }
 
 // ==========================================

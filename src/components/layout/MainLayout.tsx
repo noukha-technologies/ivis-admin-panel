@@ -80,28 +80,51 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
 
   // Derive active menu from current URL path
-  const activeMenu = location.pathname.startsWith(ROUTES.MASTER_MANAGEMENT)
-    ? 'Master Management'
-    : location.pathname.startsWith(ROUTES.PAYMENTS)
-      ? 'Transactions'
-      : location.pathname.startsWith(ROUTES.USERS_MANAGEMENT)
-        ? 'User Management'
-        : (routeToMenu[location.pathname] || 'Dashboard');
+  const getActiveMenu = () => {
+    const path = location.pathname;
+    if (path.startsWith(ROUTES.MASTER_MANAGEMENT)) return 'Master Management';
+    if (path.startsWith('/transactions')) return 'Transactions';
+    if (path.startsWith(ROUTES.USERS_MANAGEMENT)) return 'User Management';
+    if (path.startsWith(ROUTES.JOB_MANAGEMENT)) return 'Job Management';
+    if (path.startsWith(ROUTES.APPOINTMENTS)) return 'Appointments';
+    if (path.startsWith(ROUTES.REPORTS)) return 'Reports & Analytics';
+    if (path.startsWith(ROUTES.CONFIGURATION)) return 'Configuration';
+    if (path.startsWith(ROUTES.DASHBOARD)) return 'Dashboard';
+    return routeToMenu[path] || 'Dashboard';
+  };
+
+  const activeMenu = getActiveMenu();
 
   const isRolesPage = location.pathname === ROUTES.USERS_ROLES;
   const isUsersManagementPage =
     location.pathname.startsWith(ROUTES.USERS_MANAGEMENT) && !isRolesPage;
 
-  const pageTitle = isRolesPage
-    ? routeToTitle[ROUTES.USERS_ROLES]
-    : isUsersManagementPage
-      ? routeToTitle[ROUTES.USERS_MANAGEMENT]
-      : routeToTitle[location.pathname] || 'Dashboard';
-  const pageSubtitle = isRolesPage
-    ? routeToSubtitle[ROUTES.USERS_ROLES]
-    : isUsersManagementPage
-      ? routeToSubtitle[ROUTES.USERS_MANAGEMENT]
-      : routeToSubtitle[location.pathname] || '';
+  const getPageTitle = () => {
+    if (isRolesPage) return routeToTitle[ROUTES.USERS_ROLES];
+    if (isUsersManagementPage) return routeToTitle[ROUTES.USERS_MANAGEMENT];
+    
+    const path = location.pathname;
+    if (path.startsWith(ROUTES.JOB_MANAGEMENT)) return 'Job Management';
+    if (path.startsWith(ROUTES.APPOINTMENTS)) return 'Appointments & Walk-ins';
+    if (path.startsWith(ROUTES.REPORTS)) return 'Reports & Analytics';
+    
+    return routeToTitle[path] || 'Dashboard';
+  };
+
+  const getPageSubtitle = () => {
+    if (isRolesPage) return routeToSubtitle[ROUTES.USERS_ROLES];
+    if (isUsersManagementPage) return routeToSubtitle[ROUTES.USERS_MANAGEMENT];
+    
+    const path = location.pathname;
+    if (path.startsWith(ROUTES.JOB_MANAGEMENT)) return 'Manage inspection jobs and assignments';
+    if (path.startsWith(ROUTES.APPOINTMENTS)) return 'Manage scheduled appointments and walk-in entries';
+    if (path.startsWith(ROUTES.REPORTS)) return 'Analytics and reporting insights';
+    
+    return routeToSubtitle[path] || '';
+  };
+
+  const pageTitle = getPageTitle();
+  const pageSubtitle = getPageSubtitle();
 
   const handleMenuChange = (menuName: string) => {
     if (location.pathname.startsWith(ROUTES.CONFIGURATION)) {

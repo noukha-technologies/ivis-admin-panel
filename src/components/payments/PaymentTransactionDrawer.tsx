@@ -77,7 +77,7 @@ export const PaymentTransactionDrawer: React.FC<PaymentTransactionDrawerProps> =
       }
     >
       <form id="new-payment-form" onSubmit={onSubmit} className="flex flex-col gap-4">
-        <div>
+        <div className="pt-2.5">
           <label className={labelClass}>Phone *</label>
           <input
             type="tel"

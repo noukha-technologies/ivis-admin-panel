@@ -274,54 +274,13 @@ const PaymentsPage: React.FC = () => {
           data={filteredPayments}
           columns={columns}
           showControls={false}
-          showPagination={false}
+          showPagination={true}
+          serverSidePagination={true}
+          totalRows={paymentsApi.total}
+          totalPages={paymentsApi.totalPages}
+          currentPage={paymentsApi.page}
+          onPageChange={paymentsApi.setPage}
         />
-
-        <div className="flex items-center justify-between px-6 py-4 border border-neutral-200/90 rounded-2xl bg-[#FCFCFD] text-[13.5px] text-[#475467] select-none font-medium bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-          <div>
-            Showing <span className="font-semibold text-[#101828]">{filteredPayments.length}</span> of <span className="font-semibold text-[#101828]">{paymentsApi.total}</span> row(s).
-          </div>
-          <div className="flex items-center gap-6">
-            <div>
-              Page <span className="font-semibold text-[#101828]">{paymentsApi.page}</span> of <span className="font-semibold text-[#101828]">{paymentsApi.totalPages}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => paymentsApi.setPage(1)}
-                disabled={paymentsApi.page === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
-                title="First Page"
-              >
-                «
-              </button>
-              <button
-                onClick={() => paymentsApi.setPage((p) => Math.max(1, p - 1))}
-                disabled={paymentsApi.page === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
-                title="Previous Page"
-              >
-                ‹
-              </button>
-              <button
-                onClick={() => paymentsApi.setPage((p) => Math.min(paymentsApi.totalPages, p + 1))}
-                disabled={paymentsApi.page >= paymentsApi.totalPages}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
-                title="Next Page"
-              >
-                ›
-              </button>
-              <button
-                onClick={() => paymentsApi.setPage(paymentsApi.totalPages)}
-                disabled={paymentsApi.page >= paymentsApi.totalPages}
-                className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
-                title="Last Page"
-              >
-                »
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <PaymentTransactionDrawer

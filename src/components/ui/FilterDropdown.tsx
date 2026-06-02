@@ -9,6 +9,8 @@ export function FilterDropdown({
   className,
 }: FilterDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(fields[0]?.id || '');
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Local state to store active filters before applying
@@ -30,6 +32,10 @@ export function FilterDropdown({
       setLocalValues(currentValues);
     }
   }, [isOpen, fields]);
+
+  useEffect(() => {
+    setSearchQuery('');
+  }, [activeCategory, isOpen]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -108,32 +114,78 @@ export function FilterDropdown({
       {isOpen && (
         <div
           className={cn(
-            "absolute mt-2 w-70 bg-white border border-neutral-200 rounded-3xl shadow-[0_16px_48px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.03)] p-6 z-50 overflow-hidden font-sans select-none animate-fadeInMenu",
+            "absolute mt-2 w-[480px] bg-white border border-neutral-200 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.03)] z-50 overflow-hidden flex flex-row h-[320px] font-sans select-none animate-fadeInMenu",
             align === 'left' ? 'left-0' : 'right-0',
             className
           )}
         >
-          <h3 className="text-[19px] font-bold text-[#101828] mb-5">Filter</h3>
-
-          <div className="space-y-4">
-            {fields.map((field, fieldIdx) => {
-              const isRadioSection = field.selectType === 'single' || field.id === 'status' || field.id === 'mode';
+          {/* Left Panel: Sidebar */}
+          <div className="w-[190px] border-r border-neutral-100 bg-[#FCFCFD] p-3 flex flex-col gap-1 overflow-y-auto flex-none">
+            {fields.map((field) => {
+              const isActive = field.id === activeCategory;
               const selectedOpts = localValues[field.id] || [];
-
+              const selectedCount = selectedOpts.length;
               return (
-                <div key={field.id}>
-                  {fieldIdx > 0 && <div className="h-px bg-neutral-100 my-4"></div>}
+                <button
+                  key={field.id}
+                  type="button"
+                  onClick={() => setActiveCategory(field.id)}
+                  className={cn(
+                    "w-full text-left px-3.5 py-2.5 rounded-xl text-[13.5px] font-bold transition-all flex items-center justify-between cursor-pointer border border-transparent",
+                    isActive
+                      ? "bg-white border border-neutral-200/60 shadow-[0_1px_2px_rgba(16,24,40,0.04)] text-[#101828]"
+                      : "text-[#475467] hover:bg-neutral-50 hover:text-[#101828]"
+                  )}
+                >
+                  <span className="truncate">{field.label}</span>
+                  {selectedCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#101828] text-white text-[10.5px] font-bold flex-none">
+                      {selectedCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-                  <h4 className="text-[11px] font-bold tracking-[0.12em] text-[#98a2b3] uppercase mb-3.5">
-                    {field.label}
-                  </h4>
+          {/* Right Panel: Content */}
+          {(() => {
+            const field = fields.find((f) => f.id === activeCategory) || fields[0];
+            if (!field) return null;
 
-                  <div className="space-y-3">
-                    {/* Render Radio Buttons for Single-Select Section */}
-                    {isRadioSection ? (
-                      <>
-                        {/* Prepend All option */}
-                        <label className="flex items-center gap-3.5 cursor-pointer group">
+            const isRadioSection = field.selectType === 'single' || field.id === 'status' || field.id === 'mode';
+            const selectedOpts = localValues[field.id] || [];
+
+            // Filter options based on local search query
+            const filteredOptions = (field.options || []).filter((opt) =>
+              opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            return (
+              <div className="flex-1 p-4.5 flex flex-col min-w-0 h-full bg-white">
+                {/* Search Bar */}
+                <div className="relative w-full mb-3 flex-none">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-1.5 text-[13px] bg-white border border-neutral-200 rounded-lg placeholder-neutral-400 text-[#1f2937] focus:outline-none focus:border-neutral-400 transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Options List */}
+                <div className="flex-1 overflow-y-auto pr-1 space-y-1 min-h-0 mb-3 text-left">
+                  {isRadioSection ? (
+                    <>
+                      {/* Prepend All option if searched label matches 'All' or search is empty */}
+                      {('all'.includes(searchQuery.toLowerCase()) || !searchQuery) && (
+                        <label className="flex items-center gap-3.5 cursor-pointer group hover:bg-neutral-50 px-3 py-2 rounded-xl transition-all -mx-1">
                           <input
                             type="radio"
                             name={field.id}
@@ -142,96 +194,102 @@ export function FilterDropdown({
                             className="sr-only"
                           />
                           <div className={cn(
-                            "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
-                            selectedOpts.length === 0 ? "border-[#101828] border-[1.5px]" : ""
+                            "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white flex-none",
+                            selectedOpts.length === 0 ? "border-[#101828] bg-[#101828]" : ""
                           )}>
                             {selectedOpts.length === 0 && (
-                              <div className="w-2 h-2 rounded-full bg-[#101828]"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
                             )}
                           </div>
-                          <span className="text-[13.5px] font-semibold text-[#1e293b] group-hover:text-[#101828] transition-colors">
+                          <span className="text-[13.5px] font-semibold text-[#344054] group-hover:text-[#101828] transition-colors truncate">
                             All
                           </span>
                         </label>
+                      )}
 
-                        {field.options?.map((opt) => {
-                          const isSelected = selectedOpts.includes(opt.value);
-                          return (
-                            <label key={opt.value} className="flex items-center gap-3.5 cursor-pointer group">
-                              <input
-                                type="radio"
-                                name={field.id}
-                                checked={isSelected}
-                                onChange={() => handleSelectRadio(field.id, opt.value)}
-                                className="sr-only"
-                              />
-                              <div className={cn(
-                                "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white",
-                                isSelected ? "border-[#101828] border-[1.5px]" : ""
-                              )}>
-                                {isSelected && (
-                                  <div className="w-2 h-2 rounded-full bg-[#101828]"></div>
-                                )}
-                              </div>
-                              <span className="text-[13.5px] font-semibold text-[#1e293b] group-hover:text-[#101828] transition-colors">
-                                {opt.label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </>
-                    ) : (
-                      /* Render Checkboxes for Multi-Select Sections */
-                      field.options?.map((opt) => {
+                      {filteredOptions.map((opt) => {
                         const isSelected = selectedOpts.includes(opt.value);
                         return (
-                          <label key={opt.value} className="flex items-center gap-3.5 cursor-pointer group">
+                          <label key={opt.value} className="flex items-center gap-3.5 cursor-pointer group hover:bg-neutral-50 px-3 py-2 rounded-xl transition-all -mx-1">
                             <input
-                              type="checkbox"
+                              type="radio"
+                              name={field.id}
                               checked={isSelected}
-                              onChange={() => handleToggleCheckbox(field.id, opt.value)}
+                              onChange={() => handleSelectRadio(field.id, opt.value)}
                               className="sr-only"
                             />
                             <div className={cn(
-                              "w-4.5 h-4.5 rounded-[5px] border border-neutral-300 flex items-center justify-center transition-all group-hover:border-[#101828] bg-white",
+                              "w-4.5 h-4.5 rounded-full border border-neutral-300 flex items-center justify-center transition-all group-hover:border-neutral-400 bg-white flex-none",
                               isSelected ? "border-[#101828] bg-[#101828]" : ""
                             )}>
                               {isSelected && (
-                                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
+                                <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
                               )}
                             </div>
-                            <span className="text-[13.5px] font-semibold text-[#1e293b] group-hover:text-[#101828] transition-colors">
+                            <span className="text-[13.5px] font-semibold text-[#344054] group-hover:text-[#101828] transition-colors truncate">
                               {opt.label}
                             </span>
                           </label>
                         );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      })}
+                    </>
+                  ) : (
+                    /* Render Checkboxes for Multi-Select Sections */
+                    filteredOptions.map((opt) => {
+                      const isSelected = selectedOpts.includes(opt.value);
+                      return (
+                        <label key={opt.value} className="flex items-center gap-3.5 cursor-pointer group hover:bg-neutral-50 px-3 py-2 rounded-xl transition-all -mx-1">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleCheckbox(field.id, opt.value)}
+                            className="sr-only"
+                          />
+                          <div className={cn(
+                            "w-4.5 h-4.5 rounded-[5px] border border-neutral-300 flex items-center justify-center transition-all group-hover:border-[#101828] bg-white flex-none",
+                            isSelected ? "border-[#101828] bg-[#101828]" : ""
+                          )}>
+                            {isSelected && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-[13.5px] font-semibold text-[#344054] group-hover:text-[#101828] transition-colors truncate">
+                            {opt.label}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
 
-          {/* Footer Action Buttons */}
-          <div className="flex items-center justify-between mt-6 pt-2">
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="text-[12.5px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-            >
-              Clear all
-            </button>
-            <button
-              type="button"
-              onClick={handleApply}
-              className="px-5 py-2.5 bg-[#101828] hover:bg-neutral-800 text-white text-[13.5px] font-bold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow"
-            >
-              Apply Filter
-            </button>
-          </div>
+                  {filteredOptions.length === 0 && (
+                    <div className="py-8 text-center text-xs font-semibold text-neutral-400">
+                      No options found
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Action Buttons inside Right Panel */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-neutral-100 flex-none mt-auto">
+                  <button
+                    type="button"
+                    onClick={handleClearFilters}
+                    className="px-4 py-2 border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-bold text-[13px] rounded-xl transition-all cursor-pointer shadow-sm"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    className="px-5 py-2 bg-[#101828] hover:bg-neutral-800 text-white font-bold text-[13px] rounded-xl transition-all cursor-pointer shadow-sm hover:shadow"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

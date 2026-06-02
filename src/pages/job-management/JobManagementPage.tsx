@@ -83,6 +83,72 @@ function CheckboxDropdown({ label, options, selectedValues, onChange }: {
   );
 }
 
+function CustomSelect({ label, options, value, onChange }: {
+  label: string;
+  options: { label: string, value: string }[];
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="relative w-full text-left" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full bg-white border border-[#D0D5DD] text-[#101828] text-sm font-semibold rounded-xl px-3.5 py-2.5 hover:bg-neutral-50 transition-all shadow-sm cursor-pointer"
+      >
+        <span className="truncate">{selectedOption ? selectedOption.label : label}</span>
+        <svg className="w-4 h-4 ml-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 mt-1.5 w-full bg-white border border-neutral-200 rounded-xl shadow-lg py-1.5 z-50 animate-fadeInMenu text-left max-h-60 overflow-y-auto">
+          {options.map(opt => {
+            const isSelected = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={cn(
+                  "flex items-center justify-between w-full px-4 py-2.5 text-sm font-semibold cursor-pointer transition-colors text-left first:rounded-t-xl last:rounded-b-xl",
+                  isSelected ? "bg-neutral-100 text-[#101828]" : "text-[#344054] hover:bg-neutral-50"
+                )}
+              >
+                <span>{opt.label}</span>
+                {isSelected && (
+                  <svg className="w-4 h-4 text-neutral-800" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const JobManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<JobTabFilter>('Job Queue');
@@ -196,9 +262,9 @@ const JobManagementPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-4" style={{ marginLeft: '20px', marginRight: '20px', marginTop: '6px' }}>
+    <div className="flex flex-col gap-4" style={{ marginLeft: '20px', marginTop: '6px' }}>
       <div className="flex items-center justify-between w-full">
-        {/* Left Side: Tabs & Dropdowns */}
+        {/* Left Side: Tabs */}
         <div className="flex items-center gap-3">
           <div className="flex rounded-lg border border-[#D0D5DD] overflow-hidden bg-white">
             {(['Job Queue', 'Pending', 'In progress', 'Redo Test', 'Completed'] as const).map((tab) => {
@@ -216,31 +282,7 @@ const JobManagementPage: React.FC = () => {
               );
             })}
           </div>
-
-          <CheckboxDropdown
-            label="Select Center"
-            options={[
-              { label: 'Center 1', value: 'Center 1' },
-              { label: 'Center 2', value: 'Center 2' },
-              { label: 'Muscat', value: 'Muscat' },
-            ]}
-            selectedValues={selectedCenters}
-            onChange={setSelectedCenters}
-          />
-
-          <CheckboxDropdown
-            label="Select Line"
-            options={[
-              { label: 'Line 1', value: 'Line 1' },
-              { label: 'Line 2', value: 'Line 2' },
-              { label: 'Line 3', value: 'Line 3' },
-            ]}
-            selectedValues={selectedLines}
-            onChange={setSelectedLines}
-          />
         </div>
-
-
       </div>
 
       <DataTable
@@ -253,6 +295,31 @@ const JobManagementPage: React.FC = () => {
         }}
         leftElement={
           <div className="flex items-center gap-3">
+            <CheckboxDropdown
+              label="Select Center"
+              options={[
+                { label: 'Center 1', value: 'Center 1' },
+                { label: 'Center 2', value: 'Center 2' },
+                { label: 'Muscat', value: 'Muscat' },
+              ]}
+              selectedValues={selectedCenters}
+              onChange={setSelectedCenters}
+            />
+
+            <CheckboxDropdown
+              label="Select Line"
+              options={[
+                { label: 'Line 1', value: 'Line 1' },
+                { label: 'Line 2', value: 'Line 2' },
+                { label: 'Line 3', value: 'Line 3' },
+              ]}
+              selectedValues={selectedLines}
+              onChange={setSelectedLines}
+            />
+          </div>
+        }
+        rightElement={
+          <div className="flex items-center gap-3 mr-8">
             <PermissionGate permission={PERMISSIONS.JOBS_CREATE}>
               <button
                 onClick={() => setShowNewJobModal(true)}
@@ -274,197 +341,178 @@ const JobManagementPage: React.FC = () => {
               <svg className="w-4 h-4 text-[#344054]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
               </svg>
-              <span>Refresh now</span>
             </button>
           </div>
         }
       />
 
-    {/* MODAL: New Job Entry Form */}
-    {showNewJobModal && (
-      <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
-        <div
-          style={{
-            width: '460px',
-            maxWidth: '95%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            backgroundColor: '#ffffff',
-            borderRadius: '20px',
-            padding: '24px 28px',
-            position: 'relative',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            border: '1px solid #f3f4f6'
-          }}
-        >
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>New Inspection Job</h3>
-            <button
-              type="button"
-              onClick={() => setShowNewJobModal(false)}
-              style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '50%',
-                border: '1.5px solid #6b7280',
-                background: 'transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 0,
-                color: '#4b5563'
-              }}
-            >
-              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <form onSubmit={handleCreateJob} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-
-            {/* Vehicle */}
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Vehicle (Plate) *</label>
-              <input
-                type="text"
-                placeholder="Enter Plate (e.g. OM-1000)"
-                value={newVehicle}
-                onChange={(e) => setNewVehicle(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  color: '#1f2937',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#ffffff'
-                }}
-              />
-            </div>
-
-            {/* Customer */}
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Customer Name *</label>
-              <input
-                type="text"
-                placeholder="Enter Name"
-                value={newCustomer}
-                onChange={(e) => setNewCustomer(e.target.value)}
-                required
-                style={{
-                  width: '100%',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  color: '#1f2937',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#ffffff'
-                }}
-              />
-            </div>
-
-            {/* Center */}
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Center *</label>
-              <select
-                value={newCenter}
-                onChange={(e) => setNewCenter(e.target.value)}
-                style={{
-                  width: '100%',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  color: '#1f2937',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#ffffff'
-                }}
-              >
-                <option value="Muscat">Muscat</option>
-                <option value="Sohar">Sohar</option>
-                <option value="Nizwa">Nizwa</option>
-                <option value="Salalah">Salalah</option>
-              </select>
-            </div>
-
-            {/* Line */}
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Line *</label>
-              <select
-                value={newLine}
-                onChange={(e) => setNewLine(e.target.value)}
-                style={{
-                  width: '100%',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  color: '#1f2937',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#ffffff'
-                }}
-              >
-                <option value="Line 1">Line 1</option>
-                <option value="Line 2">Line 2</option>
-                <option value="Line 3">Line 3</option>
-                <option value="Muscat">Muscat</option>
-              </select>
-            </div>
-
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+      {/* MODAL: New Job Entry Form */}
+      {showNewJobModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 transition-all" style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}>
+          <div
+            style={{
+              width: '460px',
+              maxWidth: '95%',
+              maxHeight: '90vh',
+              overflow: 'visible',
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              padding: '24px 28px',
+              position: 'relative',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              border: '1px solid #f3f4f6'
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111827', margin: 0 }}>New Inspection Job</h3>
               <button
                 type="button"
                 onClick={() => setShowNewJobModal(false)}
                 style={{
-                  flex: 1,
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #d1d5db',
-                  color: '#4b5563',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  padding: '10px 0',
-                  borderRadius: '8px',
+                  width: '26px',
+                  height: '26px',
+                  borderRadius: '50%',
+                  border: '1.5px solid #6b7280',
+                  background: 'transparent',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  color: '#4b5563'
                 }}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={{
-                  flex: 1,
-                  backgroundColor: '#111827',
-                  border: 'none',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  padding: '10px 0',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                Create Job
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleCreateJob} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+              {/* Vehicle */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Vehicle (Plate) *</label>
+                <input
+                  type="text"
+                  placeholder="Enter Plate (e.g. OM-1000)"
+                  value={newVehicle}
+                  onChange={(e) => setNewVehicle(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Customer */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Customer Name *</label>
+                <input
+                  type="text"
+                  placeholder="Enter Name"
+                  value={newCustomer}
+                  onChange={(e) => setNewCustomer(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    color: '#1f2937',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#ffffff'
+                  }}
+                />
+              </div>
+
+              {/* Center */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Center *</label>
+                <CustomSelect
+                  label="Select Center"
+                  value={newCenter}
+                  onChange={setNewCenter}
+                  options={[
+                    { label: 'Muscat', value: 'Muscat' },
+                    { label: 'Sohar', value: 'Sohar' },
+                    { label: 'Nizwa', value: 'Nizwa' },
+                    { label: 'Salalah', value: 'Salalah' },
+                  ]}
+                />
+              </div>
+
+              {/* Line */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#4b5563', marginBottom: '4px' }}>Line *</label>
+                <CustomSelect
+                  label="Select Line"
+                  value={newLine}
+                  onChange={setNewLine}
+                  options={[
+                    { label: 'Line 1', value: 'Line 1' },
+                    { label: 'Line 2', value: 'Line 2' },
+                    { label: 'Line 3', value: 'Line 3' },
+                    { label: 'Muscat', value: 'Muscat' },
+                  ]}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNewJobModal(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #d1d5db',
+                    color: '#4b5563',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    padding: '10px 0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#111827',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    padding: '10px 0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  Create Job
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
 };
 
 export default JobManagementPage;

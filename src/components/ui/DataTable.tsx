@@ -26,6 +26,12 @@ export function DataTable<TData>({
   onRowClick,
   headerWeightClassName = "font-semibold",
   cellWeightClassName = "font-medium",
+  serverSidePagination = false,
+  totalRows: totalRowsProp,
+  totalPages: totalPagesProp,
+  currentPage: currentPageProp,
+  onPageChange,
+  filterPosition = 'right',
 }: DataTableProps<TData>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('All');
@@ -133,18 +139,76 @@ export function DataTable<TData>({
     return result;
   }, [data, searchQuery, filterColumnKey, filterValue, searchKey, sortConfig]);
 
-  // Pagination bounds
-  const totalPages = Math.ceil(processedData.length / pageSize) || 1;
+  // Pagination bounds and server side helper variables
+  const isServerSide = serverSidePagination === true;
+  const displayCurrentPage = isServerSide ? (currentPageProp ?? 1) : currentPage;
+  const displayTotalPages = isServerSide ? (totalPagesProp ?? 1) : (Math.ceil(processedData.length / pageSize) || 1);
+  const displayTotalRows = isServerSide ? (totalRowsProp ?? data.length) : processedData.length;
+
   const paginatedData = useMemo(() => {
+    if (isServerSide) {
+      return processedData;
+    }
     const start = (currentPage - 1) * pageSize;
     return processedData.slice(start, start + pageSize);
-  }, [processedData, currentPage, pageSize]);
+  }, [processedData, currentPage, pageSize, isServerSide]);
 
   // Handle active page switching
   const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+    if (page >= 1 && page <= displayTotalPages) {
+      if (isServerSide) {
+        onPageChange?.(page);
+      } else {
+        setCurrentPage(page);
+      }
     }
+  };
+
+  // Reusable filter dropdown component renderer
+  const renderFilterDropdown = () => {
+    if (filterElement) return filterElement;
+    if (!filterColumnKey || !filterOptions) return null;
+
+    const activeFilterLabel = filterValue === 'All' ? filterPlaceholder : (filterOptions.find(opt => opt.value === filterValue)?.label || filterValue);
+    const filterDropdownSections: DropdownMenuSection[] = [
+      {
+        items: [
+          {
+            id: 'all',
+            label: filterPlaceholder,
+            selected: filterValue === 'All',
+            onClick: () => {
+              setFilterValue('All');
+              setCurrentPage(1);
+            }
+          },
+          ...filterOptions.map(opt => ({
+            id: opt.value,
+            label: opt.label,
+            selected: filterValue === opt.value,
+            onClick: () => {
+              setFilterValue(opt.value);
+              setCurrentPage(1);
+            }
+          }))
+        ]
+      }
+    ];
+
+    return (
+      <DropdownMenu
+        trigger={
+          <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer whitespace-nowrap">
+            <span>{activeFilterLabel}</span>
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        }
+        sections={filterDropdownSections}
+        align={filterPosition === 'left' ? 'left' : 'right'}
+      />
+    );
   };
 
 
@@ -156,7 +220,10 @@ export function DataTable<TData>({
       {showControls && (
         <div className="flex items-center justify-between flex-wrap gap-3 w-full">
           {/* Left side content (e.g. switcher) or spacer */}
-          <div>{leftElement}</div>
+          <div className="flex items-center gap-2">
+            {leftElement}
+            {filterPosition === 'left' && renderFilterDropdown()}
+          </div>
 
           {/* Right side controls: Search & Dropdowns */}
           <div className="flex items-center gap-2">
@@ -179,51 +246,8 @@ export function DataTable<TData>({
               />
             </div>
 
-            {/* 2. Filter Dropdowns */}
-            {filterElement}
-
-            {!filterElement && filterColumnKey && filterOptions && (() => {
-              const activeFilterLabel = filterValue === 'All' ? filterPlaceholder : (filterOptions.find(opt => opt.value === filterValue)?.label || filterValue);
-              const filterDropdownSections: DropdownMenuSection[] = [
-                {
-                  items: [
-                    {
-                      id: 'all',
-                      label: filterPlaceholder,
-                      selected: filterValue === 'All',
-                      onClick: () => {
-                        setFilterValue('All');
-                        setCurrentPage(1);
-                      }
-                    },
-                    ...filterOptions.map(opt => ({
-                      id: opt.value,
-                      label: opt.label,
-                      selected: filterValue === opt.value,
-                      onClick: () => {
-                        setFilterValue(opt.value);
-                        setCurrentPage(1);
-                      }
-                    }))
-                  ]
-                }
-              ];
-
-              return (
-                <DropdownMenu
-                  trigger={
-                    <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-neutral-200 text-[#344054] hover:bg-neutral-50 shadow-sm rounded-xl text-[13.5px] font-semibold transition-all cursor-pointer whitespace-nowrap">
-                      <span>{activeFilterLabel}</span>
-                      <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  }
-                  sections={filterDropdownSections}
-                  align="right"
-                />
-              );
-            })()}
+            {/* 2. Filter Dropdowns if right-positioned */}
+            {filterPosition === 'right' && (filterElement || renderFilterDropdown())}
 
             {/* 3. Column Controller Trigger Dropdown */}
             {hidableColumns.length > 0 && (
@@ -234,7 +258,7 @@ export function DataTable<TData>({
                   title="Columns"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5 text-slate-700">
-                    <path d="M2 5h20"/><path d="M6 12h12"/><path d="M9 19h6"/>
+                    <path d="M2 5h20" /><path d="M6 12h12" /><path d="M9 19h6" />
                   </svg>
                 </button>
 
@@ -355,40 +379,42 @@ export function DataTable<TData>({
           <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-[#FCFCFD] text-[13.5px] text-[#475467] select-none font-medium">
             {/* Left side: Showing X of Y row(s) */}
             <div>
-              Showing <span className="font-semibold text-[#101828]">{paginatedData.length}</span> of <span className="font-semibold text-[#101828]">{processedData.length}</span> row(s).
+              Showing <span className="font-semibold text-[#101828]">{paginatedData.length}</span> of <span className="font-semibold text-[#101828]">{displayTotalRows}</span> row(s).
             </div>
 
             {/* Right side controls */}
             <div className="flex items-center gap-6">
               {/* Rows per page selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-[#344054]">Rows per page</span>
-                <div className="relative">
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="appearance-none bg-white border border-[#d0d5dd] rounded-lg px-3 py-1.5 pr-8 text-[13px] font-semibold text-[#344054] focus:outline-none focus:border-neutral-400 cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
-                  >
-                    {[5, 10, 15, 20, 30, 50, 100].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </span>
+              {!isServerSide && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[#344054]">Rows per page</span>
+                  <div className="relative">
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="appearance-none bg-white border border-[#d0d5dd] rounded-lg px-3 py-1.5 pr-8 text-[13px] font-semibold text-[#344054] focus:outline-none focus:border-neutral-400 cursor-pointer shadow-[0_1px_2px_rgba(16,24,40,0.05)]"
+                    >
+                      {[5, 10, 15, 20, 30, 50, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Page indicator */}
               <div>
-                Page <span className="font-semibold text-[#101828]">{currentPage}</span> of <span className="font-semibold text-[#101828]">{totalPages}</span>
+                Page <span className="font-semibold text-[#101828]">{displayCurrentPage}</span> of <span className="font-semibold text-[#101828]">{displayTotalPages}</span>
               </div>
 
               {/* Navigation buttons */}
@@ -396,7 +422,7 @@ export function DataTable<TData>({
                 {/* First page */}
                 <button
                   onClick={() => handlePageChange(1)}
-                  disabled={currentPage === 1}
+                  disabled={displayCurrentPage === 1}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
                   title="First Page"
                 >
@@ -404,8 +430,8 @@ export function DataTable<TData>({
                 </button>
                 {/* Previous */}
                 <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(displayCurrentPage - 1)}
+                  disabled={displayCurrentPage === 1}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
                   title="Previous Page"
                 >
@@ -413,8 +439,8 @@ export function DataTable<TData>({
                 </button>
                 {/* Next */}
                 <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(displayCurrentPage + 1)}
+                  disabled={displayCurrentPage === displayTotalPages}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
                   title="Next Page"
                 >
@@ -422,8 +448,8 @@ export function DataTable<TData>({
                 </button>
                 {/* Last page */}
                 <button
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(displayTotalPages)}
+                  disabled={displayCurrentPage === displayTotalPages}
                   className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#d0d5dd] text-[#344054] bg-white hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shadow-[0_1px_2px_rgba(16,24,40,0.05)] text-[15px] font-bold"
                   title="Last Page"
                 >
