@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { masterService } from '../../api/services/master.service';
 import type { ApiAdminPc } from '../../interfaces/admin-pc.interface';
-import type { ApiLine } from '../../interfaces/line.interface';
+import type { ApiCentre } from '../../interfaces/centre.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import { toast } from 'sonner';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
@@ -14,7 +14,7 @@ import { PERMISSIONS } from '../../constants/permissions';
 
 const AdminPcMasterPage: React.FC = () => {
   const [pcs, setPcs] = useState<ApiAdminPc[]>([]);
-  const [lines, setLines] = useState<ApiLine[]>([]);
+  const [centres, setCentres] = useState<ApiCentre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -30,18 +30,17 @@ const AdminPcMasterPage: React.FC = () => {
     name: '',
     code: '',
     ip_address: '',
-    line_id: '',
+    centre_id: '',
     description: '',
     status: 'Active' as 'Active' | 'Inactive',
   });
 
-  // Fetch active lines for dropdown options
-  const fetchLines = async () => {
+  const fetchCentres = async () => {
     try {
-      const response = await masterService.lines.getAll({ nonPaginated: true });
-      setLines(response.data);
-    } catch (err) {
-      toast.error('Failed to load lines list for dropdown.');
+      const response = await masterService.centres.getAll({ nonPaginated: true });
+      setCentres(response.data.filter((c) => c.status === 'Active'));
+    } catch {
+      toast.error('Failed to load centres list for dropdown.');
     }
   };
 
@@ -61,7 +60,7 @@ const AdminPcMasterPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchLines();
+    void fetchCentres();
     fetchPcs();
   }, []);
 
@@ -70,7 +69,7 @@ const AdminPcMasterPage: React.FC = () => {
       name: '',
       code: '',
       ip_address: '',
-      line_id: lines[0]?.id || '',
+      centre_id: centres[0]?.id || '',
       description: '',
       status: 'Active',
     });
@@ -87,7 +86,7 @@ const AdminPcMasterPage: React.FC = () => {
       name: item.name,
       code: item.code,
       ip_address: item.ip_address,
-      line_id: item.line_id,
+      centre_id: item.centre_id,
       description: item.description || '',
       status: item.status,
     });
@@ -101,8 +100,8 @@ const AdminPcMasterPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.line_id) {
-      toast.error('Please assign a Line.');
+    if (!formData.centre_id) {
+      toast.error('Please assign a centre.');
       return;
     }
     setIsSubmitting(true);
@@ -112,7 +111,7 @@ const AdminPcMasterPage: React.FC = () => {
         name: formData.name.trim(),
         code: formData.code.trim(),
         ip_address: formData.ip_address.trim(),
-        line_id: formData.line_id,
+        centre_id: formData.centre_id,
         description: formData.description.trim() || undefined,
         status: formData.status,
       });
@@ -130,8 +129,8 @@ const AdminPcMasterPage: React.FC = () => {
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
-    if (!formData.line_id) {
-      toast.error('Please assign a Line.');
+    if (!formData.centre_id) {
+      toast.error('Please assign a centre.');
       return;
     }
     setIsSubmitting(true);
@@ -141,7 +140,7 @@ const AdminPcMasterPage: React.FC = () => {
         name: formData.name.trim(),
         code: formData.code.trim(),
         ip_address: formData.ip_address.trim(),
-        line_id: formData.line_id,
+        centre_id: formData.centre_id,
         description: formData.description.trim() || undefined,
         status: formData.status,
       });
@@ -208,9 +207,9 @@ const AdminPcMasterPage: React.FC = () => {
       enableSorting: true,
     },
     {
-      id: 'line',
-      header: 'Line',
-      cell: ({ row }) => <span className="text-gray-600 font-semibold">{row.line?.name || '—'}</span>,
+      id: 'centre',
+      header: 'Centre',
+      cell: ({ row }) => <span className="text-gray-600 font-semibold">{row.centre?.name || '—'}</span>,
       enableSorting: false,
     },
     {
@@ -331,8 +330,8 @@ const AdminPcMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.ip_address}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
-                <span className="text-gray-400 font-medium">Assigned Line</span>
-                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.line?.name || '—'}</span>
+                <span className="text-gray-400 font-medium">Assigned Centre</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.centre?.name || '—'}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Description</span>
@@ -429,20 +428,20 @@ const AdminPcMasterPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Centre</label>
                     <select
                       required
-                      disabled={isSubmitting || lines.length === 0}
-                      value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
+                      disabled={isSubmitting || centres.length === 0}
+                      value={formData.centre_id}
+                      onChange={(e) => setFormData({ ...formData, centre_id: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
+                      {centres.length === 0 ? (
+                        <option value="">No active centres available</option>
                       ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
+                        centres.map((centre) => (
+                          <option key={centre.id} value={centre.id}>
+                            {centre.name}
                           </option>
                         ))
                       )}
@@ -580,20 +579,20 @@ const AdminPcMasterPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Line</label>
+                    <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Centre</label>
                     <select
                       required
-                      disabled={isSubmitting || lines.length === 0}
-                      value={formData.line_id}
-                      onChange={(e) => setFormData({ ...formData, line_id: e.target.value })}
+                      disabled={isSubmitting || centres.length === 0}
+                      value={formData.centre_id}
+                      onChange={(e) => setFormData({ ...formData, centre_id: e.target.value })}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium"
                     >
-                      {lines.length === 0 ? (
-                        <option value="">No active lines available</option>
+                      {centres.length === 0 ? (
+                        <option value="">No active centres available</option>
                       ) : (
-                        lines.map((line) => (
-                          <option key={line.id} value={line.id}>
-                            {line.name}
+                        centres.map((centre) => (
+                          <option key={centre.id} value={centre.id}>
+                            {centre.name}
                           </option>
                         ))
                       )}

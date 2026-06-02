@@ -1,4 +1,4 @@
-import type { ApiLine } from './line.interface';
+import type { ApiCentre } from './centre.interface';
 
 export interface ApiAdminPc {
   id: string;
@@ -6,8 +6,8 @@ export interface ApiAdminPc {
   name: string;
   code: string;
   ip_address: string;
-  line_id: string;
-  line?: ApiLine;
+  centre_id: string;
+  centre?: ApiCentre;
   description?: string;
   status: 'Active' | 'Inactive';
   created_by?: string;
@@ -19,7 +19,7 @@ export interface CreateAdminPcPayload {
   name: string;
   code: string;
   ip_address: string;
-  line_id: string;
+  centre_id: string;
   description?: string;
   status?: 'Active' | 'Inactive';
 }
@@ -28,7 +28,7 @@ export interface UpdateAdminPcPayload {
   name?: string;
   code?: string;
   ip_address?: string;
-  line_id?: string;
+  centre_id?: string;
   description?: string;
   status?: 'Active' | 'Inactive';
 }

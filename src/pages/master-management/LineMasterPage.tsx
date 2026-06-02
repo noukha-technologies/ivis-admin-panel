@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { masterService } from '../../api/services/master.service';
 import type { ApiLine } from '../../interfaces/line.interface';
+import type { ApiCentre } from '../../interfaces/centre.interface';
 import { getApiErrorMessage } from '../../api/apiResponse';
 import { toast } from 'sonner';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { PERMISSIONS } from '../../constants/permissions';
 
 const LineMasterPage: React.FC = () => {
   const [lines, setLines] = useState<ApiLine[]>([]);
+  const [centres, setCentres] = useState<ApiCentre[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -27,6 +29,7 @@ const LineMasterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
+    centre_id: '',
     display_order: 1,
     description: '',
     status: 'Active' as 'Active' | 'Inactive',
@@ -47,7 +50,17 @@ const LineMasterPage: React.FC = () => {
     }
   };
 
+  const fetchCentres = async () => {
+    try {
+      const result = await masterService.centres.getAll({ nonPaginated: true });
+      setCentres(result.data.filter((c) => c.status === 'Active'));
+    } catch {
+      toast.error('Failed to load centres list for dropdown.');
+    }
+  };
+
   useEffect(() => {
+    void fetchCentres();
     fetchLines();
   }, []);
 
@@ -55,6 +68,7 @@ const LineMasterPage: React.FC = () => {
     setFormData({
       name: '',
       code: '',
+      centre_id: centres[0]?.id || '',
       display_order: 1,
       description: '',
       status: 'Active',
@@ -71,6 +85,7 @@ const LineMasterPage: React.FC = () => {
     setFormData({
       name: item.name,
       code: item.code,
+      centre_id: item.centre_id,
       display_order: item.display_order,
       description: item.description || '',
       status: item.status,
@@ -85,12 +100,17 @@ const LineMasterPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.centre_id) {
+      toast.error('Please select a centre.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await masterService.lines.create({
         name: formData.name.trim(),
         code: formData.code.trim(),
+        centre_id: formData.centre_id,
         display_order: formData.display_order,
         description: formData.description.trim() || undefined,
         status: formData.status,
@@ -109,12 +129,17 @@ const LineMasterPage: React.FC = () => {
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem) return;
+    if (!formData.centre_id) {
+      toast.error('Please select a centre.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       await masterService.lines.update(selectedItem.id, {
         name: formData.name.trim(),
         code: formData.code.trim(),
+        centre_id: formData.centre_id,
         display_order: formData.display_order,
         description: formData.description.trim() || undefined,
         status: formData.status,
@@ -181,6 +206,12 @@ const LineMasterPage: React.FC = () => {
       accessorKey: 'code',
       cell: ({ value }) => <span className="text-gray-600 font-medium font-mono">{value}</span>,
       enableSorting: true,
+    },
+    {
+      id: 'centre',
+      header: 'Centre',
+      cell: ({ row }) => <span className="text-gray-600 font-semibold">{row.centre?.name || '—'}</span>,
+      enableSorting: false,
     },
     {
       id: 'display_order',
@@ -314,6 +345,10 @@ const LineMasterPage: React.FC = () => {
                 <span className="col-span-2 text-neutral-800 font-mono font-semibold">{selectedItem.code}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
+                <span className="text-gray-400 font-medium">Centre</span>
+                <span className="col-span-2 text-neutral-800 font-bold">{selectedItem.centre?.name || '—'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1.5 border-b border-neutral-50">
                 <span className="text-gray-400 font-medium">Display Order</span>
                 <span className="col-span-2 text-neutral-800 font-bold">{formatDisplayOrder(selectedItem.display_order)}</span>
               </div>
@@ -396,6 +431,27 @@ const LineMasterPage: React.FC = () => {
                       className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Centre</label>
+                  <select
+                    required
+                    disabled={isSubmitting || centres.length === 0}
+                    value={formData.centre_id}
+                    onChange={(e) => setFormData({ ...formData, centre_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium disabled:bg-neutral-50 disabled:text-neutral-400"
+                  >
+                    {centres.length === 0 ? (
+                      <option value="">No active centres available</option>
+                    ) : (
+                      centres.map((centre) => (
+                        <option key={centre.id} value={centre.id}>
+                          {centre.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
 
                 <div>
@@ -535,6 +591,27 @@ const LineMasterPage: React.FC = () => {
                       className="w-full px-3.5 py-2.5 border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] placeholder-[#98a2b3] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm disabled:bg-neutral-50 disabled:text-neutral-400"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Centre</label>
+                  <select
+                    required
+                    disabled={isSubmitting || centres.length === 0}
+                    value={formData.centre_id}
+                    onChange={(e) => setFormData({ ...formData, centre_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#d0d5dd] rounded-xl text-[14px] text-[#101828] focus:outline-none focus:ring-2 focus:ring-neutral-100 focus:border-neutral-400 transition-all shadow-sm cursor-pointer font-medium disabled:bg-neutral-50 disabled:text-neutral-400"
+                  >
+                    {centres.length === 0 ? (
+                      <option value="">No active centres available</option>
+                    ) : (
+                      centres.map((centre) => (
+                        <option key={centre.id} value={centre.id}>
+                          {centre.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
 
                 <div>

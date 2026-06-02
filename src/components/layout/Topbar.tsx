@@ -13,18 +13,18 @@ interface TopbarProps {
 }
 
 const menuItems = [
-  { name: 'User Management' },
   { name: 'Configuration' },
-  { name: 'Master Management' },
   { name: 'Transactions' },
+  { name: 'User Management' },
+  { name: 'Master Management' },
 ];
 
 const itemRouteMap: Record<string, string> = {
   'Dashboard': ROUTES.DASHBOARD,
-  'User Management': ROUTES.USERS_MANAGEMENT,
   'Configuration': ROUTES.CONFIGURATION,
-  'Master Management': ROUTES.MASTER_MANAGEMENT,
   'Transactions': ROUTES.PAYMENTS,
+  'User Management': ROUTES.USERS_MANAGEMENT,
+  'Master Management': ROUTES.MASTER_MANAGEMENT,
 };
 
 const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
@@ -49,10 +49,14 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
   const firstSegment = '/' + location.pathname.split('/')[1];
   const showDashboard = dashboardRoutes.includes(firstSegment);
 
-  const currentMenuItems = (showDashboard
-    ? [{ name: 'Dashboard' }, ...menuItems]
-    : menuItems
-  ).filter((item) => canAccessMenu(item.name, MENU_PERMISSIONS, permissions));
+  const filteredItems = menuItems.filter((item) =>
+    canAccessMenu(item.name, MENU_PERMISSIONS, permissions),
+  );
+  const sortedItems = [...filteredItems].sort((a, b) => a.name.localeCompare(b.name));
+  const currentMenuItems =
+    showDashboard && canAccessMenu('Dashboard', MENU_PERMISSIONS, permissions)
+      ? [{ name: 'Dashboard' }, ...sortedItems]
+      : sortedItems;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,7 +116,7 @@ const Topbar = ({ title, subtitle, isSidebarHidden = false }: TopbarProps) => {
         >
           <img src={topNavIcon} alt="Apps Menu" className="w-8.5 h-8.5" />
         </button>
- 
+
         {/* Dropdown Menu */}
         {isMenuOpen && (
           <div
