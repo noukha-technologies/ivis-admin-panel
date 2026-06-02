@@ -1,10 +1,14 @@
+export const VEHICLE_MASTER_STATUSES = ['Active', 'Inactive', 'Suspended'] as const;
+
+export type VehicleMasterStatus = (typeof VEHICLE_MASTER_STATUSES)[number];
+
 export interface ApiVehicle {
   id: string;
   vehicle_id: number;
-  plate_number: string;
-  vehicle_type: string;
-  vehicle_color: string;
-  vehicle_brand: string;
+  name: string;
+  code: string;
+  vin_no?: string;
+  status: VehicleMasterStatus;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -12,17 +16,17 @@ export interface ApiVehicle {
 
 export interface CreateVehiclePayload {
   vehicle_id?: number;
-  plate_number: string;
-  vehicle_type: string;
-  vehicle_color: string;
-  vehicle_brand: string;
+  name: string;
+  code: string;
+  vin_no?: string;
+  status?: VehicleMasterStatus;
 }
 
 export interface UpdateVehiclePayload {
-  plate_number?: string;
-  vehicle_type?: string;
-  vehicle_color?: string;
-  vehicle_brand?: string;
+  name?: string;
+  code?: string;
+  vin_no?: string;
+  status?: VehicleMasterStatus;
 }
 
 export interface VehicleListParams {

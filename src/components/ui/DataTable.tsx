@@ -4,39 +4,8 @@ import { cn } from '../../utils/cn';
 import { DropdownMenu } from './DropdownMenu';
 import noDataImg from '../../assets/images/no_data_premium.png';
 import type { ColumnDef, DataTableProps, DropdownMenuSection } from '../../interfaces/ui.interfaces';
+import { useAnimatedPlaceholder } from '../../hooks/useAnimatedPlaceholder';
 
-function useAnimatedPlaceholder(baseText: string, hints?: string[], interval = 2000, typingSpeed = 80) {
-  const [displayText, setDisplayText] = useState('');
-  const [hintIndex, setHintIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    if (!hints || hints.length === 0) return;
-
-    let timer: ReturnType<typeof setTimeout>;
-    const currentHint = hints[hintIndex];
-
-    if (isDeleting) {
-      if (displayText.length > 0) {
-        timer = setTimeout(() => setDisplayText(displayText.slice(0, -1)), typingSpeed / 2);
-      } else {
-        setIsDeleting(false);
-        setHintIndex((prev) => (prev + 1) % hints.length);
-      }
-    } else {
-      if (displayText.length < currentHint.length) {
-        timer = setTimeout(() => setDisplayText(currentHint.slice(0, displayText.length + 1)), typingSpeed);
-      } else {
-        timer = setTimeout(() => setIsDeleting(true), interval);
-      }
-    }
-
-    return () => clearTimeout(timer);
-  }, [displayText, isDeleting, hintIndex, hints, interval, typingSpeed]);
-
-  if (!hints || hints.length === 0) return baseText;
-  return `${baseText} ${displayText}`;
-}
 
 export function DataTable<TData>({
   data,
