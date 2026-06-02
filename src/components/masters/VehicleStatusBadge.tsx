@@ -6,19 +6,28 @@ interface VehicleStatusBadgeProps {
 }
 
 export const VehicleStatusBadge: React.FC<VehicleStatusBadgeProps> = ({ status }) => {
-  const styles: Record<VehicleMasterStatus, string> = {
-    Active: 'bg-[#ecfdf5] text-[#027a48] border-[#d1fae5]',
-    Inactive: 'bg-[#f9fafb] text-[#344054] border-[#eaecf0]',
-    Suspended: 'bg-[#fef8e6] text-[#b45309] border-[#fde8bb]',
-  };
-
   return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-lg text-[12.5px] font-semibold border select-none ${
-        styles[status] || styles.Inactive
-      }`}
-    >
-      {status}
-    </span>
+    <div className="flex items-center gap-2">
+      <div className="relative flex h-2 w-2 items-center justify-center">
+        {status === 'Active' ? (
+          <>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </>
+        ) : status === 'Suspended' ? (
+          <>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+          </>
+        ) : (
+          <>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+          </>
+        )}
+      </div>
+      <span className="text-[13.5px] font-medium text-neutral-700">{status}</span>
+    </div>
   );
 };
+

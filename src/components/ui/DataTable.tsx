@@ -13,6 +13,7 @@ export function DataTable<TData>({
   searchPlaceholder = "Search...",
   animatedSearchHints,
   searchKey,
+  searchKeys,
   filterColumnKey,
   filterPlaceholder = "Filter",
   filterOptions,
@@ -112,6 +113,12 @@ export function DataTable<TData>({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(item => {
+        if (searchKeys && searchKeys.length > 0) {
+          return searchKeys.some(key => {
+            const val = String((item as any)[key] || '');
+            return val.toLowerCase().includes(q);
+          });
+        }
         if (searchKey) {
           const val = String((item as any)[searchKey] || '');
           return val.toLowerCase().includes(q);
@@ -137,7 +144,7 @@ export function DataTable<TData>({
     }
 
     return result;
-  }, [data, searchQuery, filterColumnKey, filterValue, searchKey, sortConfig]);
+  }, [data, searchQuery, filterColumnKey, filterValue, searchKey, searchKeys, sortConfig]);
 
   // Pagination bounds and server side helper variables
   const isServerSide = serverSidePagination === true;

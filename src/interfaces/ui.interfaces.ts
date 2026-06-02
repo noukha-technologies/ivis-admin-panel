@@ -51,6 +51,7 @@ export interface DataTableProps<TData> {
   searchPlaceholder?: string;
   animatedSearchHints?: string[];
   searchKey?: keyof TData | string;
+  searchKeys?: (keyof TData | string)[];
   filterColumnKey?: keyof TData | string;
   filterPlaceholder?: string;
   filterOptions?: { label: string; value: string }[];

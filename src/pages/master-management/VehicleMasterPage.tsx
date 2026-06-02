@@ -104,11 +104,32 @@ const VehicleMasterPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const name = formData.name.trim();
+    const code = formData.code.trim();
+    const vin_no = formData.vin_no.trim();
+
+    if (!name) {
+      toast.error('Name is required.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!code) {
+      toast.error('Code is required.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!vin_no) {
+      toast.error('VIN No is required.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await masterService.vehicles.create({
-        name: formData.name.trim(),
-        code: formData.code.trim(),
-        vin_no: formData.vin_no.trim() || undefined,
+        name,
+        code,
+        vin_no,
         status: formData.status,
       });
       closeDrawer();
@@ -125,11 +146,32 @@ const VehicleMasterPage: React.FC = () => {
     e.preventDefault();
     if (!selectedItem) return;
     setIsSubmitting(true);
+
+    const name = formData.name.trim();
+    const code = formData.code.trim();
+    const vin_no = formData.vin_no.trim();
+
+    if (!name) {
+      toast.error('Name is required.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!code) {
+      toast.error('Code is required.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!vin_no) {
+      toast.error('VIN No is required.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await masterService.vehicles.update(selectedItem.id, {
-        name: formData.name.trim(),
-        code: formData.code.trim(),
-        vin_no: formData.vin_no.trim() || undefined,
+        name,
+        code,
+        vin_no,
         status: formData.status,
       });
       closeDrawer();
@@ -312,7 +354,9 @@ const VehicleMasterPage: React.FC = () => {
   const renderFormFields = () => (
     <div className="space-y-5">
       <div>
-        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Name</label>
+        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">
+          Name {!isReadOnly && <span className="text-red-500">*</span>}
+        </label>
         <input
           type="text"
           required
@@ -325,7 +369,9 @@ const VehicleMasterPage: React.FC = () => {
       </div>
 
       <div>
-        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">Code</label>
+        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">
+          Code {!isReadOnly && <span className="text-red-500">*</span>}
+        </label>
         <input
           type="text"
           required
@@ -338,9 +384,12 @@ const VehicleMasterPage: React.FC = () => {
       </div>
 
       <div>
-        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">VIN No</label>
+        <label className="block text-[13px] font-semibold text-[#344054] mb-1.5">VIN No
+          {!isReadOnly && <span className="text-red-500">*</span>}
+        </label>
         <input
           type="text"
+          required
           readOnly={isReadOnly}
           placeholder="e.g. JN1AZ32E90U123456"
           value={formData.vin_no}
@@ -364,16 +413,14 @@ const VehicleMasterPage: React.FC = () => {
           aria-label="Toggle active status"
         >
           <div
-            className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${
-              formData.status === 'Active'
-                ? 'bg-[#171717] border-[#171717]'
-                : 'bg-neutral-200 border-neutral-300'
-            }`}
+            className={`relative w-13 h-7 rounded-full transition-colors duration-200 ease-in-out border ${formData.status === 'Active'
+              ? 'bg-[#171717] border-[#171717]'
+              : 'bg-neutral-200 border-neutral-300'
+              }`}
           >
             <div
-              className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
-                formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
-              }`}
+              className={`absolute top-0.75 left-0.75 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${formData.status === 'Active' ? 'translate-x-6' : 'translate-x-0'
+                }`}
             />
           </div>
         </button>
@@ -405,7 +452,8 @@ const VehicleMasterPage: React.FC = () => {
         columns={columns}
         loading={isLoading}
         searchPlaceholder="Search by"
-        animatedSearchHints={['Name', 'Code', 'VIN No', 'Status']}
+        searchKeys={['name', 'vin_no', 'code']}
+        animatedSearchHints={['Name', 'Code', 'VIN No']}
         defaultPageSize={10}
         onRowClick={openView}
         rightElement={
